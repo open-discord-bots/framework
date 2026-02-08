@@ -171,7 +171,7 @@ export class ODClientManager {
                     process.emit("uncaughtException",new ODSystemError("Used disallowed intents"))
                 }else if (err.message.toLowerCase().includes("tokeninvalid") || err.message.toLowerCase().includes("an invalid token was provided")){
                     process.emit("uncaughtException",new ODSystemError("Invalid discord bot token provided"))
-                }else reject("OT Login Error: "+err)
+                }else reject("OD Login Error: "+err)
             }
         })
     }

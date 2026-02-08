@@ -74,7 +74,7 @@ export interface ODSharedFuseList {
     debugLoading:boolean,
     /**Enable the system responsible for the `--silent` flag. */
     silentLoading:boolean,
-    /**When enabled, you're able to use the "!OPENTICKET:dump" command to send the OT debug file. This is only possible when you're the owner of the bot. */
+    /**When enabled, you're able to use the "!OPENTICKET:dump" command to send the debug file. This is only possible when you're the owner of the bot. */
     allowDumpCommand:boolean,
     /**Enable loading all Open Discord plugins, sadly enough is only useful for the system :) */
     pluginLoading:boolean,
