@@ -2,7 +2,7 @@
     "name": "@open-discord-bots/framework",
     "author": "DJj123dj",
     "version": "0.0.1",
-    "description": "The core framework of Open Ticket & Open Moderation.",
+    "description": "The core framework of the popular open-source discord bots: Open Ticket & Open Moderation.",
     "main": "dist/index.js",
     "module": "dist/index.js",
     "scripts": {

@@ -79,7 +79,7 @@ export class ODProgressBarRenderer<Settings extends {}> extends ODManagerData {
  * This is an Open Discord console progress bar.
  * 
  * It is used to create a simple or advanced progress bar in the console of the bot.
- * These progress bars are not visible in the `otdebug.txt` file and should only be used as extra visuals.
+ * These progress bars are not visible in the `debug.txt` file and should only be used as extra visuals.
  * 
  * Use other classes as existing templates or create your own progress bar from scratch using this class.
  */

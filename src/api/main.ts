@@ -1,5 +1,5 @@
 //BASE MODULES
-import { ODEnvHelper, ODVersion, ODVersionManager } from "./modules/base"
+import { ODEnvHelper, ODProjectType, ODVersion, ODVersionManager } from "./modules/base"
 import { ODConsoleManager, ODConsoleMessage, ODConsoleMessageParam, ODConsoleMessageTypes, ODDebugFileManager, ODDebugger, ODError, ODLiveStatusManager } from "./modules/console"
 import { ODCheckerManager } from "./modules/checker"
 import { ODEventManager } from "./modules/event"
@@ -99,45 +99,48 @@ export interface ODMainManagers {
  * This is the main Open Discord class.
  * It contains all managers from the entire bot & has shortcuts to the event & logging system.
  * 
- * This class can't be overwritten or extended & is available as the global variable `openticket`!
+ * This class can't be overwritten or extended & is available as the global variable `opendiscord`!
  */
 export class ODMain implements ODMainManagers {
-    versions: ODVersionManager
-    processStartupDate: Date = new Date()
+    readonly project: ODProjectType
+
+    readonly versions: ODVersionManager
+    readonly processStartupDate: Date = new Date()
     readyStartupDate: Date|null = null
 
-    debugfile: ODDebugFileManager
-    console: ODConsoleManager
-    debug: ODDebugger
-    events: ODEventManager
+    readonly debugfile: ODDebugFileManager
+    readonly console: ODConsoleManager
+    readonly debug: ODDebugger
+    readonly events: ODEventManager
 
-    plugins: ODPluginManager
-    flags: ODFlagManager
-    progressbars: ODProgressBarManager
-    configs: ODConfigManager
-    databases: ODDatabaseManager
-    sessions: ODSessionManager
-    languages: ODLanguageManager
+    readonly plugins: ODPluginManager
+    readonly flags: ODFlagManager
+    readonly progressbars: ODProgressBarManager
+    readonly configs: ODConfigManager
+    readonly databases: ODDatabaseManager
+    readonly sessions: ODSessionManager
+    readonly languages: ODLanguageManager
     
-    checkers: ODCheckerManager
-    builders: ODBuilderManager
-    responders: ODResponderManager
-    actions: ODActionManager
-    verifybars: ODVerifyBarManager
-    permissions: ODPermissionManager
-    cooldowns: ODCooldownManager
-    helpmenu: ODHelpMenuManager
-    stats: ODStatsManager
-    code: ODCodeManager
-    posts: ODPostManager
+    readonly checkers: ODCheckerManager
+    readonly builders: ODBuilderManager
+    readonly responders: ODResponderManager
+    readonly actions: ODActionManager
+    readonly verifybars: ODVerifyBarManager
+    readonly permissions: ODPermissionManager
+    readonly cooldowns: ODCooldownManager
+    readonly helpmenu: ODHelpMenuManager
+    readonly stats: ODStatsManager
+    readonly code: ODCodeManager
+    readonly posts: ODPostManager
     
-    client: ODClientManager
-    sharedFuses: ODSharedFuseManager
-    env: ODEnvHelper
-    livestatus: ODLiveStatusManager
-    startscreen: ODStartScreenManager
+    readonly client: ODClientManager
+    readonly sharedFuses: ODSharedFuseManager
+    readonly env: ODEnvHelper
+    readonly livestatus: ODLiveStatusManager
+    readonly startscreen: ODStartScreenManager
 
-    constructor(managers:ODMainManagers){
+    constructor(managers:ODMainManagers,project:ODProjectType){
+        this.project = project
         this.versions = managers.versions
         this.versions.add(ODVersion.fromString("opendiscord:api","v1.0.0"))
         this.versions.add(ODVersion.fromString("opendiscord:livestatus","v2.0.0"))

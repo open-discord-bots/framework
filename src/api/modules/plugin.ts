@@ -1,9 +1,9 @@
 ///////////////////////////////////////
 //PLUGIN MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODSystemError, ODValidId, ODVersion } from "./base"
+import { ODId, ODManager, ODManagerData, ODValidId, ODVersion } from "./base"
+import { ODDebugger } from "./console"
 import nodepath from "path"
-import { ODConsolePluginMessage, ODConsoleWarningMessage, ODDebugger } from "./console"
 
 /**## ODUnknownCrashedPlugin `interface`
  * Basic details for a plugin that crashed while loading the `plugin.json` file.
@@ -159,7 +159,7 @@ export class ODPlugin extends ODManagerData {
                 debug.console.log(error.message+", canceling plugin execution...","plugin",[
                     {key:"path",value:"./plugins/"+this.dir}
                 ])
-                debug.console.log("You can see more about this error in the ./otdebug.txt file!","info")
+                debug.console.log("You can see more about this error in the ./debug.txt file!","info")
                 debug.console.debugfile.writeText(error.stack)
 
                 return false

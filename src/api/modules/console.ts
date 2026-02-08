@@ -65,7 +65,7 @@ export class ODConsoleMessage {
             return false
         }
     }
-    /**Create a more-detailed, non-colored version of this message to store it in the `otdebug.txt` file! */
+    /**Create a more-detailed, non-colored version of this message to store it in the `debug.txt` file! */
     toDebugString(){
         const pstrings: string[] = []
         this.params.forEach((p) => {
@@ -185,7 +185,7 @@ export class ODConsoleErrorMessage extends ODConsoleMessage {
 /**## ODError `class`
  * This is an Open Discord error.
  * 
- * It is used to render and log Node.js errors & crashes in a styled way to the console & `otdebug.txt` file!
+ * It is used to render and log Node.js errors & crashes in a styled way to the console & `debug.txt` file!
  */
 export class ODError {
     /**The original error that this class wraps around */
@@ -209,13 +209,13 @@ export class ODError {
             //additional message
             if (this.error["_ODErrorType"] == "plugin") console.log(ansis.red.bold("\nPlease report this error to the plugin developer and help us create a more stable plugin!"))
             else console.log(ansis.red.bold("\nPlease report this error to our discord server and help us create a more stable bot!"))
-            console.log(ansis.red("Also send the "+ansis.cyan.bold("otdebug.txt")+" file! It would help a lot!\n"))
+            console.log(ansis.red("Also send the "+ansis.cyan.bold("debug.txt")+" file! It would help a lot!\n"))
             return true
         }catch{
             return false
         }
     }
-    /**Create a more-detailed, non-colored version of this error to store it in the `otdebug.txt` file! */
+    /**Create a more-detailed, non-colored version of this error to store it in the `debug.txt` file! */
     toDebugString(){
         return "[UNKNOWN OD ERROR]: "+this.error.message+" | origin: "+this.origin+"\n"+this.error.stack
     }
@@ -232,14 +232,14 @@ export type ODConsoleMessageTypes = "info"|"system"|"plugin"|"debug"|"warning"|"
  * It handles the entire console system of Open Discord. It's also the place where you need to log `ODConsoleMessage`'s.
  * This manager keeps a short history of messages sent to the console which is configurable by plugins.
  * 
- * The debug file (`otdebug.txt`) is handled in a sub-manager!
+ * The debug file (`debug.txt`) is handled in a sub-manager!
  */
 export class ODConsoleManager {
     /**The history of `ODConsoleMessage`'s and `ODError`'s since startup */
     history: (ODConsoleMessage|ODError)[] = []
     /**The max length of the history. The oldest messages will be removed when over the limit */
     historylength = 100
-    /**An alias to the debugfile manager. (`otdebug.txt`) */
+    /**An alias to the debugfile manager. (`debug.txt`) */
     debugfile: ODDebugFileManager
     /**Is silent mode enabled? */
     silent: boolean = false
@@ -289,15 +289,15 @@ export class ODConsoleManager {
 /**## ODDebugFileManager `class`
  * This is the Open Discord debug file manager.
  * 
- * It manages the Open Discord debug file (`otdebug.txt`) which keeps a history of all system logs.
+ * It manages the Open Discord debug file (`debug.txt`) which keeps a history of all system logs.
  * There are even internal logs that aren't logged to the console which are available in this file!
  * 
  * Using this class, you can change the max length of this file and some other cool things!
  */
 export class ODDebugFileManager {
-    /**The path to the debugfile (`./otdebug.txt` by default) */
+    /**The path to the debugfile (`./debug.txt` by default) */
     path: string
-    /**The filename of the debugfile (`otdebug.txt` by default) */
+    /**The filename of the debugfile (`debug.txt` by default) */
     filename: string
     /**The current version of the bot used in the debug file. */
     version: ODVersion
@@ -419,7 +419,7 @@ export class ODDebugger {
         this.console = console
     }
 
-    /**Create a debug message. This will always be logged to `otdebug.txt` & sometimes to the console (when enabled). Returns `true` when visible */
+    /**Create a debug message. This will always be logged to `debug.txt` & sometimes to the console (when enabled). Returns `true` when visible */
     debug(message:string, params?:{key:string,value:string}[]): boolean {
         if (this.visible){
             this.console.log(new ODConsoleDebugMessage(message,params))
@@ -559,10 +559,10 @@ export class ODLiveStatusUrlSource extends ODLiveStatusSource {
     /**The `ODHTTPGetRequest` helper to fetch the url! */
     request: ODHTTPGetRequest
 
-    constructor(id:ODValidId, url:string){
+    constructor(main:ODMain,id:ODValidId, url:string){
         super(id,[])
         this.url = url
-        this.request = new ODHTTPGetRequest(url,false)
+        this.request = new ODHTTPGetRequest(main,url,false)
     }
     async getMessages(main:ODMain): Promise<ODLiveStatusSourceData[]> {
         //additional setup

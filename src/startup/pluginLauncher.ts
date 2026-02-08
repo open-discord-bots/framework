@@ -67,7 +67,7 @@ export const loadAllPlugins = async (opendiscord:api.ODMain) => {
             opendiscord.log(e.message+", canceling plugin execution...","plugin",[
                 {key:"path",value:"./plugins/"+p}
             ])
-            opendiscord.log("You can see more about this error in the ./otdebug.txt file!","info")
+            opendiscord.log("You can see more about this error in the ./debug.txt file!","info")
             opendiscord.debugfile.writeText(e.stack)
             
             //try to get some crashed plugin data

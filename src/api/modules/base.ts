@@ -3,6 +3,7 @@
 ///////////////////////////////////////
 import * as fs from "fs"
 import { ODConsoleWarningMessage, ODDebugger } from "./console"
+import type { ODMain } from "../main"
 
 /**## ODPromiseVoid `type`
  * This is a simple type to represent a callback return value that could be a promise or not.
@@ -596,7 +597,7 @@ export class ODHTTPGetRequest {
     /**Throw on error OR return http code 500 */
     throwOnError: boolean
 
-    constructor(url:string,throwOnError:boolean,config?:RequestInit){
+    constructor(main:ODMain,url:string,throwOnError:boolean,config?:RequestInit){
         if (typeof url != "string") throw new ODSystemError("Invalid constructor parameter => url:string")
         if (typeof throwOnError != "boolean") throw new ODSystemError("Invalid constructor parameter => throwOnError:boolean")
         if (typeof config != "undefined" && typeof config != "object") throw new ODSystemError("Invalid constructor parameter => config?:RequestInit")
@@ -605,8 +606,9 @@ export class ODHTTPGetRequest {
         this.throwOnError = throwOnError
         const newConfig = config ?? {}
         newConfig.method = "GET"
-        if (newConfig.headers) Object.assign(newConfig.headers,{"User-Agent":"OpenDiscordBots-OpenTicket/4.1.2"})
-        else newConfig.headers = {"User-Agent":"OpenDiscordBots-OpenTicket/4.1.2"}
+        const userAgent = ((main.project == "openticket") ? "OpenDiscordBots-OpenTicket" : "OpenDiscordBots-OpenModeration") +"/"+(main.versions.get("opendiscord:version")?.toString(true) ?? "<OD:UNKNOWN_VERSION>")
+        if (newConfig.headers) Object.assign(newConfig.headers,{"User-Agent":userAgent})
+        else newConfig.headers = {"User-Agent":userAgent}
         this.config = newConfig
     }
 
@@ -651,7 +653,7 @@ export class ODHTTPPostRequest {
     /**Throw on error OR return http code 500 */
     throwOnError: boolean
 
-    constructor(url:string,throwOnError:boolean,config?:RequestInit){
+    constructor(main:ODMain,url:string,throwOnError:boolean,config?:RequestInit){
         if (typeof url != "string") throw new ODSystemError("Invalid constructor parameter => url:string")
         if (typeof throwOnError != "boolean") throw new ODSystemError("Invalid constructor parameter => throwOnError:boolean")
         if (typeof config != "undefined" && typeof config != "object") throw new ODSystemError("Invalid constructor parameter => config?:RequestInit")
@@ -660,8 +662,9 @@ export class ODHTTPPostRequest {
         this.throwOnError = throwOnError
         const newConfig = config ?? {}
         newConfig.method = "POST"
-        if (newConfig.headers) Object.assign(newConfig.headers,{"User-Agent":"OpenDiscordBots-OpenTicket/4.1.2"})
-        else newConfig.headers = {"User-Agent":"OpenDiscordBots-OpenTicket/4.1.2"}
+        const userAgent = ((main.project == "openticket") ? "OpenDiscordBots-OpenTicket" : "OpenDiscordBots-OpenModeration") +"/"+(main.versions.get("opendiscord:version")?.toString(true) ?? "<OD:UNKNOWN_VERSION>")
+        if (newConfig.headers) Object.assign(newConfig.headers,{"User-Agent":userAgent})
+        else newConfig.headers = {"User-Agent":userAgent}
         this.config = newConfig
     }
 
