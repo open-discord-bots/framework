@@ -1,0 +1,20 @@
+{
+    "name": "@open-discord-bots/framework",
+    "author": "DJj123dj",
+    "version": "1.0.0",
+    "description": "The core framework of Open Ticket & Open Moderation.",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
+    "scripts": {
+        "build": "node ./tools/cleanup.js && tsc -p ./tsconfig.json"
+    },
+    "keywords": [],
+    "license": "MIT",
+    "dependencies": {
+        "discord.js": "^14.25.1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/open-discord-bots/framework.git"
+    }
+}
