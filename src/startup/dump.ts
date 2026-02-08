@@ -1,4 +1,4 @@
-import { ODMain, ODTextCommand } from "../api/api"
+import {api, utilities} from "../index"
 import * as discord from "discord.js"
 import * as fs from "fs"
 
@@ -16,9 +16,9 @@ import * as fs from "fs"
  * If you want to turn it off, you turn off the fuse using `opendiscord.sharedFuses.setFuse("allowDumpCommand",false)`
  */
 
-export const loadDumpCommand = (opendiscord:ODMain) => {
+export const loadDumpCommand = (opendiscord:api.ODMain) => {
     if (!opendiscord.sharedFuses.getFuse("allowDumpCommand")) return
-    opendiscord.client.textCommands.add(new ODTextCommand("opendiscord:dump",{
+    opendiscord.client.textCommands.add(new api.ODTextCommand("opendiscord:dump",{
         allowBots:false,
         guildPermission:true,
         dmPermission:true,
