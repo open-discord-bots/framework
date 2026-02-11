@@ -1,6 +1,6 @@
 <p align="center">
 <img src="https://apis.dj-dj.be/cdn/opendiscord/logo.png" alt="Open Ticket" width="650px"><br>
-<span align="center"><b>A modular framework for next-generation Discord bots</b></span><br><br>
+<span align="center"><b>A modular framework for the next-generation of Discord bots</b></span><br><br>
 <a href="https://otgithub.dj-dj.be"><img src="https://apis.dj-dj.be/cdn/openticket/logo.png" alt="Open Ticket" height="55px"></a>
 <a href="https://otgithub.dj-dj.be"><img src="https://apis.dj-dj.be/cdn/openmoderation/logo.png" alt="Open Moderation" height="60px"></a><br><br>
 <a href="https://discord.com/invite/26vT9wt3n3"><img alt="Discord Invite Link" src="https://img.shields.io/badge/discord-support%20server-5865F2.svg?style=flat-square&logo=discord"></img></a>
