@@ -13,7 +13,7 @@
 Open Discord is a modular plugin-driven framework built on top of discord.js that provides a structured foundation for building advanced Discord bots.
 It powers <a href="https://otgithub.dj-dj.be"><b>Open Ticket</b></a> and <a href="https://omgithub.dj-dj.be/"><b>Open Moderation</b></a>, offering shared utilities, plugin support, translations, config/database and a scalable architecture for the most advanced open-source discord bots.<br><br>
 <b>⚠️ Warning!</b><br>
-We do currently <b>NOT</b> provide support <b>3rd party implementations</b> of the framework!<br>More information can be found in our <a href="https://discord.dj-dj.be">discord server</a>.
+We do currently <b>NOT</b> provide support for <b>3rd party implementations</b> of the framework!<br>More information can be found in our <a href="https://discord.dj-dj.be">discord server</a>.
 </p>
 
 ### 📌 Primary Features
