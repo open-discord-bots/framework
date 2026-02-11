@@ -11,6 +11,7 @@ export const loadAllPlugins = async (opendiscord:api.ODMain) => {
         return
     }
     const plugins = fs.readdirSync("./plugins")
+    const pluginVersionRegex = /^(OT|OM)v(\d+)\.(\d+|x)\.(\d+|x)$/
 
     //check & validate
     for (const p of plugins){
@@ -36,6 +37,20 @@ export const loadAllPlugins = async (opendiscord:api.ODMain) => {
             if (typeof rawplugindata.name != "string") throw new api.ODPluginError("Failed to load plugin.json/name")
             if (typeof rawplugindata.version != "string") throw new api.ODPluginError("Failed to load plugin.json/version")
             if (typeof rawplugindata.startFile != "string") throw new api.ODPluginError("Failed to load plugin.json/startFile")
+
+            //only check "supportedVersions" if it exists (should be array)
+            if (rawplugindata.supportedVersions){
+                if (!Array.isArray(rawplugindata.supportedVersions)) throw new api.ODPluginError("Failed to load plugin.json/supportedVersions (must be array)")
+                for (const version of rawplugindata.supportedVersions){
+                    if (typeof version !== "string"){
+                        throw new api.ODPluginError("Failed to load plugin.json/supportedVersions (all items must be strings)")
+                    }
+                    //only OT (Open Ticket) & OM (Open Moderation) are supported at the moment
+                    if (!pluginVersionRegex.test(version)){
+                        throw new api.ODPluginError(`Failed to load plugin.json/supportedVersions (invalid format: "${version}", expected format like "OTv4.0.x" or "OMv1.0.0")`)
+                    }
+                }
+            }
             
             if (typeof rawplugindata.enabled != "boolean") throw new api.ODPluginError("Failed to load plugin.json/enabled")
             if (typeof rawplugindata.priority != "number") throw new api.ODPluginError("Failed to load plugin.json/priority")
@@ -47,6 +62,10 @@ export const loadAllPlugins = async (opendiscord:api.ODMain) => {
             
             if (typeof rawplugindata.details != "object") throw new api.ODPluginError("Failed to load plugin.json/details")
             if (typeof rawplugindata.details.author != "string") throw new api.ODPluginError("Failed to load plugin.json/details/author")
+            
+            //only check "contributors" if it exists (should be array)
+            if (rawplugindata.details.contributors && !Array.isArray(rawplugindata.details.contributors)) throw new api.ODPluginError("Failed to load plugin.json/details/contributors (must be array)")
+            
             if (typeof rawplugindata.details.shortDescription != "string") throw new api.ODPluginError("Failed to load plugin.json/details/shortDescription")
             if (typeof rawplugindata.details.longDescription != "string") throw new api.ODPluginError("Failed to load plugin.json/details/longDescription")
             if (typeof rawplugindata.details.imageUrl != "string") throw new api.ODPluginError("Failed to load plugin.json/details/imageUrl")
@@ -90,6 +109,7 @@ export const loadAllPlugins = async (opendiscord:api.ODMain) => {
     const incompatibilities: {from:string,to:string}[] = []
     const missingDependencies: {id:string,missing:string}[] = []
     const missingPlugins: {id:string,missing:string}[] = []
+    const versionIncompatibilities: {id:string}[] = []
 
     //go through all plugins for errors
     sortedPlugins.filter((plugin) => plugin.enabled).forEach((plugin) => {
@@ -97,6 +117,34 @@ export const loadAllPlugins = async (opendiscord:api.ODMain) => {
         plugin.dependenciesInstalled().forEach((missing) => missingDependencies.push({id:from,missing}))
         plugin.pluginsIncompatible(opendiscord.plugins).forEach((incompatible) => incompatibilities.push({from,to:incompatible}))
         plugin.pluginsInstalled(opendiscord.plugins).forEach((missing) => missingPlugins.push({id:from,missing}))
+
+        //check if plugins are compatible with version of bot
+        if (plugin.data.supportedVersions && plugin.data.supportedVersions.length > 0){
+            const currentVersion = opendiscord.versions.get("opendiscord:version")
+            if (!currentVersion) throw new api.ODSystemError("Unable to get project version: opendiscord.versions.get('opendiscord:version')!")
+            let isCompatible = false
+            
+            for (const versionStr of plugin.data.supportedVersions){
+                const match = versionStr.match(pluginVersionRegex)
+                if (!match) continue
+                
+                const projectPrefix = match[1]
+                const primary = parseInt(match[2])
+                const secondary = (match[3] === "x") ? null : parseInt(match[3])
+                const tertiary = (match[4] === "x") ? null : parseInt(match[4])
+                
+                if (projectPrefix !== "OT") continue
+                else if (primary !== currentVersion.primary) continue
+                else if (typeof secondary === "number" && secondary !== currentVersion.secondary) continue
+                else if (typeof tertiary === "number" && tertiary !== currentVersion.tertiary) continue
+                else{
+                    isCompatible = true
+                    break
+                }
+            }
+            
+            if (!isCompatible) versionIncompatibilities.push({id:from})
+        }
     })
 
     //handle all incompatibilities
@@ -151,6 +199,22 @@ export const loadAllPlugins = async (opendiscord:api.ODMain) => {
         initPluginError = true
     })
 
+    //handle all bot version incompatibilities
+    versionIncompatibilities.forEach((match) => {
+        const plugin = opendiscord.plugins.get(match.id)
+        if (plugin && !plugin.crashed){
+            plugin.crashed = true
+            plugin.crashReason = "incompatible.version"
+        }
+
+        const versions = plugin?.data.supportedVersions?.join(", ") ?? "<unknown-version>"
+        const currentVersion = opendiscord.versions.get("opendiscord:version")?.toString() ?? "<OD:UNKNOWN_VERION>"
+        opendiscord.log(`Plugin version incompatibility: plugin requires "${versions}" but current bot version is "${currentVersion}", canceling plugin execution...`,"plugin",[
+            {key:"path",value:"./plugins/"+match.id}
+        ])
+        initPluginError = true
+    })
+
     //exit on error (when soft mode disabled)
     if (!opendiscord.sharedFuses.getFuse("softPluginLoading") && initPluginError){
         console.log("")
@@ -176,17 +240,19 @@ export const loadAllPlugins = async (opendiscord:api.ODMain) => {
     }
 
     for (const plugin of sortedPlugins){
+        const authors = [plugin.details.author,...(plugin.details.contributors ?? [])].join(", ")
+        
         if (plugin.enabled){
             opendiscord.debug.debug("Plugin \""+plugin.id.value+"\" loaded",[
                 {key:"status",value:(plugin.crashed ? "crashed" : "success")},
                 {key:"crashReason",value:(plugin.crashed ? (plugin.crashReason ?? "/") : "/")},
-                {key:"author",value:plugin.details.author},
+                {key:"authors",value:authors},
                 {key:"version",value:plugin.version.toString()},
                 {key:"priority",value:plugin.priority.toString()}
             ])
         }else{
             opendiscord.debug.debug("Plugin \""+plugin.id.value+"\" disabled",[
-                {key:"author",value:plugin.details.author},
+                {key:"authors",value:authors},
                 {key:"version",value:plugin.version.toString()},
                 {key:"priority",value:plugin.priority.toString()}
             ])
