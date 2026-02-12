@@ -60,13 +60,8 @@ function saveNewCompilationHash(){
     fs.writeFileSync("./dist/hash.txt",hash)
 }
 
-export function frameworkStartup(startupFlags:string[],project:ODProjectType,startCallback:() => void){
-    const logTitle = (project == "openticket") ? "OT" : "OM"
-
-    //push additional startup flags (for pterodactyl panels)
-    process.argv.push(...startupFlags)
-
-    //check directory structure
+export function checkFrameworkAllowed(project?:ODProjectType){
+    const logTitle = (project) ? ((project == "openticket") ? "OT" : "OM") : "OD"
     const requiredStructures: string[] = [
         "index.js",
         "./package.json",
@@ -92,7 +87,17 @@ export function frameworkStartup(startupFlags:string[],project:ODProjectType,sta
         !readmeContents.includes(`<img src="https://apis.dj-dj.be/cdn/openmoderation/logo.png" alt="Open Moderation" width="650px">`)
     ) throw new Error(logTitle+": Please do not use this framework in third party bots or outside Open Ticket/Moderation! (2)")
     if (!readmeContents.includes("DJdj Development") || !readmeContents.includes("DJj123dj")) throw new Error(logTitle+": Please do not use this framework in third party bots or outside Open Ticket/Moderation! (3)")
+}
 
+export function frameworkStartup(startupFlags:string[],project:ODProjectType,startCallback:() => void){
+    const logTitle = (project == "openticket") ? "OT" : "OM"
+
+    //push additional startup flags (for pterodactyl panels)
+    process.argv.push(...startupFlags)
+
+    //check directory structure
+    checkFrameworkAllowed(project)
+    
     //start compilation
     if (!process.argv.includes("--no-compile")){
         const requiredDependencies: Set<string> = new Set()
