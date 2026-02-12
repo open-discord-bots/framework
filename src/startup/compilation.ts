@@ -80,11 +80,18 @@ export function frameworkStartup(startupFlags:string[],project:ODProjectType,sta
         "./plugins/",
         "./.github/",
         "./.github/FUNDING.yml",
-        "./.github/SECURITY.yml"
+        "./.github/SECURITY.md"
     ]
     for (const path of requiredStructures){
-        if (!fs.existsSync(path)) throw new Error(logTitle+": Project uses invalid structure for Open Discord! ("+path+")")
+        if (!fs.existsSync(path)) throw new Error(logTitle+": Project uses invalid structure for Open Discord! (missing: "+path+")")
     }
+    if (!fs.readFileSync("./.github/FUNDING.yml").toString().startsWith("github: DJj123dj")) throw new Error(logTitle+": Please do not use this framework in third party bots outside Open Ticket/Moderation! (1)")
+    const readmeContents = fs.readFileSync("./README.md").toString()
+    if (
+        !readmeContents.includes(`<img src="https://apis.dj-dj.be/cdn/openticket/logo.png" alt="Open Ticket" width="650px">`) &&
+        !readmeContents.includes(`<img src="https://apis.dj-dj.be/cdn/openmoderation/logo.png" alt="Open Moderation" width="650px">`)
+    ) throw new Error(logTitle+": Please do not use this framework in third party bots or outside Open Ticket/Moderation! (2)")
+    if (!readmeContents.includes("DJdj Development") || !readmeContents.includes("DJj123dj")) throw new Error(logTitle+": Please do not use this framework in third party bots or outside Open Ticket/Moderation! (3)")
 
     //start compilation
     if (!process.argv.includes("--no-compile")){
