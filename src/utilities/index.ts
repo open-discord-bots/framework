@@ -51,6 +51,7 @@ export function initialStartupLogs(opendiscord:api.ODMain,project:api.ODProjectT
         opendiscord.debug.debug("Using formatted-json-stringify "+packageJson.dependencies["formatted-json-stringify"]+"!")
         opendiscord.debug.debug("Using terminal-kit "+packageJson.dependencies["terminal-kit"]+"!")
         opendiscord.debug.debug("Using typescript "+packageJson.dependencies["typescript"]+"!")
+        opendiscord.debug.debug("Using @open-discord-bots/framework "+packageJson.dependencies["@open-discord-bots/framework"]+"!")
     }catch{
         opendiscord.debug.debug("Failed to fetch module versions!")
     }
