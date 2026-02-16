@@ -1,7 +1,8 @@
-import {api, utilities} from "../index"
+import * as api from "../api/index"
+import * as utilities from "../utilities/index"
 import {Terminal, terminal} from "terminal-kit"
 import ansis from "ansis"
-import {ODCliHeaderOpts, renderHeader} from "./cli"
+import {ODCliHeaderOpts, renderHeader} from "."
 
 export class ODCliEditConfigInstance {
     private readonly opts: ODCliHeaderOpts

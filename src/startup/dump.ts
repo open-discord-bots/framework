@@ -1,4 +1,5 @@
-import {api, utilities} from "../index"
+import * as api from "../api/index"
+import * as utilities from "../utilities/index"
 import * as discord from "discord.js"
 import * as fs from "fs"
 

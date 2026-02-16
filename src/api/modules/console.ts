@@ -592,16 +592,16 @@ export class ODLiveStatusManager extends ODManager<ODLiveStatusSource> {
     /**The class responsible for rendering the livestatus messages. */
     renderer: ODLiveStatusRenderer
     /**A reference to the ODMain or "opendiscord" global variable */
-    #main: ODMain
+    #main: ODMain|null = null
 
-    constructor(debug:ODDebugger, main:ODMain){
+    constructor(debug:ODDebugger,console:ODConsoleManager){
         super(debug,"livestatus source")
-        this.renderer = new ODLiveStatusRenderer(main.console)
-        this.#main = main
+        this.renderer = new ODLiveStatusRenderer(console)
     }
 
     /**Get the messages from all sources combined! */
     async getAllMessages(): Promise<ODLiveStatusSourceData[]> {
+        if (!this.#main) throw new ODSystemError("ODLiveStatusManager:getAllMessages() --> Unable to get messages, 'opendiscord/ODMain' has not been connected!")
         const messages: ODLiveStatusSourceData[] = []
         for (const source of this.getAll()){
             try {
@@ -609,6 +609,10 @@ export class ODLiveStatusManager extends ODManager<ODLiveStatusSource> {
             }catch{}
         }
         return messages
+    }
+    /**Set the opendiscord `ODMain` class to use for fetching message filters. */
+    useMain(main:ODMain){
+        this.#main = main
     }
 }
 

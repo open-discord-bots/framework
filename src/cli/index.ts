@@ -1,4 +1,5 @@
-import {api, utilities} from "../index"
+import * as api from "../api/index"
+import * as utilities from "../utilities/index"
 import {Terminal, terminal} from "terminal-kit"
 import * as discord from "discord.js"
 import ansis from "ansis"
