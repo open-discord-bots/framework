@@ -54,6 +54,29 @@ We do currently <b>NOT</b> provide support for <b>3rd party implementations</b> 
 - **Large Ecosystem** - The same plugin is able to work in all projects using Open discord (e.g. Open Ticket / Moderation)
 
 ## 🛠️ Contributors
+### ❤️ Sponsors
+Huge thanks to our sponsors for making this project possible. Your support means everything to us.
+<table>
+<tr>
+<td><img src="https://github.com/guillee3.png" alt="Profile Picture" width="100px"></td>
+<td><img src="https://github.com/yeeetSK.png" alt="Profile Picture" width="100px"></td>
+<td><img src="https://github.com/jacobhumston.png" alt="Profile Picture" width="100px"></td>
+</tr>
+<tr>
+<td align="center"><a href="https://github.com/guillee3"><b>guillee3</b></a></td>
+<td align="center"><a href="https://github.com/yeeetSK"><b>yeeetSK</b></a></td>
+<td align="center"><a href="https://github.com/jacobhumston"><b>jacobhumston</b></a></td>
+</tr>
+</table>
+
+**Past Sponsors:**<br>
+<a href="https://github.com/sponsors/DJj123dj">
+<img src="https://github.com/SpyEye2.png" alt="SpyEye" width="40px">
+<img src="https://github.com/mods-hd.png" alt="Mods HD" width="40px">
+<img src="https://github.com/DOSEV5.png" alt="DOSEV5" width="40px">
+<img src="https://github.com/BENZORICH.png" alt="BENZORICH" width="40px">
+</a>
+
 ### 🖥️ Team & Contributors
 A list of people that contributed or provided support for Open Ticket, Open Moderation & Open Discord.
 <table>
@@ -72,28 +95,6 @@ A list of people that contributed or provided support for Open Ticket, Open Mode
 <th><a href="https://github.com/Sank34">💬 Sanke</a></th>
 </tr>
 </table>
-
-### ❤️ Sponsors
-A big thanks to all our sponsors! Without them, it wouldn't be possible to create this project!
-
-<table>
-<tr>
-<td><img src="https://github.com/guillee3.png" alt="Profile Picture" width="100px"></td>
-<td><img src="https://github.com/yeeetSK.png" alt="Profile Picture" width="100px"></td>
-</tr>
-<tr>
-<td align="center"><a href="https://github.com/guillee3"><b>guillee3</b></a></td>
-<td align="center"><a href="https://github.com/yeeetSK"><b>yeeetSK</b></a></td>
-</tr>
-</table>
-
-**Past Sponsors:**<br>
-<a href="https://github.com/sponsors/DJj123dj">
-<img src="https://github.com/SpyEye2.png" alt="SpyEye" width="40px">
-<img src="https://github.com/mods-hd.png" alt="Mods HD" width="40px">
-<img src="https://github.com/DOSEV5.png" alt="DOSEV5" width="40px">
-<img src="https://github.com/BENZORICH.png" alt="BENZORICH" width="40px">
-</a>
 
 ---
 <img src="https://apis.dj-dj.be/cdn/opendiscord/logo.png" alt="Open Ticket Logo" width="170px">
