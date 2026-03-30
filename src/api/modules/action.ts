@@ -12,9 +12,9 @@ import { ODDebugger } from "./console"
  * 
  * This class can't be used stand-alone & needs to be extended from!
  */
-export class ODActionImplementation<Source extends string,Params extends object,Result extends object> extends ODManagerData {
+export class ODActionImplementation<Source extends string,Params extends object,Result extends object,WorkerIds extends string = string> extends ODManagerData {
     /**The manager that has all workers of this implementation */
-    workers: ODWorkerManager<object,Source,Params>
+    workers: ODWorkerManager<object,Source,Params,WorkerIds>
 
     constructor(id:ODValidId, callback?:ODWorkerCallback<object,Source,Params>, priority?:number, callbackId?:ODValidId){
         super(id)
@@ -27,6 +27,11 @@ export class ODActionImplementation<Source extends string,Params extends object,
     }
 }
 
+/**## ODActionManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODActionManager` class.
+ */
+export type ODActionManagerIdConstraint = Record<string,{source:string,params:object,result:object,workers:string}>
+
 /**## ODActionManager `class`
  * This is an Open Discord action manager.
  * 
@@ -37,13 +42,41 @@ export class ODActionImplementation<Source extends string,Params extends object,
  * 
  * It's recommended to use this system in combination with Open Discord responders!
  */
-export class ODActionManager extends ODManager<ODAction<string,{},{}>> {
+export class ODActionManager<IdList extends ODActionManagerIdConstraint = ODActionManagerIdConstraint> extends ODManager<ODAction<string,{},{},string>> {
     constructor(debug:ODDebugger){
         super(debug,"action")
     }
+
+    get<ActionId extends keyof IdList>(id:ActionId): ODAction<IdList[ActionId]["source"],IdList[ActionId]["params"],IdList[ActionId]["result"],IdList[ActionId]["workers"]>
+    get(id:ODValidId): ODAction<string,{},{},string>|null
+    
+    get(id:ODValidId): ODAction<string,{},{},string>|null {
+        return super.get(id)
+    }
+
+    remove<ActionId extends keyof IdList>(id:ActionId): ODAction<IdList[ActionId]["source"],IdList[ActionId]["params"],IdList[ActionId]["result"],IdList[ActionId]["workers"]>
+    remove(id:ODValidId): ODAction<string,{},{},string>|null
+    
+    remove(id:ODValidId): ODAction<string,{},{},string>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
+    }
 }
 
-export class ODAction<Source extends string,Params extends object,Result extends object> extends ODActionImplementation<Source,Params,Result> {
+/**## ODAction `class`
+ * This is an Open Discord action.
+ * 
+ * It is a collection of functions/workers to execute a complex workflow (e.g. creating a ticket, banning a user, ...).
+ * 
+ * Can be used standalone.
+ */
+export class ODAction<Source extends string,Params extends object,Result extends object,WorkerIds extends string = string> extends ODActionImplementation<Source,Params,Result,WorkerIds> {
     /**Run this action */
     async run(source:Source, params:Params): Promise<Partial<Result>> {
         //create instance

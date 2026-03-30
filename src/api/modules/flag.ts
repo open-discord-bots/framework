@@ -53,13 +53,18 @@ export class ODFlag extends ODManagerData {
     }
 }
 
+/**## ODFlagManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODFlagManager` class.
+ */
+export type ODFlagManagerIdConstraint = Record<string,ODFlag>
+
 /**## ODFlagManager `class`
  * This is an Open Discord flag manager.
  * 
  * This class is responsible for managing & initiating all flags of the bot.
  * It also contains a shortcut for initiating all flags.
  */
-export class ODFlagManager extends ODManager<ODFlag> {
+export class ODFlagManager<IdList extends ODFlagManagerIdConstraint = ODFlagManagerIdConstraint> extends ODManager<ODFlag> {
     constructor(debug:ODDebugger){
         super(debug,"flag")
     }
@@ -69,5 +74,26 @@ export class ODFlagManager extends ODManager<ODFlag> {
         await this.loopAll((flag) => {
             flag.detectProcessParams(false)
         })
+    }
+
+    get<FlagId extends keyof IdList>(id:FlagId): IdList[FlagId]
+    get(id:ODValidId): ODFlag|null
+    
+    get(id:ODValidId): ODFlag|null {
+        return super.get(id)
+    }
+
+    remove<FlagId extends keyof IdList>(id:FlagId): IdList[FlagId]
+    remove(id:ODValidId): ODFlag|null
+    
+    remove(id:ODValidId): ODFlag|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }

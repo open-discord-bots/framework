@@ -4,6 +4,11 @@
 import { ODId, ODValidId, ODManager, ODSystemError, ODManagerData } from "./base"
 import { ODDebugger } from "./console"
 
+/**## ODCooldownManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODCooldownManager` class.
+ */
+export type ODCooldownManagerIdConstraint = Record<string,ODCooldown<object>>
+
 /**## ODCooldownManager `class`
  * This is an Open Discord cooldown manager.
  * 
@@ -11,7 +16,7 @@ import { ODDebugger } from "./console"
  * 
  * There are many types of cooldowns available, but you can also create your own!
  */
-export class ODCooldownManager extends ODManager<ODCooldown<object>> {
+export class ODCooldownManager<IdList extends ODCooldownManagerIdConstraint = ODCooldownManagerIdConstraint> extends ODManager<ODCooldown<object>> {
     constructor(debug:ODDebugger){
         super(debug,"cooldown")
     }
@@ -20,6 +25,27 @@ export class ODCooldownManager extends ODManager<ODCooldown<object>> {
         for (const cooldown of this.getAll()){
             await cooldown.init()
         }
+    }
+
+    get<CooldownId extends keyof IdList>(id:CooldownId): IdList[CooldownId]
+    get(id:ODValidId): ODCooldown<object>|null
+    
+    get(id:ODValidId): ODCooldown<object>|null {
+        return super.get(id)
+    }
+
+    remove<CooldownId extends keyof IdList>(id:CooldownId): IdList[CooldownId]
+    remove(id:ODValidId): ODCooldown<object>|null
+    
+    remove(id:ODValidId): ODCooldown<object>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 

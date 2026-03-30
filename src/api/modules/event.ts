@@ -70,6 +70,11 @@ export class ODEvent extends ODManagerData {
     }
 }
 
+/**## ODEventManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODEventManager` class.
+ */
+export type ODEventManagerIdConstraint = Record<string,ODEvent>
+
 /**## ODEventManager `class`
  * This is an Open Discord event manager.
  * 
@@ -78,7 +83,7 @@ export class ODEvent extends ODManagerData {
  * It's not recommended to create this class yourself. Plugin events should be registered in their `plugin.json` file instead.
  * All events are available in the `opendiscord.events` global!
  */
-export class ODEventManager extends ODManager<ODEvent> {
+export class ODEventManager<IdList extends ODEventManagerIdConstraint = ODEventManagerIdConstraint> extends ODManager<ODEvent> {
     /**Reference to the Open Discord debugger */
     #debug: ODDebugger
 
@@ -91,9 +96,27 @@ export class ODEventManager extends ODManager<ODEvent> {
         data.useDebug(this.#debug)
         return super.add(data,overwrite)
     }
+
+    get<EventId extends keyof IdList>(id:EventId): IdList[EventId]
+    get(id:ODValidId): ODEvent|null
+    
+    get(id:ODValidId): ODEvent|null {
+        return super.get(id)
+    }
+
+    remove<EventId extends keyof IdList>(id:EventId): IdList[EventId]
+    remove(id:ODValidId): ODEvent|null
+    
     remove(id:ODValidId): ODEvent|null {
         const data = super.remove(id)
         if (data) data.useDebug(null)
         return data
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }

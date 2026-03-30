@@ -115,6 +115,11 @@ export type ODPermissionCommandResult = {
     isAdmin:boolean
 }
 
+/**## ODPermissionManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODPermissionManager` class.
+ */
+export type ODPermissionManagerIdConstraint = Record<string,ODPermission>
+
 /**## ODPermissionManager `class`
  * This is an Open Discord permission manager.
  * 
@@ -123,7 +128,7 @@ export type ODPermissionCommandResult = {
  * 
  * Add new permissions using the `ODPermission` class in your plugin!
  */
-export class ODPermissionManager extends ODManager<ODPermission> {
+export class ODPermissionManager<IdList extends ODPermissionManagerIdConstraint = ODPermissionManagerIdConstraint> extends ODManager<ODPermission> {
     /**Alias for Open Discord debugger. */
     #debug: ODDebugger
     /**The function for calculating permissions in this manager. */
@@ -336,5 +341,26 @@ export class ODPermissionManager extends ODManager<ODPermission> {
             const isAdmin = this.hasPermissions(requiredLevel,await this.getPermissions(user,channel,guild,settings))
             return {hasPerms:true,isAdmin}
         }
+    }
+
+    get<PermissionId extends keyof IdList>(id:PermissionId): IdList[PermissionId]
+    get(id:ODValidId): ODPermission|null
+    
+    get(id:ODValidId): ODPermission|null {
+        return super.get(id)
+    }
+
+    remove<PermissionId extends keyof IdList>(id:PermissionId): IdList[PermissionId]
+    remove(id:ODValidId): ODPermission|null
+    
+    remove(id:ODValidId): ODPermission|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }

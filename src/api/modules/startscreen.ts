@@ -2,7 +2,7 @@
 //STARTSCREEN MODULE
 ///////////////////////////////////////
 import { ODId, ODManager, ODManagerData, ODValidId } from "./base"
-import { ODDebugger, ODError, ODLiveStatusManager } from "./console"
+import { ODDebugger, ODError, ODLiveStatusManager, ODLiveStatusManagerIdConstraint } from "./console"
 import { ODFlag } from "./flag"
 import { ODPlugin, ODUnknownCrashedPlugin } from "./plugin"
 import ansis from "ansis"
@@ -12,19 +12,24 @@ import ansis from "ansis"
  */
 export type ODStartScreenComponentRenderCallback = (location:number) => string|Promise<string>
 
+/**## ODStartScreenManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODStartScreenManager` class.
+ */
+export type ODStartScreenManagerIdConstraint = Record<string,ODStartScreenComponent>
+
 /**## ODStartScreenManager `class`
  * This is an Open Discord startscreen manager.
  * 
  * This class is responsible for managing & rendering the startscreen of the bot.
  * The startscreen is the part you see when the bot has started up successfully. (e.g. the Open Discord logo, logs, livestatus, flags, ...)
  */
-export class ODStartScreenManager extends ODManager<ODStartScreenComponent> {
+export class ODStartScreenManager<IdList extends ODStartScreenManagerIdConstraint = ODStartScreenManagerIdConstraint,LiveStatus extends ODLiveStatusManager = ODLiveStatusManager> extends ODManager<ODStartScreenComponent> {
     /**Alias to the Open Discord debugger. */
     #debug: ODDebugger
     /**Alias to the livestatus manager. */
-    livestatus: ODLiveStatusManager
+    livestatus: LiveStatus
 
-    constructor(debug:ODDebugger,livestatus:ODLiveStatusManager){
+    constructor(debug:ODDebugger,livestatus:LiveStatus){
         super(debug,"startscreen component")
         this.#debug = debug
         this.livestatus = livestatus
@@ -53,6 +58,27 @@ export class ODStartScreenManager extends ODManager<ODStartScreenComponent> {
             }
             location++
         }
+    }
+
+    get<StartScreenId extends keyof IdList>(id:StartScreenId): IdList[StartScreenId]
+    get(id:ODValidId): ODStartScreenComponent|null
+    
+    get(id:ODValidId): ODStartScreenComponent|null {
+        return super.get(id)
+    }
+
+    remove<StartScreenId extends keyof IdList>(id:StartScreenId): IdList[StartScreenId]
+    remove(id:ODValidId): ODStartScreenComponent|null
+    
+    remove(id:ODValidId): ODStartScreenComponent|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -294,11 +320,11 @@ export class ODStartScreenPluginsCategoryComponent extends ODStartScreenCategory
  * This component will render a livestatus category to the startscreen. This will list the livestatus messages in the category.
  * An optional priority can be specified to choose the location of the component.
  */
-export class ODStartScreenLiveStatusCategoryComponent extends ODStartScreenCategoryComponent {
+export class ODStartScreenLiveStatusCategoryComponent<LiveStatus extends ODLiveStatusManager<ODLiveStatusManagerIdConstraint>> extends ODStartScreenCategoryComponent {
     /**A reference to the Open Discord livestatus manager. */
-    livestatus: ODLiveStatusManager
+    livestatus: LiveStatus
 
-    constructor(id:ODValidId, priority:number, livestatus:ODLiveStatusManager){
+    constructor(id:ODValidId, priority:number, livestatus:LiveStatus){
         super(id,priority,"livestatus",async () => {
             const messages = await this.livestatus.getAllMessages()
             return this.livestatus.renderer.render(messages)

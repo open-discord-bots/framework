@@ -580,6 +580,11 @@ export class ODLiveStatusUrlSource extends ODLiveStatusSource {
     }
 }
 
+/**## ODLiveStatusManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODLiveStatusManager` class.
+ */
+export type ODLiveStatusManagerIdConstraint = Record<string,ODLiveStatusSource>
+
 /**## ODLiveStatusManager `class`
  * This is the Open Discord livestatus manager.
  * 
@@ -588,7 +593,7 @@ export class ODLiveStatusUrlSource extends ODLiveStatusSource {
  * You can use this to customise or add stuff to the LiveStatus system.
  * Access it in the global `opendiscord.startscreen.livestatus` variable!
  */
-export class ODLiveStatusManager extends ODManager<ODLiveStatusSource> {
+export class ODLiveStatusManager<IdList extends ODLiveStatusManagerIdConstraint = ODLiveStatusManagerIdConstraint> extends ODManager<ODLiveStatusSource> {
     /**The class responsible for rendering the livestatus messages. */
     renderer: ODLiveStatusRenderer
     /**A reference to the ODMain or "opendiscord" global variable */
@@ -613,6 +618,27 @@ export class ODLiveStatusManager extends ODManager<ODLiveStatusSource> {
     /**Set the opendiscord `ODMain` class to use for fetching message filters. */
     useMain(main:ODMain){
         this.#main = main
+    }
+
+    get<LiveStatusId extends keyof IdList>(id:LiveStatusId): IdList[LiveStatusId]
+    get(id:ODValidId): ODLiveStatusSource|null
+    
+    get(id:ODValidId): ODLiveStatusSource|null {
+        return super.get(id)
+    }
+
+    remove<LiveStatusId extends keyof IdList>(id:LiveStatusId): IdList[LiveStatusId]
+    remove(id:ODValidId): ODLiveStatusSource|null
+    
+    remove(id:ODValidId): ODLiveStatusSource|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 

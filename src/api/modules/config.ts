@@ -1,11 +1,16 @@
 ///////////////////////////////////////
 //CONFIG MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODPromiseVoid, ODSystemError, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODPromiseVoid, ODSystemError, ODValidId, ODValidJsonType } from "./base"
 import nodepath from "path"
 import { ODDebugger } from "./console"
 import fs from "fs"
 import * as fjs from "formatted-json-stringify"
+
+/**## ODConfigManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODConfigManager` class.
+ */
+export type ODConfigManagerIdConstraint = Record<string,ODConfig<any>>
 
 /**## ODConfigManager `class`
  * This is an Open Discord config manager.
@@ -14,7 +19,7 @@ import * as fjs from "formatted-json-stringify"
  * 
  * You can use this class to get/change/add a config file (`ODConfig`) in your plugin!
  */
-export class ODConfigManager extends ODManager<ODConfig> {
+export class ODConfigManager<IdList extends ODConfigManagerIdConstraint = ODConfigManagerIdConstraint> extends ODManager<ODConfig<any>> {
     /**Alias to Open Discord debugger. */
     #debug: ODDebugger
     
@@ -22,7 +27,7 @@ export class ODConfigManager extends ODManager<ODConfig> {
         super(debug,"config")
         this.#debug = debug
     }
-    add(data:ODConfig|ODConfig[],overwrite?:boolean): boolean {
+    add(data:ODConfig<any>|ODConfig<any>[],overwrite?:boolean): boolean {
         if (Array.isArray(data)) data.forEach((d) => d.useDebug(this.#debug))
         else data.useDebug(this.#debug)
         return super.add(data,overwrite)
@@ -37,6 +42,27 @@ export class ODConfigManager extends ODManager<ODConfig> {
             }
         }
     }
+
+    get<ConfigId extends keyof IdList>(id:ConfigId): IdList[ConfigId]
+    get(id:ODValidId): ODConfig<any>|null
+    
+    get(id:ODValidId): ODConfig<any>|null {
+        return super.get(id)
+    }
+    
+    remove<ConfigId extends keyof IdList>(id:ConfigId): IdList[ConfigId]
+    remove(id:ODValidId): ODConfig<any>|null
+    
+    remove(id:ODValidId): ODConfig<any>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
+    }
 }
 
 /**## ODConfig `class`
@@ -45,13 +71,13 @@ export class ODConfigManager extends ODManager<ODConfig> {
  * 
  * You can use this class if you want to create your own config implementation (e.g. `yml`, `xml`,...)!
  */
-export class ODConfig extends ODManagerData {
+export class ODConfig<Data extends any> extends ODManagerData {
     /**The name of the file with extension. */
     file: string = ""
     /**The path to the file relative to the main directory. */
     path: string = ""
     /**An object/array of the entire config file! Variables inside it can be edited while the bot is running! */
-    data: any
+    data: Data
     /**Is this config already initiated? */
     initiated: boolean = false
     /**An array of listeners to run when the config gets reloaded. These are not executed on the initial loading. */
@@ -104,7 +130,7 @@ export class ODConfig extends ODManagerData {
  * //create a config with custom dir: ./plugins/testplugin/test.json
  * const config = new api.ODJsonConfig("plugin-config","test.json","./plugins/testplugin/")
  */
-export class ODJsonConfig extends ODConfig {
+export class ODJsonConfig<Data extends any> extends ODConfig<Data> {
     formatter: fjs.custom.BaseFormatter
 
     constructor(id:ODValidId, file:string, customPath?:string, formatter?:fjs.custom.BaseFormatter){
@@ -148,7 +174,7 @@ export class ODJsonConfig extends ODConfig {
     save(): ODPromiseVoid {
         if (!this.initiated) throw new ODSystemError("Unable to save config \""+nodepath.join("./",this.path)+"\", the file hasn't been initiated yet!")
         try{
-            const contents = this.formatter.stringify(this.data)
+            const contents = this.formatter.stringify(this.data as ODValidJsonType)
             fs.writeFileSync(this.path,contents)
             super.save()
         }catch(err){

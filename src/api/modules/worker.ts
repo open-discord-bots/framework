@@ -38,7 +38,7 @@ export class ODWorker<Instance, Source extends string, Params> extends ODManager
  * 
  * You can register a custom worker in this class to create a message or button.
  */
-export class ODWorkerManager<Instance, Source extends string, Params> extends ODManager<ODWorker<Instance,Source,Params>> {
+export class ODWorkerManager<Instance, Source extends string, Params,WorkerIds extends string = string> extends ODManager<ODWorker<Instance,Source,Params>> {
     /**The order of execution for workers inside this manager. */
     #priorityOrder: "ascending"|"descending"
     /**The backup worker will be executed when one of the workers fails or cancels execution. */
@@ -89,5 +89,26 @@ export class ODWorkerManager<Instance, Source extends string, Params> extends OD
                 process.emit("uncaughtException",err)
             }
         }
+    }
+
+    get(id:WorkerIds): ODWorker<Instance,Source,Params>
+    get(id:ODValidId): ODWorker<Instance,Source,Params>|null
+    
+    get(id:ODValidId): ODWorker<Instance,Source,Params>|null {
+        return super.get(id)
+    }
+
+    remove(id:WorkerIds): ODWorker<Instance,Source,Params>
+    remove(id:ODValidId): ODWorker<Instance,Source,Params>|null
+    
+    remove(id:ODValidId): ODWorker<Instance,Source,Params>|null {
+        return super.remove(id)
+    }
+
+    exists(id:WorkerIds): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }

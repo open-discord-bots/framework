@@ -6,6 +6,11 @@ import { ODMessageBuildResult, ODMessageBuildSentResult } from "./builder"
 import { ODDebugger } from "./console"
 import * as discord from "discord.js"
 
+/**## ODPostManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODPostManager` class.
+ */
+export type ODPostManagerIdConstraint = Record<string,ODPost<discord.GuildBasedChannel>>
+
 /**## ODPostManager `class`
  * This is an Open Discord post manager.
  * 
@@ -13,7 +18,7 @@ import * as discord from "discord.js"
  * 
  * You can use this to get the logs channel of the bot (or some other static channel/category).
  */
-export class ODPostManager extends ODManager<ODPost<discord.GuildBasedChannel>> {
+export class ODPostManager<IdList extends ODPostManagerIdConstraint = ODPostManagerIdConstraint> extends ODManager<ODPost<discord.GuildBasedChannel>> {
     /**A reference to the main server of the bot */
     #guild: discord.Guild|null = null
 
@@ -32,6 +37,27 @@ export class ODPostManager extends ODManager<ODPost<discord.GuildBasedChannel>> 
             post.useGuild(guild)
             await post.init()
         }
+    }
+
+    get<PostId extends keyof IdList>(id:PostId): IdList[PostId]
+    get(id:ODValidId): ODPost<discord.GuildBasedChannel>|null
+    
+    get(id:ODValidId): ODPost<discord.GuildBasedChannel>|null {
+        return super.get(id)
+    }
+
+    remove<PostId extends keyof IdList>(id:PostId): IdList[PostId]
+    remove(id:ODValidId): ODPost<discord.GuildBasedChannel>|null
+    
+    remove(id:ODValidId): ODPost<discord.GuildBasedChannel>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 

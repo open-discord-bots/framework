@@ -3,7 +3,7 @@
 ///////////////////////////////////////
 import { ODId, ODManager, ODManagerData, ODSystemError, ODValidId } from "./base"
 import { ODDebugger } from "./console"
-import { ODDatabase, ODJsonDatabaseStructure } from "./database"
+import { ODDatabase, ODDatabaseIdConstraint, ODJsonDatabaseStructure } from "./database"
 import * as discord from "discord.js"
 
 /**## ODValidStatValue `type`
@@ -23,6 +23,11 @@ export type ODStatsManagerInitCallback = (database:ODJsonDatabaseStructure, dele
  */
 export type ODStatScopeSetMode = "set"|"increase"|"decrease"
 
+/**## ODStatsManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODStatsManager` class.
+ */
+export type ODStatsManagerIdConstraint = Record<string,ODStatScope>
+
 /**## ODStatsManager `class`
  * This is an Open Discord stats manager.
  * 
@@ -31,11 +36,11 @@ export type ODStatScopeSetMode = "set"|"increase"|"decrease"
  * 
  * Stats can be accessed in the individual scopes.
  */
-export class ODStatsManager extends ODManager<ODStatScope> {
+export class ODStatsManager<IdList extends ODStatsManagerIdConstraint = ODStatsManagerIdConstraint> extends ODManager<ODStatScope> {
     /**Alias to Open Discord debugger. */
     #debug: ODDebugger
     /**Alias to Open Discord stats database. */
-    database: ODDatabase|null = null
+    database: ODDatabase<ODDatabaseIdConstraint>|null = null
     /**All the listeners for the init event. */
     #initListeners: ODStatsManagerInitCallback[] = []
 
@@ -45,7 +50,7 @@ export class ODStatsManager extends ODManager<ODStatScope> {
     }
 
     /**Select the database to use to read/write all stats from/to. */
-    useDatabase(database:ODDatabase){
+    useDatabase(database:ODDatabase<ODDatabaseIdConstraint>){
         this.database = database
     }
     add(data:ODStatScope, overwrite?:boolean): boolean {
@@ -94,7 +99,32 @@ export class ODStatsManager extends ODManager<ODStatScope> {
     onInit(callback:ODStatsManagerInitCallback){
         this.#initListeners.push(callback)
     }
+
+    get<StatsId extends keyof IdList>(id:StatsId): IdList[StatsId]
+    get(id:ODValidId): ODStatScope|null
+    
+    get(id:ODValidId): ODStatScope|null {
+        return super.get(id)
+    }
+
+    remove<StatsId extends keyof IdList>(id:StatsId): IdList[StatsId]
+    remove(id:ODValidId): ODStatScope|null
+    
+    remove(id:ODValidId): ODStatScope|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
+    }
 }
+/**## ODStatScopeIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODStatScope` class.
+ */
+export type ODStatScopeIdConstraint = Record<string,ODStat>
 
 /**## ODStatScope `class`
  * This is an Open Discord stat scope.
@@ -104,13 +134,13 @@ export class ODStatsManager extends ODManager<ODStatScope> {
  * 
  * The built-in Open Discord scopes are: `global`, `user`, `ticket`
  */
-export class ODStatScope extends ODManager<ODStat> {
+export class ODStatScope<IdList extends ODStatScopeIdConstraint = ODStatScopeIdConstraint> extends ODManager<ODStat> {
     /**The id of this statistics scope. */
     id: ODId
     /**Is this stat scope already initialized? */
     ready: boolean = false
     /**Alias to Open Discord stats database. */
-    database: ODDatabase|null = null
+    database: ODDatabase<ODDatabaseIdConstraint>|null = null
     /**The name of this scope (used in embed title) */
     name:string
 
@@ -121,10 +151,12 @@ export class ODStatScope extends ODManager<ODStat> {
     }
 
     /**Select the database to use to read/write all stats from/to. (Automatically assigned when used in `ODStatsManager`) */
-    useDatabase(database:ODDatabase){
+    useDatabase(database:ODDatabase<ODDatabaseIdConstraint>){
         this.database = database
     }
     /**Get the value of a statistic. The `scopeId` is the unique id of the user, channel, role, etc that the stats are related to. */
+    getStat<StatsId extends keyof IdList>(id:StatsId, scopeId:string): Promise<ODValidStatValue|null>
+    getStat(id:ODValidId, scopeId:string): Promise<ODValidStatValue|null>
     async getStat(id:ODValidId, scopeId:string): Promise<ODValidStatValue|null> {
         if (!this.database) return null
         const newId = new ODId(id)
@@ -141,6 +173,8 @@ export class ODStatScope extends ODManager<ODStat> {
         return null
     }
     /**Get the value of a statistic for all `scopeId`'s. The `scopeId` is the unique id of the user, channel, role, etc that the stats are related to. */
+    getAllStats<StatsId extends keyof IdList>(id:StatsId): Promise<{id:string,value:ODValidStatValue}[]>
+    getAllStats(id:ODValidId): Promise<{id:string,value:ODValidStatValue}[]>
     async getAllStats(id:ODValidId): Promise<{id:string,value:ODValidStatValue}[]> {
         if (!this.database) return []
         const newId = new ODId(id)
@@ -158,6 +192,8 @@ export class ODStatScope extends ODManager<ODStat> {
         return output
     }
     /**Set, increase or decrease the value of a statistic. The `scopeId` is the unique id of the user, channel, role, etc that the stats are related to. */
+    setStat<StatsId extends keyof IdList>(id:StatsId, scopeId:string, value:ODValidStatValue, mode:ODStatScopeSetMode): Promise<boolean>
+    setStat(id:ODValidId, scopeId:string, value:ODValidStatValue, mode:ODStatScopeSetMode): Promise<boolean>
     async setStat(id:ODValidId, scopeId:string, value:ODValidStatValue, mode:ODStatScopeSetMode): Promise<boolean> {
         if (!this.database) return false
         const stat = this.get(id)
@@ -176,6 +212,8 @@ export class ODStatScope extends ODManager<ODStat> {
         return true
     }
     /**Reset the value of a statistic to the initial value. The `scopeId` is the unique id of the user, channel, role, etc that the stats are related to. */
+    resetStat<StatsId extends keyof IdList>(id:ODValidId, scopeId:string): Promise<ODValidStatValue|null>
+    resetStat(id:ODValidId, scopeId:string): Promise<ODValidStatValue|null>
     async resetStat(id:ODValidId, scopeId:string): Promise<ODValidStatValue|null> {
         if (!this.database) return null
         const stat = this.get(id)
@@ -216,6 +254,27 @@ export class ODStatScope extends ODManager<ODStat> {
 
         return result.filter((stat) => stat !== "").join("\n")
     }
+
+    get<StatsId extends keyof IdList>(id:StatsId): IdList[StatsId]
+    get(id:ODValidId): ODStat|null
+    
+    get(id:ODValidId): ODStat|null {
+        return super.get(id)
+    }
+
+    remove<StatsId extends keyof IdList>(id:StatsId): IdList[StatsId]
+    remove(id:ODValidId): ODStat|null
+    
+    remove(id:ODValidId): ODStat|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
+    }
 }
 
 /**## ODStatGlobalScope `class`
@@ -226,19 +285,31 @@ export class ODStatScope extends ODManager<ODStat> {
  * 
  * This scope is made specifically for the global stats of Open Discord.
  */
-export class ODStatGlobalScope extends ODStatScope {
+export class ODStatGlobalScope<IdList extends ODStatScopeIdConstraint = ODStatScopeIdConstraint> extends ODStatScope<IdList> {
+    getStat<StatsId extends keyof IdList>(id:StatsId): Promise<ODValidStatValue|null>
+    getStat(id:ODValidId): Promise<ODValidStatValue|null>
     getStat(id:ODValidId): Promise<ODValidStatValue|null> {
         return super.getStat(id,"GLOBAL")
     }
+
+    getAllStats<StatsId extends keyof IdList>(id:StatsId): Promise<{id:string,value:ODValidStatValue}[]>
+    getAllStats(id:ODValidId): Promise<{id:string,value:ODValidStatValue}[]>
     getAllStats(id:ODValidId): Promise<{id:string,value:ODValidStatValue}[]> {
         return super.getAllStats(id)
     }
+
+    setStat<StatsId extends keyof IdList>(id:StatsId, value:ODValidStatValue, mode:ODStatScopeSetMode): Promise<boolean>
+    setStat(id:ODValidId, value:ODValidStatValue, mode:ODStatScopeSetMode): Promise<boolean>
     setStat(id:ODValidId, value:ODValidStatValue, mode:ODStatScopeSetMode): Promise<boolean> {
         return super.setStat(id,"GLOBAL",value,mode)
     }
+
+    resetStat<StatsId extends keyof IdList>(id:ODValidId): Promise<ODValidStatValue|null>
+    resetStat(id:ODValidId): Promise<ODValidStatValue|null>
     resetStat(id:ODValidId): Promise<ODValidStatValue|null> {
         return super.resetStat(id,"GLOBAL")
     }
+
     render(scopeId:"GLOBAL", guild:discord.Guild, channel:discord.TextBasedChannel, user: discord.User): Promise<string> {
         return super.render("GLOBAL",guild,channel,user)
     }

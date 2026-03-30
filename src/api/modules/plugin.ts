@@ -15,6 +15,11 @@ export interface ODUnknownCrashedPlugin {
     description:string
 }
 
+/**## ODPluginManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODPluginManager` class.
+ */
+export type ODPluginManagerIdConstraint = Record<string,ODPlugin>
+
 /**## ODPluginManager `class`
  * This is an Open Discord plugin manager.
  * 
@@ -24,9 +29,9 @@ export interface ODUnknownCrashedPlugin {
  * 
  * Use `isPluginLoaded()` to check if a plugin has been loaded. 
  */
-export class ODPluginManager extends ODManager<ODPlugin> {
+export class ODPluginManager<IdList extends ODPluginManagerIdConstraint = ODPluginManagerIdConstraint,PluginClassIdList extends ODPluginClassManagerIdConstraint = ODPluginClassManagerIdConstraint> extends ODManager<ODPlugin> {
     /**A manager for all custom managers registered by plugins. */
-    classes: ODPluginClassManager
+    classes: ODPluginClassManager<PluginClassIdList>
     /**A list of basic details from all plugins that crashed while loading the `plugin.json` file. */
     unknownCrashedPlugins: ODUnknownCrashedPlugin[] = []
     
@@ -40,6 +45,27 @@ export class ODPluginManager extends ODManager<ODPlugin> {
         const newId = new ODId(id)
         const plugin = this.get(newId)
         return (plugin !== null && plugin.executed)
+    }
+
+    get<PluginId extends keyof IdList>(id:PluginId): IdList[PluginId]
+    get(id:ODValidId): ODPlugin|null
+    
+    get(id:ODValidId): ODPlugin|null {
+        return super.get(id)
+    }
+
+    remove<PluginId extends keyof IdList>(id:PluginId): IdList[PluginId]
+    remove(id:ODValidId): ODPlugin|null
+    
+    remove(id:ODValidId): ODPlugin|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -225,6 +251,11 @@ export class ODPlugin extends ODManagerData {
     }
 }
 
+/**## ODPluginClassManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODPluginClassManager` class.
+ */
+export type ODPluginClassManagerIdConstraint = Record<string,ODManagerData>
+
 /**## ODPluginClassManager `class`
  * This is an Open Discord plugin class manager.
  * 
@@ -235,8 +266,29 @@ export class ODPlugin extends ODManagerData {
  * 
  * Use `isPluginLoaded()` to check if a plugin has been loaded before trying to access the manager.
  */
-export class ODPluginClassManager extends ODManager<ODManagerData> {
+export class ODPluginClassManager<IdList extends ODPluginClassManagerIdConstraint = ODPluginClassManagerIdConstraint> extends ODManager<ODManagerData> {
     constructor(debug:ODDebugger){
         super(debug,"plugin class")
+    }
+
+    get<PluginClassId extends keyof IdList>(id:PluginClassId): IdList[PluginClassId]
+    get(id:ODValidId): ODManagerData|null
+    
+    get(id:ODValidId): ODManagerData|null {
+        return super.get(id)
+    }
+
+    remove<PluginClassId extends keyof IdList>(id:PluginClassId): IdList[PluginClassId]
+    remove(id:ODValidId): ODManagerData|null
+    
+    remove(id:ODValidId): ODManagerData|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }

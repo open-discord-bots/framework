@@ -30,6 +30,11 @@ export class ODCode extends ODManagerData {
     }
 }
 
+/**## ODCodeManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODCodeManager` class.
+ */
+export type ODCodeManagerIdConstraint = Record<string,ODCode>
+
 /**## ODCodeManager `class`
  * This is an Open Discord code manager.
  * 
@@ -37,7 +42,7 @@ export class ODCode extends ODManagerData {
  * 
  * Use this to register a function/code which executes just before the startup screen. (90% is already loaded)
  */
-export class ODCodeManager extends ODManager<ODCode> {
+export class ODCodeManager<IdList extends ODCodeManagerIdConstraint = ODCodeManagerIdConstraint> extends ODManager<ODCode> {
     constructor(debug:ODDebugger){
         super(debug,"code")
     }
@@ -54,5 +59,26 @@ export class ODCodeManager extends ODManager<ODCode> {
                 process.emit("uncaughtException",err)
             }
         }
+    }
+
+    get<CodeId extends keyof IdList>(id:CodeId): IdList[CodeId]
+    get(id:ODValidId): ODCode|null
+    
+    get(id:ODValidId): ODCode|null {
+        return super.get(id)
+    }
+
+    remove<CodeId extends keyof IdList>(id:CodeId): IdList[CodeId]
+    remove(id:ODValidId): ODCode|null
+    
+    remove(id:ODValidId): ODCode|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }

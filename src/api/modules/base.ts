@@ -31,7 +31,7 @@ export type ODProjectType = "openticket"|"openmoderation"
  * 
  * You will see this type in many functions from Open Discord.
  */
-export type ODValidId = string|ODId
+export type ODValidId = string|number|symbol|ODId
 
 /**## ODValidJsonType `type`
  * This is a collection of all types that can be stored in a JSON file!
@@ -382,23 +382,50 @@ export class ODManagerWithSafety<DataType extends ODManagerData> extends ODManag
      * ### ⚠️ This should only be used when the data doesn't need to be written/edited
     */
     getSafe(id:ODValidId): DataType {
+        const newId = new ODId(id)
         const data = super.get(id)
         if (!data){
-            process.emit("uncaughtException",new ODSystemError("ODManagerWithSafety:getSafe(\""+id+"\") => Unknown Id => Used backup data ("+this.#debugname+" manager)"))
+            process.emit("uncaughtException",new ODSystemError("ODManagerWithSafety:getSafe(\""+newId.value+"\") => Unknown Id => Used backup data ("+this.#debugname+" manager)"))
             return this.#backupCreator()
         }
         else return data
     }
 }
 
+/**## ODVersionManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODVersionManager` class.
+ */
+export type ODVersionManagerIdConstraint = Record<string,ODVersion>
+
 /**## ODVersionManager `class`
  * A Open Discord version manager.
  * 
  * It is used to manage different `ODVersion`'s from the bot. You will use it to check which version of the bot is used.
  */
-export class ODVersionManager extends ODManager<ODVersion> {
+export class ODVersionManager<IdList extends ODVersionManagerIdConstraint = ODVersionManagerIdConstraint> extends ODManager<ODVersion> {
     constructor(){
         super()
+    }
+
+    get<VersionId extends keyof IdList>(id:VersionId): IdList[VersionId]
+    get(id:ODValidId): ODVersion|null
+    
+    get(id:ODValidId): ODVersion|null {
+        return super.get(id)
+    }
+
+    remove<VersionId extends keyof IdList>(id:VersionId): IdList[VersionId]
+    remove(id:ODValidId): ODVersion|null
+    
+    remove(id:ODValidId): ODVersion|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 

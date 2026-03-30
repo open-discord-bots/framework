@@ -5,6 +5,11 @@ import { ODSystemError, ODManager, ODManagerData, ODValidId } from "./base"
 import { ODDebugger } from "./console"
 import readline from "readline"
 
+/**## ODProgressBarRendererManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODProgressBarRendererManager` class.
+ */
+export type ODProgressBarRendererManagerIdConstraint = Record<string,ODProgressBarRenderer<{}>>
+
 /**## ODProgressBarRendererManager `class`
  * This is an Open Discord progress bar renderer manager.
  * 
@@ -12,11 +17,37 @@ import readline from "readline"
  * 
  * A renderer is a function which will try to visualize the progress bar in the console.
  */
-export class ODProgressBarRendererManager extends ODManager<ODProgressBarRenderer<{}>> {
+export class ODProgressBarRendererManager<IdList extends ODProgressBarRendererManagerIdConstraint = ODProgressBarRendererManagerIdConstraint> extends ODManager<ODProgressBarRenderer<{}>> {
     constructor(debug:ODDebugger){
         super(debug,"progress bar renderer")
     }
+
+    get<RendererId extends keyof IdList>(id:RendererId): IdList[RendererId]
+    get(id:ODValidId): ODProgressBarRenderer<{}>|null
+    
+    get(id:ODValidId): ODProgressBarRenderer<{}>|null {
+        return super.get(id)
+    }
+
+    remove<RendererId extends keyof IdList>(id:RendererId): IdList[RendererId]
+    remove(id:ODValidId): ODProgressBarRenderer<{}>|null
+    
+    remove(id:ODValidId): ODProgressBarRenderer<{}>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
+    }
 }
+
+/**## ODProgressBarManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODProgressBarManager` class.
+ */
+export type ODProgressBarManagerIdConstraint = Record<string,ODProgressBar>
 
 /**## ODProgressBarManager `class`
  * This is an Open Discord progress bar manager.
@@ -25,12 +56,34 @@ export class ODProgressBarRendererManager extends ODManager<ODProgressBarRendere
  * 
  * There are many types of progress bars available, but you can also create your own!
  */
-export class ODProgressBarManager extends ODManager<ODProgressBar> {
-    renderers: ODProgressBarRendererManager
+export class ODProgressBarManager<IdList extends ODProgressBarManagerIdConstraint = ODProgressBarManagerIdConstraint,RendererIdList extends ODProgressBarRendererManagerIdConstraint = ODProgressBarRendererManagerIdConstraint> extends ODManager<ODProgressBar> {
+    /**A collection of render types for progress bars. */
+    renderers: ODProgressBarRendererManager<ODProgressBarRendererManagerIdConstraint>
 
     constructor(debug:ODDebugger){
         super(debug,"progress bar")
         this.renderers = new ODProgressBarRendererManager(debug)
+    }
+
+    get<ProgressBarId extends keyof IdList>(id:ProgressBarId): IdList[ProgressBarId]
+    get(id:ODValidId): ODProgressBar|null
+    
+    get(id:ODValidId): ODProgressBar|null {
+        return super.get(id)
+    }
+
+    remove<ProgressBarId extends keyof IdList>(id:ProgressBarId): IdList[ProgressBarId]
+    remove(id:ODValidId): ODProgressBar|null
+    
+    remove(id:ODValidId): ODProgressBar|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 

@@ -5,6 +5,11 @@ import { ODId, ODManager, ODManagerData, ODValidId } from "./base"
 import { ODDebugger } from "./console"
 import * as crypto from "crypto"
 
+/**## ODSessionManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODSessionManager` class.
+ */
+export type ODSessionManagerIdConstraint = Record<string,ODSession>
+
 /**## ODSessionManager `class`
  * This is an Open Discord session manager.
  * 
@@ -13,9 +18,30 @@ import * as crypto from "crypto"
  * 
  * Visit the `ODSession` class for more info
  */
-export class ODSessionManager extends ODManager<ODSession> {
+export class ODSessionManager<IdList extends ODSessionManagerIdConstraint = ODSessionManagerIdConstraint> extends ODManager<ODSession> {
     constructor(debug:ODDebugger){
         super(debug,"session")
+    }
+
+    get<SessionId extends keyof IdList>(id:SessionId): IdList[SessionId]
+    get(id:ODValidId): ODSession|null
+    
+    get(id:ODValidId): ODSession|null {
+        return super.get(id)
+    }
+
+    remove<SessionId extends keyof IdList>(id:SessionId): IdList[SessionId]
+    remove(id:ODValidId): ODSession|null
+    
+    remove(id:ODValidId): ODSession|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 

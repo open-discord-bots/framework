@@ -15,9 +15,9 @@ import { ODDropdownData, ODMessageBuildResult, ODMessageBuildSentResult, ODModal
  * 
  * This class can't be used stand-alone & needs to be extended from!
  */
-export class ODResponderImplementation<Instance,Source extends string,Params> extends ODManagerData {
+export class ODResponderImplementation<Instance,Source extends string,Params,WorkerIds extends string = string> extends ODManagerData {
     /**The manager that has all workers of this implementation */
-    workers: ODWorkerManager<Instance,Source,Params>
+    workers: ODWorkerManager<Instance,Source,Params,WorkerIds>
     /**The `commandName` or `customId` needs to match this string or regex for this responder to be executed. */
     match: string|RegExp
 
@@ -52,19 +52,26 @@ export type ODResponderTimeoutErrorCallback<Instance, Source extends "slash"|"te
  * - know where the request came from & parse options/subcommands & without errors!
  * - And so much more!
  */
-export class ODResponderManager {
+export class ODResponderManager<
+    CommandIdList extends ODCommandResponderManagerIdConstraint = ODCommandResponderManagerIdConstraint,
+    ButtonIdList extends ODButtonResponderManagerIdConstraint = ODButtonResponderManagerIdConstraint,
+    DropdownIdList extends ODDropdownResponderManagerIdConstraint = ODDropdownResponderManagerIdConstraint,
+    ModalIdList extends ODModalResponderManagerIdConstraint = ODModalResponderManagerIdConstraint,
+    ContextMenuIdList extends ODContextMenuResponderManagerIdConstraint = ODContextMenuResponderManagerIdConstraint,
+    AutocompleteIdList extends ODAutocompleteResponderManagerIdConstraint = ODAutocompleteResponderManagerIdConstraint
+> {
     /**A manager for all (text & slash) command responders. */
-    commands: ODCommandResponderManager
+    commands: ODCommandResponderManager<CommandIdList>
     /**A manager for all button responders. */
-    buttons: ODButtonResponderManager
+    buttons: ODButtonResponderManager<ButtonIdList>
     /**A manager for all dropdown/select menu responders. */
-    dropdowns: ODDropdownResponderManager
+    dropdowns: ODDropdownResponderManager<DropdownIdList>
     /**A manager for all modal responders. */
-    modals: ODModalResponderManager
+    modals: ODModalResponderManager<ModalIdList>
     /**A manager for all context menu responders. */
-    contextMenus: ODContextMenuResponderManager
+    contextMenus: ODContextMenuResponderManager<ContextMenuIdList>
     /**A manager for all autocomplete responders. */
-    autocomplete: ODAutocompleteResponderManager
+    autocomplete: ODAutocompleteResponderManager<AutocompleteIdList>
 
     constructor(debug:ODDebugger, client:ODClientManager){
         this.commands = new ODCommandResponderManager(debug,"command responder",client)
@@ -75,6 +82,11 @@ export class ODResponderManager {
         this.autocomplete = new ODAutocompleteResponderManager(debug,"autocomplete responder",client)
     }
 }
+
+/**## ODCommandResponderManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODCommandResponderManager` class.
+ */
+export type ODCommandResponderManagerIdConstraint = Record<string,{source:"slash"|"text",params:object,workers:string}>
 
 /**## ODCommandResponderManager `class`
  * This is an Open Discord command responder manager.
@@ -90,7 +102,7 @@ export class ODResponderManager {
  * - know where the request came from & parse options/subcommands & without errors!
  * - And so much more!
  */
-export class ODCommandResponderManager extends ODManager<ODCommandResponder<"slash"|"text",any>> {
+export class ODCommandResponderManager<IdList extends ODCommandResponderManagerIdConstraint = ODCommandResponderManagerIdConstraint> extends ODManager<ODCommandResponder<"slash"|"text",any>> {
     /**An alias to the Open Discord client manager. */
     #client: ODClientManager
     /**The callback executed when the default workers take too much time to reply. */
@@ -127,6 +139,27 @@ export class ODCommandResponderManager extends ODManager<ODCommandResponder<"sla
         })
 
         return res
+    }
+
+    get<CommandResponderId extends keyof IdList>(id:CommandResponderId): ODCommandResponder<IdList[CommandResponderId]["source"],IdList[CommandResponderId]["params"],IdList[CommandResponderId]["workers"]>
+    get(id:ODValidId): ODCommandResponder<"slash"|"text",any>|null
+    
+    get(id:ODValidId): ODCommandResponder<"slash"|"text",any>|null {
+        return super.get(id)
+    }
+
+    remove<CommandResponderId extends keyof IdList>(id:CommandResponderId): ODCommandResponder<IdList[CommandResponderId]["source"],IdList[CommandResponderId]["params"],IdList[CommandResponderId]["workers"]>
+    remove(id:ODValidId): ODCommandResponder<"slash"|"text",any>|null
+    
+    remove(id:ODValidId): ODCommandResponder<"slash"|"text",any>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -438,7 +471,7 @@ export class ODCommandResponderInstance {
  * 
  * This class manages all workers which are executed when the related command is triggered.
  */
-export class ODCommandResponder<Source extends "slash"|"text",Params> extends ODResponderImplementation<ODCommandResponderInstance,Source,Params> {
+export class ODCommandResponder<Source extends "slash"|"text",Params,WorkerIds extends string = string> extends ODResponderImplementation<ODCommandResponderInstance,Source,Params,WorkerIds> {
     /**The prefix of the text command needs to match this */
     prefix: string
     
@@ -454,6 +487,11 @@ export class ODCommandResponder<Source extends "slash"|"text",Params> extends OD
     }
 }
 
+/**## ODButtonResponderManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODButtonResponderManager` class.
+ */
+export type ODButtonResponderManagerIdConstraint = Record<string,{source:"button",params:object,workers:string}>
+
 /**## ODButtonResponderManager `class`
  * This is an Open Discord button responder manager.
  * 
@@ -467,7 +505,7 @@ export class ODCommandResponder<Source extends "slash"|"text",Params> extends OD
  * - know where the request came from!
  * - And so much more!
  */
-export class ODButtonResponderManager extends ODManager<ODButtonResponder<"button",any>> {
+export class ODButtonResponderManager<IdList extends ODButtonResponderManagerIdConstraint = ODButtonResponderManagerIdConstraint> extends ODManager<ODButtonResponder<"button",any>> {
     /**An alias to the Open Discord client manager. */
     #client: ODClientManager
     /**The callback executed when the default workers take too much time to reply. */
@@ -503,6 +541,27 @@ export class ODButtonResponderManager extends ODManager<ODButtonResponder<"butto
         })
 
         return res
+    }
+
+    get<ButtonResponderId extends keyof IdList>(id:ButtonResponderId): ODButtonResponder<IdList[ButtonResponderId]["source"],IdList[ButtonResponderId]["params"],IdList[ButtonResponderId]["workers"]>
+    get(id:ODValidId): ODButtonResponder<"button",any>|null
+    
+    get(id:ODValidId): ODButtonResponder<"button",any>|null {
+        return super.get(id)
+    }
+
+    remove<ButtonResponderId extends keyof IdList>(id:ButtonResponderId): ODButtonResponder<IdList[ButtonResponderId]["source"],IdList[ButtonResponderId]["params"],IdList[ButtonResponderId]["workers"]>
+    remove(id:ODValidId): ODButtonResponder<"button",any>|null
+    
+    remove(id:ODValidId): ODButtonResponder<"button",any>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -644,13 +703,18 @@ export class ODButtonResponderInstance {
  * 
  * This class manages all workers which are executed when the related button is triggered.
  */
-export class ODButtonResponder<Source extends string,Params> extends ODResponderImplementation<ODButtonResponderInstance,Source,Params> {
+export class ODButtonResponder<Source extends string,Params,WorkerIds extends string = string> extends ODResponderImplementation<ODButtonResponderInstance,Source,Params,WorkerIds> {
     /**Respond to this button */
     async respond(instance:ODButtonResponderInstance, source:Source, params:Params){
         //wait for workers to finish
         await this.workers.executeWorkers(instance,source,params)
     }
 }
+
+/**## ODDropdownResponderManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODDropdownResponderManager` class.
+ */
+export type ODDropdownResponderManagerIdConstraint = Record<string,{source:"dropdown",params:object,workers:string}>
 
 /**## ODDropdownResponderManager `class`
  * This is an Open Discord dropdown responder manager.
@@ -665,7 +729,7 @@ export class ODButtonResponder<Source extends string,Params> extends ODResponder
  * - know where the request came from!
  * - And so much more!
  */
-export class ODDropdownResponderManager extends ODManager<ODDropdownResponder<"dropdown",any>> {
+export class ODDropdownResponderManager<IdList extends ODDropdownResponderManagerIdConstraint = ODDropdownResponderManagerIdConstraint> extends ODManager<ODDropdownResponder<"dropdown",any>> {
     /**An alias to the Open Discord client manager. */
     #client: ODClientManager
     /**The callback executed when the default workers take too much time to reply. */
@@ -701,6 +765,27 @@ export class ODDropdownResponderManager extends ODManager<ODDropdownResponder<"d
         })
 
         return res
+    }
+
+    get<DropdownResponderId extends keyof IdList>(id:DropdownResponderId): ODDropdownResponder<IdList[DropdownResponderId]["source"],IdList[DropdownResponderId]["params"],IdList[DropdownResponderId]["workers"]>
+    get(id:ODValidId): ODDropdownResponder<"dropdown",any>|null
+    
+    get(id:ODValidId): ODDropdownResponder<"dropdown",any>|null {
+        return super.get(id)
+    }
+
+    remove<DropdownResponderId extends keyof IdList>(id:DropdownResponderId): ODDropdownResponder<IdList[DropdownResponderId]["source"],IdList[DropdownResponderId]["params"],IdList[DropdownResponderId]["workers"]>
+    remove(id:ODValidId): ODDropdownResponder<"dropdown",any>|null
+    
+    remove(id:ODValidId): ODDropdownResponder<"dropdown",any>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -933,13 +1018,18 @@ export class ODDropdownResponderInstance {
  * 
  * This class manages all workers which are executed when the related dropdown is triggered.
  */
-export class ODDropdownResponder<Source extends string,Params> extends ODResponderImplementation<ODDropdownResponderInstance,Source,Params> {
+export class ODDropdownResponder<Source extends string,Params,WorkerIds extends string = string> extends ODResponderImplementation<ODDropdownResponderInstance,Source,Params,WorkerIds> {
     /**Respond to this dropdown */
     async respond(instance:ODDropdownResponderInstance, source:Source, params:Params){
         //wait for workers to finish
         await this.workers.executeWorkers(instance,source,params)
     }
 }
+
+/**## ODModalResponderManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODModalResponderManager` class.
+ */
+export type ODModalResponderManagerIdConstraint = Record<string,{source:"modal",params:object,workers:string}>
 
 /**## ODModalResponderManager `class`
  * This is an Open Discord modal responder manager.
@@ -954,7 +1044,7 @@ export class ODDropdownResponder<Source extends string,Params> extends ODRespond
  * - know where the request came from!
  * - And so much more!
  */
-export class ODModalResponderManager extends ODManager<ODModalResponder<"modal",any>> {
+export class ODModalResponderManager<IdList extends ODModalResponderManagerIdConstraint = ODModalResponderManagerIdConstraint> extends ODManager<ODModalResponder<"modal",any>> {
     /**An alias to the Open Discord client manager. */
     #client: ODClientManager
     /**The callback executed when the default workers take too much time to reply. */
@@ -990,6 +1080,27 @@ export class ODModalResponderManager extends ODManager<ODModalResponder<"modal",
         })
 
         return res
+    }
+
+    get<ModalResponderId extends keyof IdList>(id:ModalResponderId): ODModalResponder<IdList[ModalResponderId]["source"],IdList[ModalResponderId]["params"],IdList[ModalResponderId]["workers"]>
+    get(id:ODValidId): ODModalResponder<"modal",any>|null
+    
+    get(id:ODValidId): ODModalResponder<"modal",any>|null {
+        return super.get(id)
+    }
+
+    remove<ModalResponderId extends keyof IdList>(id:ModalResponderId): ODModalResponder<IdList[ModalResponderId]["source"],IdList[ModalResponderId]["params"],IdList[ModalResponderId]["workers"]>
+    remove(id:ODValidId): ODModalResponder<"modal",any>|null
+    
+    remove(id:ODValidId): ODModalResponder<"modal",any>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -1114,13 +1225,18 @@ export class ODModalResponderInstance {
  * 
  * This class manages all workers which are executed when the related modal is triggered.
  */
-export class ODModalResponder<Source extends string,Params> extends ODResponderImplementation<ODModalResponderInstance,Source,Params> {
+export class ODModalResponder<Source extends string,Params,WorkerIds extends string = string> extends ODResponderImplementation<ODModalResponderInstance,Source,Params,WorkerIds> {
     /**Respond to this modal */
     async respond(instance:ODModalResponderInstance, source:Source, params:Params){
         //wait for workers to finish
         await this.workers.executeWorkers(instance,source,params)
     }
 }
+
+/**## ODContextMenuResponderManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODContextMenuResponderManager` class.
+ */
+export type ODContextMenuResponderManagerIdConstraint = Record<string,{source:"context-menu",params:object,workers:string}>
 
 /**## ODContextMenuResponderManager `class`
  * This is an Open Discord context menu responder manager.
@@ -1135,7 +1251,7 @@ export class ODModalResponder<Source extends string,Params> extends ODResponderI
  * - know where the request came from!
  * - And so much more!
  */
-export class ODContextMenuResponderManager extends ODManager<ODContextMenuResponder<"context-menu",any>> {
+export class ODContextMenuResponderManager<IdList extends ODContextMenuResponderManagerIdConstraint = ODContextMenuResponderManagerIdConstraint> extends ODManager<ODContextMenuResponder<"context-menu",any>> {
     /**An alias to the Open Discord client manager. */
     #client: ODClientManager
     /**The callback executed when the default workers take too much time to reply. */
@@ -1164,6 +1280,27 @@ export class ODContextMenuResponderManager extends ODManager<ODContextMenuRespon
         })
 
         return res
+    }
+
+    get<ModalResponderId extends keyof IdList>(id:ModalResponderId): ODContextMenuResponder<IdList[ModalResponderId]["source"],IdList[ModalResponderId]["params"],IdList[ModalResponderId]["workers"]>
+    get(id:ODValidId): ODContextMenuResponder<"context-menu",any>|null
+    
+    get(id:ODValidId): ODContextMenuResponder<"context-menu",any>|null {
+        return super.get(id)
+    }
+
+    remove<ModalResponderId extends keyof IdList>(id:ModalResponderId): ODContextMenuResponder<IdList[ModalResponderId]["source"],IdList[ModalResponderId]["params"],IdList[ModalResponderId]["workers"]>
+    remove(id:ODValidId): ODContextMenuResponder<"context-menu",any>|null
+    
+    remove(id:ODValidId): ODContextMenuResponder<"context-menu",any>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -1274,13 +1411,18 @@ export class ODContextMenuResponderInstance {
  * 
  * This class manages all workers which are executed when the related context menu is triggered.
  */
-export class ODContextMenuResponder<Source extends string,Params> extends ODResponderImplementation<ODContextMenuResponderInstance,Source,Params> {
+export class ODContextMenuResponder<Source extends string,Params,WorkerIds extends string = string> extends ODResponderImplementation<ODContextMenuResponderInstance,Source,Params,WorkerIds> {
     /**Respond to this button */
     async respond(instance:ODContextMenuResponderInstance, source:Source, params:Params){
         //wait for workers to finish
         await this.workers.executeWorkers(instance,source,params)
     }
 }
+
+/**## ODAutocompleteResponderManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODAutocompleteResponderManager` class.
+ */
+export type ODAutocompleteResponderManagerIdConstraint = Record<string,{source:"autocomplete",params:object,workers:string}>
 
 /**## ODAutocompleteResponderManager `class`
  * This is an Open Discord autocomplete responder manager.
@@ -1295,7 +1437,7 @@ export class ODContextMenuResponder<Source extends string,Params> extends ODResp
  * - know where the request came from!
  * - And so much more!
  */
-export class ODAutocompleteResponderManager extends ODManager<ODAutocompleteResponder<"autocomplete",any>> {
+export class ODAutocompleteResponderManager<IdList extends ODAutocompleteResponderManagerIdConstraint = ODAutocompleteResponderManagerIdConstraint> extends ODManager<ODAutocompleteResponder<"autocomplete",any>> {
     /**An alias to the Open Discord client manager. */
     #client: ODClientManager
     /**The callback executed when the default workers take too much time to reply. */
@@ -1324,6 +1466,27 @@ export class ODAutocompleteResponderManager extends ODManager<ODAutocompleteResp
         })
 
         return res
+    }
+
+    get<AutocompleteResponderId extends keyof IdList>(id:AutocompleteResponderId): ODAutocompleteResponder<IdList[AutocompleteResponderId]["source"],IdList[AutocompleteResponderId]["params"],IdList[AutocompleteResponderId]["workers"]>
+    get(id:ODValidId): ODAutocompleteResponder<"autocomplete",any>|null
+    
+    get(id:ODValidId): ODAutocompleteResponder<"autocomplete",any>|null {
+        return super.get(id)
+    }
+
+    remove<AutocompleteResponderId extends keyof IdList>(id:AutocompleteResponderId): ODAutocompleteResponder<IdList[AutocompleteResponderId]["source"],IdList[AutocompleteResponderId]["params"],IdList[AutocompleteResponderId]["workers"]>
+    remove(id:ODValidId): ODAutocompleteResponder<"autocomplete",any>|null
+    
+    remove(id:ODValidId): ODAutocompleteResponder<"autocomplete",any>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof IdList): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -1401,7 +1564,7 @@ export class ODAutocompleteResponderInstance {
  * 
  * This class manages all workers which are executed when the related autocomplete is triggered.
  */
-export class ODAutocompleteResponder<Source extends string,Params> extends ODResponderImplementation<ODAutocompleteResponderInstance,Source,Params> {
+export class ODAutocompleteResponder<Source extends string,Params,WorkerIds extends string = string> extends ODResponderImplementation<ODAutocompleteResponderInstance,Source,Params,WorkerIds> {
     /**The slash command of the autocomplete should match the following regex. */
     cmdMatch: string|RegExp
     
