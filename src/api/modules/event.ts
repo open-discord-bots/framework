@@ -1,8 +1,13 @@
 ///////////////////////////////////////
 //EVENT MODULE
 ///////////////////////////////////////
-import { ODManagerData, ODManager, ODValidId } from "./base"
+import { ODManagerData, ODManager, ODValidId, ODPromiseVoid } from "./base"
 import { ODConsoleWarningMessage, ODDebugger } from "./console"
+
+/**## ODEventCallback `type`
+ * The base callback function for events.
+ */
+export type ODEventCallback = (...args:any) => ODPromiseVoid
 
 /**## ODEvent `class`
  * This is an Open Discord event.
@@ -10,7 +15,7 @@ import { ODConsoleWarningMessage, ODDebugger } from "./console"
  * This class is made to work with the `ODEventManager` to handle events.
  * The function of this specific class is to manage all listeners for a specifc event!
  */
-export class ODEvent extends ODManagerData {
+export class ODEvent<Callback extends ODEventCallback = ODEventCallback> extends ODManagerData {
     /**Alias to Open Discord debugger. */
     #debug?: ODDebugger
     /**The list of permanent listeners. */
@@ -38,7 +43,7 @@ export class ODEvent extends ODManagerData {
         this.listenerLimit = limit
     }
     /**Add a permanent callback to this event. This will stay as long as the bot is running! */
-    listen(callback:Function){
+    listen(callback:Callback){
         this.listeners.push(callback)
 
         if (this.listeners.length > this.listenerLimit){
@@ -49,17 +54,17 @@ export class ODEvent extends ODManagerData {
         }
     }
     /**Add a one-time-only callback to this event. This will only trigger the callback once! */
-    listenOnce(callback:Function){
+    listenOnce(callback:Callback){
         this.oncelisteners.push(callback)
     }
     /**Wait until this event is fired! Be carefull with it, because it could block the entire bot when wrongly used! */
-    async wait(): Promise<any[]> {
+    async wait(): Promise<Parameters<Callback>> {
         return new Promise((resolve,reject) => {
             this.oncelisteners.push((...args:any) => {resolve(args)})
         })
     }
     /**Emit this event to all listeners. You are required to provide all parameters of the event! */
-    async emit(params:any[]): Promise<void> {
+    async emit(params:Parameters<Callback>): Promise<void> {
         for (const listener of this.#getCurrentListeners()){
             try{
                 await listener(...params)
