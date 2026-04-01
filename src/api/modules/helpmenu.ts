@@ -95,7 +95,7 @@ export class ODHelpMenuCommandComponent extends ODHelpMenuComponent {
 /**## ODHelpMenuCategoryIdConstraint `type`
  * The constraint/layout for id mappings/interfaces of the `ODHelpMenuCategory` class.
  */
-export type ODHelpMenuCategoryIdConstraint = Record<string,ODHelpMenuComponent>
+export type ODHelpMenuCategoryIdConstraint = Record<string,ODHelpMenuComponent|null>
 
 /**## ODHelpMenuCategory `class`
  * This is an Open Discord help menu category.

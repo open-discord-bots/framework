@@ -9,7 +9,7 @@ import * as discord from "discord.js"
 /**## ODPostManagerIdConstraint `type`
  * The constraint/layout for id mappings/interfaces of the `ODPostManager` class.
  */
-export type ODPostManagerIdConstraint = Record<string,ODPost<discord.GuildBasedChannel>>
+export type ODPostManagerIdConstraint = Record<string,ODPost<discord.GuildBasedChannel>|null>
 
 /**## ODPostManager `class`
  * This is an Open Discord post manager.

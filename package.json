@@ -1,7 +1,7 @@
 {
     "name": "@open-discord-bots/framework",
     "author": "DJj123dj",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "description": "The core framework of the popular open-source discord bots: Open Ticket & Open Moderation.",
     "main": "dist/index.js",
     "module": "dist/index.js",
@@ -11,10 +11,10 @@
     "keywords": [],
     "license": "GPL-3.0-only",
     "dependencies": {
-        "@discordjs/rest": "^2.6.0",
+        "@discordjs/rest": "^2.6.1",
         "@types/terminal-kit": "^2.5.7",
         "ansis": "^4.2.0",
-        "discord.js": "^14.25.1",
+        "discord.js": "^14.26.0",
         "formatted-json-stringify": "^1.2.1",
         "terminal-kit": "^3.1.2",
         "typescript": "^5.9.3"
