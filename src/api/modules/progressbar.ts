@@ -2,8 +2,9 @@
 //PROGRESS BAR MODULE
 ///////////////////////////////////////
 import { ODSystemError, ODManager, ODManagerData, ODValidId } from "./base"
-import { ODDebugger } from "./console"
+import { ODDebugger, ODValidConsoleColor } from "./console"
 import readline from "readline"
+import ansis from "ansis"
 
 /**## ODProgressBarRendererManagerIdConstraint `type`
  * The constraint/layout for id mappings/interfaces of the `ODProgressBarRendererManager` class.
@@ -281,5 +282,88 @@ export class ODManualProgressBar extends ODProgressBar {
     /**Decrease the value of the progress bar. */
     decrease(amount:number,stop?:boolean){
         super.update(this.value-amount,stop)
+    }
+}
+
+/**## ODDefaultProgressBarRendererLabel `type`
+ * All available label types for the default progress bar renderer
+ */
+export type ODDefaultProgressBarRendererLabel = "value"|"percentage"|"fraction"|"time-ms"|"time-sec"|"time-min"
+
+/**## ODDefaultProgressBarRendererSettings `interface`
+ * All settings for the default progress bar renderer.
+ */
+export interface ODDefaultProgressBarRendererSettings {
+    /**The color of the progress bar border. */
+    borderColor:ODValidConsoleColor|"openticket"|"openmoderation",
+    /**The color of the progress bar (filled side). */
+    filledBarColor:ODValidConsoleColor|"openticket"|"openmoderation",
+    /**The color of the progress bar (empty side). */
+    emptyBarColor:ODValidConsoleColor|"openticket"|"openmoderation",
+    /**The color of the text before the progress bar. */
+    prefixColor:ODValidConsoleColor|"openticket"|"openmoderation",
+    /**The color of the text after the progress bar. */
+    suffixColor:ODValidConsoleColor|"openticket"|"openmoderation",
+    /**The color of the progress bar label. */
+    labelColor:ODValidConsoleColor|"openticket"|"openmoderation",
+
+    /**The character used in the left border. */
+    leftBorderChar:string,
+    /**The character used in the right border. */
+    rightBorderChar:string,
+    /**The character used in the filled side of the progress bar. */
+    filledBarChar:string,
+    /**The character used in the empty side of the progress bar. */
+    emptyBarChar:string,
+    /**The label type. (will show a number related to the progress) */
+    labelType:ODDefaultProgressBarRendererLabel,
+    /**The position of the label. */
+    labelPosition:"start"|"end",
+    /**The width of the bar. (50 characters by default) */
+    barWidth:number,
+
+    /**Show the bar. */
+    showBar:boolean,
+    /**Show the label. */
+    showLabel:boolean,
+    /**Show the border. */
+    showBorder:boolean,
+}
+
+export class ODDefaultProgressBarRenderer extends ODProgressBarRenderer<ODDefaultProgressBarRendererSettings> {
+    constructor(id:ODValidId,settings:ODDefaultProgressBarRendererSettings){
+        super(id,(settings,min,max,value,rawPrefix,rawSuffix) => {
+            const percentage = (value-min)/(max-min)
+            const barLevel = Math.round(percentage*settings.barWidth)
+
+            const borderAnsis = this.#switchColorAnsis(settings.borderColor)
+            const filledBarAnsis = this.#switchColorAnsis(settings.filledBarColor)
+            const emptyBarAnsis = this.#switchColorAnsis(settings.emptyBarColor)
+            const labelAnsis = this.#switchColorAnsis(settings.labelColor)
+            const prefixAnsis = this.#switchColorAnsis(settings.prefixColor)
+            const suffixAnsis = this.#switchColorAnsis(settings.suffixColor)
+
+            const leftBorder = (settings.showBorder) ? borderAnsis(settings.leftBorderChar) : ""
+            const rightBorder = (settings.showBorder) ? borderAnsis(settings.rightBorderChar) : ""
+            const bar = (settings.showBar) ? filledBarAnsis(settings.filledBarChar.repeat(barLevel))+emptyBarAnsis(settings.emptyBarChar.repeat(settings.barWidth-barLevel)) : ""
+            const prefix = (rawPrefix) ? prefixAnsis(rawPrefix)+" " : ""
+            const suffix = (rawSuffix) ? " "+suffixAnsis(rawSuffix) : ""
+            let label: string
+            if (!settings.showLabel) label = ""
+            if (settings.labelType == "fraction") label = labelAnsis(value+"/"+max)
+            else if (settings.labelType == "percentage") label = labelAnsis(Math.round(percentage*100)+"%")
+            else if (settings.labelType == "time-ms") label = labelAnsis(value+"ms")
+            else if (settings.labelType == "time-sec") label = labelAnsis(Math.round(value*10)/10+"sec")
+            else if (settings.labelType == "time-min") label = labelAnsis(Math.round(value*10)/10+"min")
+            else label = labelAnsis(value.toString())
+
+            const labelWithPrefixAndSuffix = prefix+label+suffix
+            return (settings.labelPosition == "start") ? labelWithPrefixAndSuffix+" "+leftBorder+bar+rightBorder : leftBorder+bar+rightBorder+" "+labelWithPrefixAndSuffix
+        },settings)
+    }
+
+    /**Switch between Ansis functions based on the specified color. */
+    #switchColorAnsis(c:ODValidConsoleColor|"openticket"|"openmoderation"){
+        return (c === "openticket") ? ansis.hex("#f8ba00") : (c === "openmoderation") ? ansis.hex("#1690ff") : ansis[c]
     }
 }
