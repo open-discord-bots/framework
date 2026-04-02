@@ -347,7 +347,7 @@ export class ODDebugFileManager {
             fs.writeFileSync(this.path,newtext)
         }
     }
-    /**Generate the stats/header of the debug file (containing the version) */
+    /**Generate the statistics/header of the debug file (containing the version) */
     #createStatsText(){
         const date = new Date()
         const dstring = `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
@@ -359,7 +359,7 @@ export class ODDebugFileManager {
             "=========================\n\n"
         ].join("\n")
     }
-    /**Write the stats/header to the debug file on startup */
+    /**Write the statistics/header to the debug file on startup */
     #writeStartupStats(){
         const currenttext = this.#readDebugFile()
         if (currenttext){

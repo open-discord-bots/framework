@@ -12,7 +12,7 @@ import { ODDebugger } from "./console"
  * You can also specify a priority to change the execution order.
  * In Open Discord, this is used for the following processes:
  * - Autoclose/delete
- * - Database syncronisation (with tickets, stats & used options)
+ * - Database syncronisation (with tickets, statistics & used options)
  * - Panel auto-update
  * - Database Garbage Collection (removing tickets that don't exist anymore)
  * - And more!

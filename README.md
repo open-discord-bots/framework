@@ -45,7 +45,7 @@ We do currently <b>NOT</b> provide support for <b>3rd party implementations</b> 
 
 - **Permissions** - An easy to use system for managing bot permissions for users, roles & channels at the same time.
 
-- **Stats** - Save, modify and keep track of statistics for users, channels, roles or custom entities.
+- **Statistics** - Save, modify and keep track of statistics for users, channels, roles or custom entities.
 
 - **Workers** - Many features use a worker-based system to allow extensible/overwritable code by plugins.
 

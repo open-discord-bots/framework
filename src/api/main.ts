@@ -1,26 +1,26 @@
 //BASE MODULES
-import { ODEnvHelper, ODProjectType, ODVersion, ODVersionManager, ODVersionManagerIdConstraint } from "./modules/base"
-import { ODConsoleManager, ODConsoleMessage, ODConsoleMessageParam, ODConsoleMessageTypes, ODDebugFileManager, ODDebugger, ODError, ODLiveStatusManager, ODLiveStatusManagerIdConstraint } from "./modules/console"
-import { ODCheckerFunctionManagerIdConstraint, ODCheckerManager, ODCheckerManagerIdConstraint, ODCheckerRenderer } from "./modules/checker"
+import { ODEnvHelper, ODProjectType, ODVersion, ODVersionManager } from "./modules/base"
+import { ODConsoleManager, ODConsoleMessage, ODConsoleMessageParam, ODConsoleMessageTypes, ODDebugFileManager, ODDebugger, ODError, ODLiveStatusManager } from "./modules/console"
+import { ODCheckerManager } from "./modules/checker"
 import { ODEventManager } from "./modules/event"
 import { ODPluginManager } from "./modules/plugin"
 import { ODFlagManager } from "./modules/flag"
 import { ODProgressBarManager } from "./modules/progressbar"
-import { ODConfigManager, ODConfigManagerIdConstraint } from "./modules/config"
-import { ODDatabaseManager, ODDatabaseManagerIdConstraint } from "./modules/database"
+import { ODConfigManager } from "./modules/config"
+import { ODDatabaseManager } from "./modules/database"
 import { ODSessionManager } from "./modules/session"
 import { ODLanguageManager } from "./modules/language"
-import { ODBuilderManager, ODButtonManagerIdConstraint, ODDropdownManagerIdConstraint, ODEmbedManagerIdConstraint, ODFileManagerIdConstraint, ODMessageManagerIdConstraint, ODModalManagerIdConstraint } from "./modules/builder"
+import { ODBuilderManager } from "./modules/builder"
 import { ODResponderManager } from "./modules/responder"
-import { ODActionManager, ODActionManagerIdConstraint } from "./modules/action"
+import { ODActionManager } from "./modules/action"
 import { ODVerifyBarManager } from "./modules/verifybar"
 import { ODPermissionManager } from "./modules/permission"
-import { ODCooldownManager, ODCooldownManagerIdConstraint } from "./modules/cooldown"
+import { ODCooldownManager } from "./modules/cooldown"
 import { ODHelpMenuManager } from "./modules/helpmenu"
-import { ODStatsManager } from "./modules/stat"
-import { ODCodeManager, ODCodeManagerIdConstraint } from "./modules/code"
+import { ODStatisticManager } from "./modules/statistic"
+import { ODCodeManager } from "./modules/code"
 import { ODPostManager } from "./modules/post"
-import { ODClientManager, ODContextMenuManagerIdConstraint, ODSlashCommandManagerIdConstraint, ODTextCommandManagerIdConstraint } from "./modules/client"
+import { ODClientManager } from "./modules/client"
 import { ODSharedFuseManager } from "./modules/fuse"
 import { ODStartScreenManager } from "./modules/startscreen"
 
@@ -77,7 +77,7 @@ export interface ODMainManagers {
     /**The manager that manages & renders the Open Discord help menu. (not the embed, but the text) */
     helpmenu: ODHelpMenuManager
     /**The manager that manages, saves & renders the Open Discord statistics. (not the embed, but the text & database) */
-    stats: ODStatsManager
+    statistics: ODStatisticManager
     /**This manager is a place where you can put code that executes when the bot almost finishes the setup. (can be used for less important stuff that doesn't require an exact time-order) */
     code: ODCodeManager
     /**The manager that manages all posts (static discord channels) in the bot. (e.g. transcripts, logs, etc) */
@@ -129,7 +129,7 @@ export class ODMain implements ODMainManagers {
     readonly permissions: ODPermissionManager
     readonly cooldowns: ODCooldownManager
     readonly helpmenu: ODHelpMenuManager
-    readonly stats: ODStatsManager
+    readonly statistics: ODStatisticManager
     readonly code: ODCodeManager
     readonly posts: ODPostManager
     
@@ -167,7 +167,7 @@ export class ODMain implements ODMainManagers {
         this.permissions = managers.permissions
         this.cooldowns = managers.cooldowns
         this.helpmenu = managers.helpmenu
-        this.stats = managers.stats
+        this.statistics = managers.statistics
         this.code = managers.code
         this.posts = managers.posts
         

@@ -212,12 +212,12 @@ export interface ODSharedFuseList {
     /**Load the default Open Discord help menu components. */
     helpMenuComponentLoading:boolean,
 
-    /**Load the default Open Discord stat scopes. */
-    statScopesLoading:boolean,
-    /**Load the default Open Discord stats. */
-    statLoading:boolean,
-    /**Initiate the default Open Discord stats. */
-    statInitiating:boolean,
+    /**Load the default Open Discord statistic scopes. */
+    statisticScopesLoading:boolean,
+    /**Load the default Open Discord statistics. */
+    statisticLoading:boolean,
+    /**Initiate the default Open Discord statistics. */
+    statisticInitiating:boolean,
 
     /**Load the default Open Discord code/functions. */
     codeLoading:boolean,
@@ -329,9 +329,9 @@ export class ODSharedFuseManager extends ODFuseManager<ODSharedFuseList> {
             helpMenuCategoryLoading:true,
             helpMenuComponentLoading:true,
 
-            statScopesLoading:true,
-            statLoading:true,
-            statInitiating:true,
+            statisticScopesLoading:true,
+            statisticLoading:true,
+            statisticInitiating:true,
 
             codeLoading:true,
             codeExecution:true,
