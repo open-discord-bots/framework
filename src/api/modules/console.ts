@@ -116,67 +116,67 @@ export class ODConsoleMessage {
     }
 }
 
-/**## ODConsoleInfoMessage `class`
+/**## ODInfoConsoleMessage `class`
  * This is an Open Discord console info message.
  * 
  * It is the same as a normal `ODConsoleMessage`, but it has a predefined prefix & color scheme for the "INFO" messages!
  */
-export class ODConsoleInfoMessage extends ODConsoleMessage {
+export class ODInfoConsoleMessage extends ODConsoleMessage {
     constructor(message:string,params?:ODConsoleMessageParam[]){
         super(message,"INFO","blue",params)
     }
 }
 
-/**## ODConsoleSystemMessage `class`
+/**## ODSystemConsoleMessage `class`
  * This is an Open Discord console system message.
  * 
  * It is the same as a normal `ODConsoleMessage`, but it has a predefined prefix & color scheme for the "SYSTEM" messages!
  */
-export class ODConsoleSystemMessage extends ODConsoleMessage {
+export class ODSystemConsoleMessage extends ODConsoleMessage {
     constructor(message:string,params?:ODConsoleMessageParam[]){
         super(message,"SYSTEM","green",params)
     }
 }
 
-/**## ODConsolePluginMessage `class`
+/**## ODPluginConsoleMessage `class`
  * This is an Open Discord console plugin message.
  * 
  * It is the same as a normal `ODConsoleMessage`, but it has a predefined prefix & color scheme for the "PLUGIN" messages!
  */
-export class ODConsolePluginMessage extends ODConsoleMessage {
+export class ODPluginConsoleMessage extends ODConsoleMessage {
     constructor(message:string,params?:ODConsoleMessageParam[]){
         super(message,"PLUGIN","magenta",params)
     }
 }
 
-/**## ODConsoleDebugMessage `class`
+/**## ODDebugConsoleMessage `class`
  * This is an Open Discord console debug message.
  * 
  * It is the same as a normal `ODConsoleMessage`, but it has a predefined prefix & color scheme for the "DEBUG" messages!
  */
-export class ODConsoleDebugMessage extends ODConsoleMessage {
+export class ODDebugConsoleMessage extends ODConsoleMessage {
     constructor(message:string,params?:ODConsoleMessageParam[]){
         super(message,"DEBUG","cyan",params)
     }
 }
 
-/**## ODConsoleWarningMessage `class`
+/**## ODWarningConsoleMessage `class`
  * This is an Open Discord console warning message.
  * 
  * It is the same as a normal `ODConsoleMessage`, but it has a predefined prefix & color scheme for the "WARNING" messages!
  */
-export class ODConsoleWarningMessage extends ODConsoleMessage {
+export class ODWarningConsoleMessage extends ODConsoleMessage {
     constructor(message:string,params?:ODConsoleMessageParam[]){
         super(message,"WARNING","yellow",params)
     }
 }
 
-/**## ODConsoleErrorMessage `class`
+/**## ODErrorConsoleMessage `class`
  * This is an Open Discord console error message.
  * 
  * It is the same as a normal `ODConsoleMessage`, but it has a predefined prefix & color scheme for the "ERROR" messages!
  */
-export class ODConsoleErrorMessage extends ODConsoleMessage {
+export class ODErrorConsoleMessage extends ODConsoleMessage {
     constructor(message:string,params?:ODConsoleMessageParam[]){
         super(message,"ERROR","red",params)
     }
@@ -266,13 +266,13 @@ export class ODConsoleManager {
             
         }else if (["string","number","boolean","object"].includes(typeof message)){
             let newMessage: ODConsoleMessage
-            if (type == "info") newMessage = new ODConsoleInfoMessage(message,params)
-            else if (type == "system") newMessage = new ODConsoleSystemMessage(message,params)
-            else if (type == "plugin") newMessage = new ODConsolePluginMessage(message,params)
-            else if (type == "debug") newMessage = new ODConsoleDebugMessage(message,params)
-            else if (type == "warning") newMessage = new ODConsoleWarningMessage(message,params)
-            else if (type == "error") newMessage = new ODConsoleErrorMessage(message,params)
-            else newMessage = new ODConsoleSystemMessage(message,params)
+            if (type == "info") newMessage = new ODInfoConsoleMessage(message,params)
+            else if (type == "system") newMessage = new ODSystemConsoleMessage(message,params)
+            else if (type == "plugin") newMessage = new ODPluginConsoleMessage(message,params)
+            else if (type == "debug") newMessage = new ODDebugConsoleMessage(message,params)
+            else if (type == "warning") newMessage = new ODWarningConsoleMessage(message,params)
+            else if (type == "error") newMessage = new ODErrorConsoleMessage(message,params)
+            else newMessage = new ODSystemConsoleMessage(message,params)
 
             if (!this.silent) newMessage.render()
             if (this.debugfile) this.debugfile.writeConsoleMessage(newMessage)
@@ -422,10 +422,10 @@ export class ODDebugger {
     /**Create a debug message. This will always be logged to `debug.txt` & sometimes to the console (when enabled). Returns `true` when visible */
     debug(message:string, params?:{key:string,value:string}[]): boolean {
         if (this.visible){
-            this.console.log(new ODConsoleDebugMessage(message,params))
+            this.console.log(new ODDebugConsoleMessage(message,params))
             return true
         }else{
-            this.console.debugfile.writeConsoleMessage(new ODConsoleDebugMessage(message,params))
+            this.console.debugfile.writeConsoleMessage(new ODDebugConsoleMessage(message,params))
             return false
         }
     }

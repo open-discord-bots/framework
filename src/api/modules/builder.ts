@@ -13,9 +13,9 @@ import { ODDebugger } from "./console"
  * 
  * This class can't be used stand-alone & needs to be extended from!
  */
-export class ODBuilderImplementation<Instance,Source extends string,Params,BuildType extends {id:ODId},WorkerIds extends string = string> extends ODManagerData {
+export class ODBuilderImplementation<Instance,Origin extends string,Params,BuildType extends {id:ODId},WorkerIds extends string = string> extends ODManagerData {
     /**The manager that has all workers of this implementation */
-    workers: ODWorkerManager<Instance,Source,Params,WorkerIds>
+    workers: ODWorkerManager<Instance,Origin,Params,WorkerIds>
     /**Cache a build or create it every time from scratch when this.build() gets executed. */
     allowCache: boolean = false
     /**Did the build already got created/cached? */
@@ -23,7 +23,7 @@ export class ODBuilderImplementation<Instance,Source extends string,Params,Build
     /**The cache of this build. */
     cache:BuildType|null = null
 
-    constructor(id:ODValidId, callback?:ODWorkerCallback<Instance,Source,Params>, priority?:number, callbackId?:ODValidId){
+    constructor(id:ODValidId, callback?:ODWorkerCallback<Instance,Origin,Params>, priority?:number, callbackId?:ODValidId){
         super(id)
         this.workers = new ODWorkerManager("ascending")
         if (callback) this.workers.add(new ODWorker(callbackId ? callbackId : id,priority ?? 0,callback))
@@ -42,7 +42,7 @@ export class ODBuilderImplementation<Instance,Source extends string,Params,Build
         return this
     }
     /**Execute all workers & return the result. */
-    async build(source:Source, params:Params): Promise<BuildType> {
+    async build(origin:Origin, params:Params): Promise<BuildType> {
         throw new ODSystemError("Tried to build an unimplemented ODBuilderImplementation")
     }
 }
@@ -58,7 +58,7 @@ export class ODBuilderImplementation<Instance,Source extends string,Params,Build
  * - independent workers (with priority)
  * - fail-safe design using try-catch
  * - cache frequently used objects
- * - get to know the source of the build request for a specific message, button, etc
+ * - get to know the origin of the build request for a specific message, button, etc
  * - And so much more!
  */
 export class ODBuilderManager<
@@ -105,7 +105,7 @@ export interface ODComponentBuildResult {
 /**## ODButtonManagerIdConstraint `type`
  * The constraint/layout for id mappings/interfaces of the `ODButtonManager` class.
  */
-export type ODButtonManagerIdConstraint = Record<string,{source:string,params:object,workers:string}>
+export type ODButtonManagerIdConstraint = Record<string,{origin:string,params:object,workers:string}>
 
 /**## ODButtonManager `class`
  * This is an Open Discord button manager.
@@ -117,7 +117,7 @@ export type ODButtonManagerIdConstraint = Record<string,{source:string,params:ob
 export class ODButtonManager<IdList extends ODButtonManagerIdConstraint = ODButtonManagerIdConstraint> extends ODManagerWithSafety<ODButton<string,{},string>> {
     constructor(debug:ODDebugger){
         super(() => {
-            return new ODButton("opendiscord:unknown-button",(instance,params,source,cancel) => {
+            return new ODButton("opendiscord:unknown-button",(instance,params,origin,cancel) => {
                 instance.setCustomId("od:unknown-button")
                 instance.setMode("button")
                 instance.setColor("red")
@@ -137,14 +137,14 @@ export class ODButtonManager<IdList extends ODButtonManagerIdConstraint = ODButt
         }
     }
 
-    get<ButtonId extends keyof ODNoGeneric<IdList>>(id:ButtonId): ODButton<IdList[ButtonId]["source"],IdList[ButtonId]["params"],IdList[ButtonId]["workers"]>
+    get<ButtonId extends keyof ODNoGeneric<IdList>>(id:ButtonId): ODButton<IdList[ButtonId]["origin"],IdList[ButtonId]["params"],IdList[ButtonId]["workers"]>
     get(id:ODValidId): ODButton<string,{},string>|null
     
     get(id:ODValidId): ODButton<string,{},string>|null {
         return super.get(id)
     }
 
-    remove<ButtonId extends keyof ODNoGeneric<IdList>>(id:ButtonId): ODButton<IdList[ButtonId]["source"],IdList[ButtonId]["params"],IdList[ButtonId]["workers"]>
+    remove<ButtonId extends keyof ODNoGeneric<IdList>>(id:ButtonId): ODButton<IdList[ButtonId]["origin"],IdList[ButtonId]["params"],IdList[ButtonId]["workers"]>
     remove(id:ODValidId): ODButton<string,{},string>|null
     
     remove(id:ODValidId): ODButton<string,{},string>|null {
@@ -158,7 +158,7 @@ export class ODButtonManager<IdList extends ODButtonManagerIdConstraint = ODButt
         return super.exists(id)
     }
 
-    getSafe<ButtonId extends keyof ODNoGeneric<IdList>>(id:ButtonId): ODButton<IdList[ButtonId]["source"],IdList[ButtonId]["params"],IdList[ButtonId]["workers"]>
+    getSafe<ButtonId extends keyof ODNoGeneric<IdList>>(id:ButtonId): ODButton<IdList[ButtonId]["origin"],IdList[ButtonId]["params"],IdList[ButtonId]["workers"]>
     getSafe(id:ODValidId): ODButton<string,{},string>
     
     getSafe(id:ODValidId): ODButton<string,{},string> {
@@ -248,9 +248,9 @@ export class ODButtonInstance {
  * 
  * This is possible by using "workers" or multiple functions that will be executed in priority order!
  */
-export class ODButton<Source extends string,Params,WorkerIds extends string = string> extends ODBuilderImplementation<ODButtonInstance,Source,Params,ODComponentBuildResult,WorkerIds> {
+export class ODButton<Origin extends string,Params,WorkerIds extends string = string> extends ODBuilderImplementation<ODButtonInstance,Origin,Params,ODComponentBuildResult,WorkerIds> {
     /**Build this button & compile it for discord.js */
-    async build(source:Source, params:Params): Promise<ODComponentBuildResult> {
+    async build(origin:Origin, params:Params): Promise<ODComponentBuildResult> {
         if (this.didCache && this.cache && this.allowCache) return this.cache
         
         try {
@@ -258,7 +258,7 @@ export class ODButton<Source extends string,Params,WorkerIds extends string = st
             const instance = new ODButtonInstance()
 
             //wait for workers to finish
-            await this.workers.executeWorkers(instance,source,params)
+            await this.workers.executeWorkers(instance,origin,params)
 
             //create the discord.js button
             const button = new discord.ButtonBuilder()
@@ -334,7 +334,7 @@ export class ODQuickButton {
 /**## ODDropdownManagerIdConstraint `type`
  * The constraint/layout for id mappings/interfaces of the `ODDropdownManager` class.
  */
-export type ODDropdownManagerIdConstraint = Record<string,{source:string,params:object,workers:string}>
+export type ODDropdownManagerIdConstraint = Record<string,{origin:string,params:object,workers:string}>
 
 /**## ODDropdownManager `class`
  * This is an Open Discord dropdown manager.
@@ -346,7 +346,7 @@ export type ODDropdownManagerIdConstraint = Record<string,{source:string,params:
 export class ODDropdownManager<IdList extends ODDropdownManagerIdConstraint = ODDropdownManagerIdConstraint> extends ODManagerWithSafety<ODDropdown<string,{},string>> {
     constructor(debug:ODDebugger){
         super(() => {
-            return new ODDropdown("opendiscord:unknown-dropdown",(instance,params,source,cancel) => {
+            return new ODDropdown("opendiscord:unknown-dropdown",(instance,params,origin,cancel) => {
                 instance.setCustomId("od:unknown-dropdown")
                 instance.setType("string")
                 instance.setPlaceholder("❌ <ODError:Unknown Dropdown>")
@@ -367,14 +367,14 @@ export class ODDropdownManager<IdList extends ODDropdownManagerIdConstraint = OD
         }
     }
 
-    get<DropdownId extends keyof ODNoGeneric<IdList>>(id:DropdownId): ODDropdown<IdList[DropdownId]["source"],IdList[DropdownId]["params"],IdList[DropdownId]["workers"]>
+    get<DropdownId extends keyof ODNoGeneric<IdList>>(id:DropdownId): ODDropdown<IdList[DropdownId]["origin"],IdList[DropdownId]["params"],IdList[DropdownId]["workers"]>
     get(id:ODValidId): ODDropdown<string,{},string>|null
     
     get(id:ODValidId): ODDropdown<string,{},string>|null {
         return super.get(id)
     }
 
-    remove<DropdownId extends keyof ODNoGeneric<IdList>>(id:DropdownId): ODDropdown<IdList[DropdownId]["source"],IdList[DropdownId]["params"],IdList[DropdownId]["workers"]>
+    remove<DropdownId extends keyof ODNoGeneric<IdList>>(id:DropdownId): ODDropdown<IdList[DropdownId]["origin"],IdList[DropdownId]["params"],IdList[DropdownId]["workers"]>
     remove(id:ODValidId): ODDropdown<string,{},string>|null
     
     remove(id:ODValidId): ODDropdown<string,{},string>|null {
@@ -388,7 +388,7 @@ export class ODDropdownManager<IdList extends ODDropdownManagerIdConstraint = OD
         return super.exists(id)
     }
 
-    getSafe<DropdownId extends keyof ODNoGeneric<IdList>>(id:DropdownId): ODDropdown<IdList[DropdownId]["source"],IdList[DropdownId]["params"],IdList[DropdownId]["workers"]>
+    getSafe<DropdownId extends keyof ODNoGeneric<IdList>>(id:DropdownId): ODDropdown<IdList[DropdownId]["origin"],IdList[DropdownId]["params"],IdList[DropdownId]["workers"]>
     getSafe(id:ODValidId): ODDropdown<string,{},string>
     
     getSafe(id:ODValidId): ODDropdown<string,{},string> {
@@ -520,9 +520,9 @@ export class ODDropdownInstance {
  * 
  * This is possible by using "workers" or multiple functions that will be executed in priority order!
  */
-export class ODDropdown<Source extends string,Params,WorkerIds extends string = string> extends ODBuilderImplementation<ODDropdownInstance,Source,Params,ODComponentBuildResult,WorkerIds> {
+export class ODDropdown<Origin extends string,Params,WorkerIds extends string = string> extends ODBuilderImplementation<ODDropdownInstance,Origin,Params,ODComponentBuildResult,WorkerIds> {
     /**Build this dropdown & compile it for discord.js */
-    async build(source:Source, params:Params): Promise<ODComponentBuildResult> {
+    async build(origin:Origin, params:Params): Promise<ODComponentBuildResult> {
         if (this.didCache && this.cache && this.allowCache) return this.cache
         
         try{
@@ -530,7 +530,7 @@ export class ODDropdown<Source extends string,Params,WorkerIds extends string = 
             const instance = new ODDropdownInstance()
 
             //wait for workers to finish
-            await this.workers.executeWorkers(instance,source,params)
+            await this.workers.executeWorkers(instance,origin,params)
 
             //create the discord.js dropdown
             if (instance.data.type == "string"){
@@ -724,7 +724,7 @@ export class ODQuickDropdown {
 /**## ODFileManagerIdConstraint `type`
  * The constraint/layout for id mappings/interfaces of the `ODFileManager` class.
  */
-export type ODFileManagerIdConstraint = Record<string,{source:string,params:object,workers:string}>
+export type ODFileManagerIdConstraint = Record<string,{origin:string,params:object,workers:string}>
 
 /**## ODFileManager `class`
  * This is an Open Discord file manager.
@@ -736,7 +736,7 @@ export type ODFileManagerIdConstraint = Record<string,{source:string,params:obje
 export class ODFileManager<IdList extends ODFileManagerIdConstraint = ODFileManagerIdConstraint> extends ODManagerWithSafety<ODFile<string,{},string>> {
     constructor(debug:ODDebugger){
         super(() => {
-            return new ODFile("opendiscord:unknown-file",(instance,params,source,cancel) => {
+            return new ODFile("opendiscord:unknown-file",(instance,params,origin,cancel) => {
                 instance.setName("opendiscord_unknown-file.txt")
                 instance.setDescription("❌ <ODError:Unknown File>")
                 instance.setContents("Couldn't find file in registery `opendiscord.builders.files`")
@@ -745,14 +745,14 @@ export class ODFileManager<IdList extends ODFileManagerIdConstraint = ODFileMana
         },debug,"file")
     }
 
-    get<FileId extends keyof ODNoGeneric<IdList>>(id:FileId): ODFile<IdList[FileId]["source"],IdList[FileId]["params"],IdList[FileId]["workers"]>
+    get<FileId extends keyof ODNoGeneric<IdList>>(id:FileId): ODFile<IdList[FileId]["origin"],IdList[FileId]["params"],IdList[FileId]["workers"]>
     get(id:ODValidId): ODFile<string,{},string>|null
     
     get(id:ODValidId): ODFile<string,{},string>|null {
         return super.get(id)
     }
 
-    remove<FileId extends keyof ODNoGeneric<IdList>>(id:FileId): ODFile<IdList[FileId]["source"],IdList[FileId]["params"],IdList[FileId]["workers"]>
+    remove<FileId extends keyof ODNoGeneric<IdList>>(id:FileId): ODFile<IdList[FileId]["origin"],IdList[FileId]["params"],IdList[FileId]["workers"]>
     remove(id:ODValidId): ODFile<string,{},string>|null
     
     remove(id:ODValidId): ODFile<string,{},string>|null {
@@ -766,7 +766,7 @@ export class ODFileManager<IdList extends ODFileManagerIdConstraint = ODFileMana
         return super.exists(id)
     }
 
-    getSafe<FileId extends keyof ODNoGeneric<IdList>>(id:FileId): ODFile<IdList[FileId]["source"],IdList[FileId]["params"],IdList[FileId]["workers"]>
+    getSafe<FileId extends keyof ODNoGeneric<IdList>>(id:FileId): ODFile<IdList[FileId]["origin"],IdList[FileId]["params"],IdList[FileId]["workers"]>
     getSafe(id:ODValidId): ODFile<string,{},string>
     
     getSafe(id:ODValidId): ODFile<string,{},string> {
@@ -847,9 +847,9 @@ export class ODFileInstance {
  * 
  * This is possible by using "workers" or multiple functions that will be executed in priority order!
  */
-export class ODFile<Source extends string,Params,WorkerIds extends string = string> extends ODBuilderImplementation<ODFileInstance,Source,Params,ODFileBuildResult,WorkerIds> {
+export class ODFile<Origin extends string,Params,WorkerIds extends string = string> extends ODBuilderImplementation<ODFileInstance,Origin,Params,ODFileBuildResult,WorkerIds> {
     /**Build this attachment & compile it for discord.js */
-    async build(source:Source, params:Params): Promise<ODFileBuildResult> {
+    async build(origin:Origin, params:Params): Promise<ODFileBuildResult> {
         if (this.didCache && this.cache && this.allowCache) return this.cache
         
         try{
@@ -857,7 +857,7 @@ export class ODFile<Source extends string,Params,WorkerIds extends string = stri
             const instance = new ODFileInstance()
 
             //wait for workers to finish
-            await this.workers.executeWorkers(instance,source,params)
+            await this.workers.executeWorkers(instance,origin,params)
 
             //create the discord.js attachment
             const file = new discord.AttachmentBuilder(instance.data.file)
@@ -917,7 +917,7 @@ export class ODQuickFile {
 /**## ODEmbedManagerIdConstraint `type`
  * The constraint/layout for id mappings/interfaces of the `ODEmbedManager` class.
  */
-export type ODEmbedManagerIdConstraint = Record<string,{source:string,params:object,workers:string}>
+export type ODEmbedManagerIdConstraint = Record<string,{origin:string,params:object,workers:string}>
 
 /**## ODEmbedManager `class`
  * This is an Open Discord embed manager.
@@ -929,7 +929,7 @@ export type ODEmbedManagerIdConstraint = Record<string,{source:string,params:obj
 export class ODEmbedManager<IdList extends ODEmbedManagerIdConstraint = ODEmbedManagerIdConstraint> extends ODManagerWithSafety<ODEmbed<string,{},string>> {
     constructor(debug:ODDebugger){
         super(() => {
-            return new ODEmbed("opendiscord:unknown-embed",(instance,params,source,cancel) => {
+            return new ODEmbed("opendiscord:unknown-embed",(instance,params,origin,cancel) => {
                 instance.setFooter("opendiscord:unknown-embed")
                 instance.setColor("#ff0000")
                 instance.setTitle("❌ <ODError:Unknown Embed>")
@@ -939,14 +939,14 @@ export class ODEmbedManager<IdList extends ODEmbedManagerIdConstraint = ODEmbedM
         },debug,"embed")
     }
 
-    get<EmbedId extends keyof ODNoGeneric<IdList>>(id:EmbedId): ODEmbed<IdList[EmbedId]["source"],IdList[EmbedId]["params"],IdList[EmbedId]["workers"]>
+    get<EmbedId extends keyof ODNoGeneric<IdList>>(id:EmbedId): ODEmbed<IdList[EmbedId]["origin"],IdList[EmbedId]["params"],IdList[EmbedId]["workers"]>
     get(id:ODValidId): ODEmbed<string,{},string>|null
     
     get(id:ODValidId): ODEmbed<string,{},string>|null {
         return super.get(id)
     }
 
-    remove<EmbedId extends keyof ODNoGeneric<IdList>>(id:EmbedId): ODEmbed<IdList[EmbedId]["source"],IdList[EmbedId]["params"],IdList[EmbedId]["workers"]>
+    remove<EmbedId extends keyof ODNoGeneric<IdList>>(id:EmbedId): ODEmbed<IdList[EmbedId]["origin"],IdList[EmbedId]["params"],IdList[EmbedId]["workers"]>
     remove(id:ODValidId): ODEmbed<string,{},string>|null
     
     remove(id:ODValidId): ODEmbed<string,{},string>|null {
@@ -960,7 +960,7 @@ export class ODEmbedManager<IdList extends ODEmbedManagerIdConstraint = ODEmbedM
         return super.exists(id)
     }
 
-    getSafe<EmbedId extends keyof ODNoGeneric<IdList>>(id:EmbedId): ODEmbed<IdList[EmbedId]["source"],IdList[EmbedId]["params"],IdList[EmbedId]["workers"]>
+    getSafe<EmbedId extends keyof ODNoGeneric<IdList>>(id:EmbedId): ODEmbed<IdList[EmbedId]["origin"],IdList[EmbedId]["params"],IdList[EmbedId]["workers"]>
     getSafe(id:ODValidId): ODEmbed<string,{},string>
     
     getSafe(id:ODValidId): ODEmbed<string,{},string> {
@@ -1118,9 +1118,9 @@ export class ODEmbedInstance {
  * 
  * This is possible by using "workers" or multiple functions that will be executed in priority order!
  */
-export class ODEmbed<Source extends string,Params,WorkerIds extends string = string> extends ODBuilderImplementation<ODEmbedInstance,Source,Params,ODEmbedBuildResult,WorkerIds> {
+export class ODEmbed<Origin extends string,Params,WorkerIds extends string = string> extends ODBuilderImplementation<ODEmbedInstance,Origin,Params,ODEmbedBuildResult,WorkerIds> {
     /**Build this embed & compile it for discord.js */
-    async build(source:Source, params:Params): Promise<ODEmbedBuildResult> {
+    async build(origin:Origin, params:Params): Promise<ODEmbedBuildResult> {
         if (this.didCache && this.cache && this.allowCache) return this.cache
         
         try{
@@ -1128,7 +1128,7 @@ export class ODEmbed<Source extends string,Params,WorkerIds extends string = str
             const instance = new ODEmbedInstance()
 
             //wait for workers to finish
-            await this.workers.executeWorkers(instance,source,params)
+            await this.workers.executeWorkers(instance,origin,params)
 
             //create the discord.js embed
             const embed = new discord.EmbedBuilder()
@@ -1215,7 +1215,7 @@ export class ODQuickEmbed {
 /**## ODMessageManagerIdConstraint `type`
  * The constraint/layout for id mappings/interfaces of the `ODMessageManager` class.
  */
-export type ODMessageManagerIdConstraint = Record<string,{source:string,params:object,workers:string}>
+export type ODMessageManagerIdConstraint = Record<string,{origin:string,params:object,workers:string}>
 
 /**## ODMessageManager `class`
  * This is an Open Discord message manager.
@@ -1227,21 +1227,21 @@ export type ODMessageManagerIdConstraint = Record<string,{source:string,params:o
 export class ODMessageManager<IdList extends ODMessageManagerIdConstraint = ODMessageManagerIdConstraint> extends ODManagerWithSafety<ODMessage<string,{},string>> {
     constructor(debug:ODDebugger){
         super(() => {
-            return new ODMessage("opendiscord:unknown-message",(instance,params,source,cancel) => {
+            return new ODMessage("opendiscord:unknown-message",(instance,params,origin,cancel) => {
                 instance.setContent("**❌ <ODError:Unknown Message>**\nCouldn't find message in registery `opendiscord.builders.messages`")
                 cancel()
             })
         },debug,"message")
     }
 
-    get<MessageId extends keyof ODNoGeneric<IdList>>(id:MessageId): ODMessage<IdList[MessageId]["source"],IdList[MessageId]["params"],IdList[MessageId]["workers"]>
+    get<MessageId extends keyof ODNoGeneric<IdList>>(id:MessageId): ODMessage<IdList[MessageId]["origin"],IdList[MessageId]["params"],IdList[MessageId]["workers"]>
     get(id:ODValidId): ODMessage<string,{},string>|null
     
     get(id:ODValidId): ODMessage<string,{},string>|null {
         return super.get(id)
     }
 
-    remove<MessageId extends keyof ODNoGeneric<IdList>>(id:MessageId): ODMessage<IdList[MessageId]["source"],IdList[MessageId]["params"],IdList[MessageId]["workers"]>
+    remove<MessageId extends keyof ODNoGeneric<IdList>>(id:MessageId): ODMessage<IdList[MessageId]["origin"],IdList[MessageId]["params"],IdList[MessageId]["workers"]>
     remove(id:ODValidId): ODMessage<string,{},string>|null
     
     remove(id:ODValidId): ODMessage<string,{},string>|null {
@@ -1255,7 +1255,7 @@ export class ODMessageManager<IdList extends ODMessageManagerIdConstraint = ODMe
         return super.exists(id)
     }
 
-    getSafe<MessageId extends keyof ODNoGeneric<IdList>>(id:MessageId): ODMessage<IdList[MessageId]["source"],IdList[MessageId]["params"],IdList[MessageId]["workers"]>
+    getSafe<MessageId extends keyof ODNoGeneric<IdList>>(id:MessageId): ODMessage<IdList[MessageId]["origin"],IdList[MessageId]["params"],IdList[MessageId]["workers"]>
     getSafe(id:ODValidId): ODMessage<string,{},string>
     
     getSafe(id:ODValidId): ODMessage<string,{},string> {
@@ -1415,16 +1415,16 @@ export class ODMessageInstance {
  * 
  * This is possible by using "workers" or multiple functions that will be executed in priority order!
  */
-export class ODMessage<Source extends string,Params,WorkerIds extends string = string> extends ODBuilderImplementation<ODMessageInstance,Source,Params,ODMessageBuildResult,WorkerIds> {
+export class ODMessage<Origin extends string,Params,WorkerIds extends string = string> extends ODBuilderImplementation<ODMessageInstance,Origin,Params,ODMessageBuildResult,WorkerIds> {
     /**Build this message & compile it for discord.js */
-    async build(source:Source, params:Params){
+    async build(origin:Origin, params:Params){
         if (this.didCache && this.cache && this.allowCache) return this.cache
         
         //create instance
         const instance = new ODMessageInstance()
 
         //wait for workers to finish
-        await this.workers.executeWorkers(instance,source,params)
+        await this.workers.executeWorkers(instance,origin,params)
 
         //create the discord.js message
         const componentArray: discord.ActionRowBuilder<discord.MessageActionRowComponentBuilder>[] = []
@@ -1561,7 +1561,7 @@ export class ODQuickMessage {
 /**## ODModalManagerIdConstraint `type`
  * The constraint/layout for id mappings/interfaces of the `ODModalManager` class.
  */
-export type ODModalManagerIdConstraint = Record<string,{source:string,params:object,workers:string}>
+export type ODModalManagerIdConstraint = Record<string,{origin:string,params:object,workers:string}>
 
 /**## ODModalManager `class`
  * This is an Open Discord modal manager.
@@ -1573,7 +1573,7 @@ export type ODModalManagerIdConstraint = Record<string,{source:string,params:obj
 export class ODModalManager<IdList extends ODModalManagerIdConstraint = ODModalManagerIdConstraint> extends ODManagerWithSafety<ODModal<string,{},string>> {
     constructor(debug:ODDebugger){
         super(() => {
-            return new ODModal("opendiscord:unknown-modal",(instance,params,source,cancel) => {
+            return new ODModal("opendiscord:unknown-modal",(instance,params,origin,cancel) => {
                 instance.setCustomId("od:unknown-modal")
                 instance.setTitle("❌ <ODError:Unknown Modal>")
                 instance.setQuestions(
@@ -1589,14 +1589,14 @@ export class ODModalManager<IdList extends ODModalManagerIdConstraint = ODModalM
         },debug,"modal")
     }
 
-    get<ModalId extends keyof ODNoGeneric<IdList>>(id:ModalId): ODModal<IdList[ModalId]["source"],IdList[ModalId]["params"],IdList[ModalId]["workers"]>
+    get<ModalId extends keyof ODNoGeneric<IdList>>(id:ModalId): ODModal<IdList[ModalId]["origin"],IdList[ModalId]["params"],IdList[ModalId]["workers"]>
     get(id:ODValidId): ODModal<string,{},string>|null
     
     get(id:ODValidId): ODModal<string,{},string>|null {
         return super.get(id)
     }
 
-    remove<ModalId extends keyof ODNoGeneric<IdList>>(id:ModalId): ODModal<IdList[ModalId]["source"],IdList[ModalId]["params"],IdList[ModalId]["workers"]>
+    remove<ModalId extends keyof ODNoGeneric<IdList>>(id:ModalId): ODModal<IdList[ModalId]["origin"],IdList[ModalId]["params"],IdList[ModalId]["workers"]>
     remove(id:ODValidId): ODModal<string,{},string>|null
     
     remove(id:ODValidId): ODModal<string,{},string>|null {
@@ -1610,7 +1610,7 @@ export class ODModalManager<IdList extends ODModalManagerIdConstraint = ODModalM
         return super.exists(id)
     }
 
-    getSafe<ModalId extends keyof ODNoGeneric<IdList>>(id:ModalId): ODModal<IdList[ModalId]["source"],IdList[ModalId]["params"],IdList[ModalId]["workers"]>
+    getSafe<ModalId extends keyof ODNoGeneric<IdList>>(id:ModalId): ODModal<IdList[ModalId]["origin"],IdList[ModalId]["params"],IdList[ModalId]["workers"]>
     getSafe(id:ODValidId): ODModal<string,{},string>
     
     getSafe(id:ODValidId): ODModal<string,{},string> {
@@ -1717,16 +1717,16 @@ export class ODModalInstance {
  * 
  * This is possible by using "workers" or multiple functions that will be executed in priority order!
  */
-export class ODModal<Source extends string,Params,WorkerIds extends string = string> extends ODBuilderImplementation<ODModalInstance,Source,Params,ODModalBuildResult,WorkerIds> {
+export class ODModal<Origin extends string,Params,WorkerIds extends string = string> extends ODBuilderImplementation<ODModalInstance,Origin,Params,ODModalBuildResult,WorkerIds> {
     /**Build this modal & compile it for discord.js */
-    async build(source:Source, params:Params){
+    async build(origin:Origin, params:Params){
         if (this.didCache && this.cache && this.allowCache) return this.cache
         
         //create instance
         const instance = new ODModalInstance()
 
         //wait for workers to finish
-        await this.workers.executeWorkers(instance,source,params)
+        await this.workers.executeWorkers(instance,origin,params)
 
         //create the discord.js modal
         const modal = new discord.ModalBuilder()

@@ -2,7 +2,7 @@
 //EVENT MODULE
 ///////////////////////////////////////
 import { ODManagerData, ODManager, ODValidId, ODPromiseVoid, ODNoGeneric } from "./base"
-import { ODConsoleWarningMessage, ODDebugger } from "./console"
+import { ODWarningConsoleMessage, ODDebugger } from "./console"
 
 /**## ODEventCallback `type`
  * The base callback function for events.
@@ -47,7 +47,7 @@ export class ODEvent<Callback extends ODEventCallback = ODEventCallback> extends
         this.listeners.push(callback)
 
         if (this.listeners.length > this.listenerLimit){
-            if (this.#debug) this.#debug.console.log(new ODConsoleWarningMessage("Possible event memory leak detected!",[
+            if (this.#debug) this.#debug.console.log(new ODWarningConsoleMessage("Possible event memory leak detected!",[
                 {key:"event",value:this.id.value},
                 {key:"listeners",value:this.listeners.length.toString()}
             ]))

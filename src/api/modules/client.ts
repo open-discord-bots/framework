@@ -4,7 +4,7 @@
 import { ODId, ODManager, ODManagerData, ODNoGeneric, ODSystemError, ODValidId } from "./base"
 import * as discord from "discord.js"
 import {REST} from "@discordjs/rest"
-import { ODConsoleWarningMessage, ODDebugger } from "./console"
+import { ODWarningConsoleMessage, ODDebugger } from "./console"
 import { ODMessageBuildResult, ODMessageBuildSentResult } from "./builder"
 import { ODManualProgressBar } from "./progressbar"
 
@@ -946,7 +946,7 @@ export class ODSlashCommandManager<IdList extends ODSlashCommandManagerIdConstra
         })
 
         if (this.#interactionListeners.length > this.listenerLimit){
-            this.#debug.console.log(new ODConsoleWarningMessage("Possible slash command interaction memory leak detected!",[
+            this.#debug.console.log(new ODWarningConsoleMessage("Possible slash command interaction memory leak detected!",[
                 {key:"listeners",value:this.#interactionListeners.length.toString()}
             ]))
         }
@@ -1821,7 +1821,7 @@ export class ODTextCommandManager<IdList extends ODTextCommandManagerIdConstrain
         })
 
         if (this.#interactionListeners.length > this.listenerLimit){
-            this.#debug.console.log(new ODConsoleWarningMessage("Possible text command interaction memory leak detected!",[
+            this.#debug.console.log(new ODWarningConsoleMessage("Possible text command interaction memory leak detected!",[
                 {key:"listeners",value:this.#interactionListeners.length.toString()}
             ]))
         }
