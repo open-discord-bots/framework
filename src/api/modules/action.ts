@@ -14,9 +14,9 @@ import { ODDebugger } from "./console"
  */
 export class ODActionImplementation<Source extends string,Params extends object,Result extends object,WorkerIds extends string = string> extends ODManagerData {
     /**The manager that has all workers of this implementation */
-    workers: ODWorkerManager<object,Source,Params,WorkerIds>
+    workers: ODWorkerManager<Partial<Result>,Source,Params,WorkerIds>
 
-    constructor(id:ODValidId, callback?:ODWorkerCallback<object,Source,Params>, priority?:number, callbackId?:ODValidId){
+    constructor(id:ODValidId, callback?:ODWorkerCallback<Result,Source,Params>, priority?:number, callbackId?:ODValidId){
         super(id)
         this.workers = new ODWorkerManager("descending")
         if (callback) this.workers.add(new ODWorker(callbackId ? callbackId : id,priority ?? 0,callback))

@@ -78,7 +78,7 @@ export function checkFrameworkAllowed(project?:ODProjectType){
         if (!fs.existsSync(path)) throw new Error(logTitle+": Project uses invalid structure for Open Discord! (missing: "+path+")")
     }
 
-    const licenseContents = fs.readFileSync("./LICENCE.md").toString()
+    const licenseContents = fs.readFileSync("./LICENSE.md").toString()
     const readmeContents = fs.readFileSync("./README.md").toString()
 
     if (
