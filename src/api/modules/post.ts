@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //POST MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base"
 import { ODMessageBuildResult, ODMessageBuildSentResult } from "./builder"
 import { ODDebugger } from "./console"
 import * as discord from "discord.js"
@@ -39,21 +39,21 @@ export class ODPostManager<IdList extends ODPostManagerIdConstraint = ODPostMana
         }
     }
 
-    get<PostId extends keyof IdList>(id:PostId): IdList[PostId]
+    get<PostId extends keyof ODNoGeneric<IdList>>(id:PostId): IdList[PostId]
     get(id:ODValidId): ODPost<discord.GuildBasedChannel>|null
     
     get(id:ODValidId): ODPost<discord.GuildBasedChannel>|null {
         return super.get(id)
     }
 
-    remove<PostId extends keyof IdList>(id:PostId): IdList[PostId]
+    remove<PostId extends keyof ODNoGeneric<IdList>>(id:PostId): IdList[PostId]
     remove(id:ODValidId): ODPost<discord.GuildBasedChannel>|null
     
     remove(id:ODValidId): ODPost<discord.GuildBasedChannel>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

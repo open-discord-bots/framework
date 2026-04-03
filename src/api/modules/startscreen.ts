@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //STARTSCREEN MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base"
 import { ODDebugger, ODError, ODLiveStatusManager, ODLiveStatusManagerIdConstraint } from "./console"
 import { ODFlag } from "./flag"
 import { ODPlugin, ODUnknownCrashedPlugin } from "./plugin"
@@ -60,21 +60,21 @@ export class ODStartScreenManager<IdList extends ODStartScreenManagerIdConstrain
         }
     }
 
-    get<StartScreenId extends keyof IdList>(id:StartScreenId): IdList[StartScreenId]
+    get<StartScreenId extends keyof ODNoGeneric<IdList>>(id:StartScreenId): IdList[StartScreenId]
     get(id:ODValidId): ODStartScreenComponent|null
     
     get(id:ODValidId): ODStartScreenComponent|null {
         return super.get(id)
     }
 
-    remove<StartScreenId extends keyof IdList>(id:StartScreenId): IdList[StartScreenId]
+    remove<StartScreenId extends keyof ODNoGeneric<IdList>>(id:StartScreenId): IdList[StartScreenId]
     remove(id:ODValidId): ODStartScreenComponent|null
     
     remove(id:ODValidId): ODStartScreenComponent|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

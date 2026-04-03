@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //CONSOLE MODULE
 ///////////////////////////////////////
-import { ODHTTPGetRequest, ODVersion, ODSystemError, ODPluginError, ODManager, ODManagerData, ODValidId } from "./base"
+import { ODHTTPGetRequest, ODVersion, ODSystemError, ODPluginError, ODManager, ODManagerData, ODValidId, ODNoGeneric } from "./base"
 import { ODMain } from "../main"
 import nodepath from "path"
 import fs from "fs"
@@ -620,21 +620,21 @@ export class ODLiveStatusManager<IdList extends ODLiveStatusManagerIdConstraint 
         this.#main = main
     }
 
-    get<LiveStatusId extends keyof IdList>(id:LiveStatusId): IdList[LiveStatusId]
+    get<LiveStatusId extends keyof ODNoGeneric<IdList>>(id:LiveStatusId): IdList[LiveStatusId]
     get(id:ODValidId): ODLiveStatusSource|null
     
     get(id:ODValidId): ODLiveStatusSource|null {
         return super.get(id)
     }
 
-    remove<LiveStatusId extends keyof IdList>(id:LiveStatusId): IdList[LiveStatusId]
+    remove<LiveStatusId extends keyof ODNoGeneric<IdList>>(id:LiveStatusId): IdList[LiveStatusId]
     remove(id:ODValidId): ODLiveStatusSource|null
     
     remove(id:ODValidId): ODLiveStatusSource|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //PLUGIN MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODValidId, ODVersion } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId, ODVersion } from "./base"
 import { ODDebugger } from "./console"
 import nodepath from "path"
 
@@ -47,21 +47,21 @@ export class ODPluginManager<IdList extends ODPluginManagerIdConstraint = ODPlug
         return (plugin !== null && plugin.executed)
     }
 
-    get<PluginId extends keyof IdList>(id:PluginId): IdList[PluginId]
+    get<PluginId extends keyof ODNoGeneric<IdList>>(id:PluginId): IdList[PluginId]
     get(id:ODValidId): ODPlugin|null
     
     get(id:ODValidId): ODPlugin|null {
         return super.get(id)
     }
 
-    remove<PluginId extends keyof IdList>(id:PluginId): IdList[PluginId]
+    remove<PluginId extends keyof ODNoGeneric<IdList>>(id:PluginId): IdList[PluginId]
     remove(id:ODValidId): ODPlugin|null
     
     remove(id:ODValidId): ODPlugin|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
@@ -271,21 +271,21 @@ export class ODPluginClassManager<IdList extends ODPluginClassManagerIdConstrain
         super(debug,"plugin class")
     }
 
-    get<PluginClassId extends keyof IdList>(id:PluginClassId): IdList[PluginClassId]
+    get<PluginClassId extends keyof ODNoGeneric<IdList>>(id:PluginClassId): IdList[PluginClassId]
     get(id:ODValidId): ODManagerData|null
     
     get(id:ODValidId): ODManagerData|null {
         return super.get(id)
     }
 
-    remove<PluginClassId extends keyof IdList>(id:PluginClassId): IdList[PluginClassId]
+    remove<PluginClassId extends keyof ODNoGeneric<IdList>>(id:PluginClassId): IdList[PluginClassId]
     remove(id:ODValidId): ODManagerData|null
     
     remove(id:ODValidId): ODManagerData|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

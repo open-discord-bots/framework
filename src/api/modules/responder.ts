@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //RESPONDER MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODValidId, ODSystemError, ODManagerData } from "./base"
+import { ODId, ODManager, ODValidId, ODSystemError, ODManagerData, ODNoGeneric } from "./base"
 import * as discord from "discord.js"
 import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker"
 import { ODDebugger } from "./console"
@@ -141,21 +141,21 @@ export class ODCommandResponderManager<IdList extends ODCommandResponderManagerI
         return res
     }
 
-    get<CommandResponderId extends keyof IdList>(id:CommandResponderId): ODCommandResponder<IdList[CommandResponderId]["source"],IdList[CommandResponderId]["params"],IdList[CommandResponderId]["workers"]>
+    get<CommandResponderId extends keyof ODNoGeneric<IdList>>(id:CommandResponderId): ODCommandResponder<IdList[CommandResponderId]["source"],IdList[CommandResponderId]["params"],IdList[CommandResponderId]["workers"]>
     get(id:ODValidId): ODCommandResponder<"slash"|"text",any>|null
     
     get(id:ODValidId): ODCommandResponder<"slash"|"text",any>|null {
         return super.get(id)
     }
 
-    remove<CommandResponderId extends keyof IdList>(id:CommandResponderId): ODCommandResponder<IdList[CommandResponderId]["source"],IdList[CommandResponderId]["params"],IdList[CommandResponderId]["workers"]>
+    remove<CommandResponderId extends keyof ODNoGeneric<IdList>>(id:CommandResponderId): ODCommandResponder<IdList[CommandResponderId]["source"],IdList[CommandResponderId]["params"],IdList[CommandResponderId]["workers"]>
     remove(id:ODValidId): ODCommandResponder<"slash"|"text",any>|null
     
     remove(id:ODValidId): ODCommandResponder<"slash"|"text",any>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
@@ -543,21 +543,21 @@ export class ODButtonResponderManager<IdList extends ODButtonResponderManagerIdC
         return res
     }
 
-    get<ButtonResponderId extends keyof IdList>(id:ButtonResponderId): ODButtonResponder<IdList[ButtonResponderId]["source"],IdList[ButtonResponderId]["params"],IdList[ButtonResponderId]["workers"]>
+    get<ButtonResponderId extends keyof ODNoGeneric<IdList>>(id:ButtonResponderId): ODButtonResponder<IdList[ButtonResponderId]["source"],IdList[ButtonResponderId]["params"],IdList[ButtonResponderId]["workers"]>
     get(id:ODValidId): ODButtonResponder<"button",any>|null
     
     get(id:ODValidId): ODButtonResponder<"button",any>|null {
         return super.get(id)
     }
 
-    remove<ButtonResponderId extends keyof IdList>(id:ButtonResponderId): ODButtonResponder<IdList[ButtonResponderId]["source"],IdList[ButtonResponderId]["params"],IdList[ButtonResponderId]["workers"]>
+    remove<ButtonResponderId extends keyof ODNoGeneric<IdList>>(id:ButtonResponderId): ODButtonResponder<IdList[ButtonResponderId]["source"],IdList[ButtonResponderId]["params"],IdList[ButtonResponderId]["workers"]>
     remove(id:ODValidId): ODButtonResponder<"button",any>|null
     
     remove(id:ODValidId): ODButtonResponder<"button",any>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
@@ -767,21 +767,21 @@ export class ODDropdownResponderManager<IdList extends ODDropdownResponderManage
         return res
     }
 
-    get<DropdownResponderId extends keyof IdList>(id:DropdownResponderId): ODDropdownResponder<IdList[DropdownResponderId]["source"],IdList[DropdownResponderId]["params"],IdList[DropdownResponderId]["workers"]>
+    get<DropdownResponderId extends keyof ODNoGeneric<IdList>>(id:DropdownResponderId): ODDropdownResponder<IdList[DropdownResponderId]["source"],IdList[DropdownResponderId]["params"],IdList[DropdownResponderId]["workers"]>
     get(id:ODValidId): ODDropdownResponder<"dropdown",any>|null
     
     get(id:ODValidId): ODDropdownResponder<"dropdown",any>|null {
         return super.get(id)
     }
 
-    remove<DropdownResponderId extends keyof IdList>(id:DropdownResponderId): ODDropdownResponder<IdList[DropdownResponderId]["source"],IdList[DropdownResponderId]["params"],IdList[DropdownResponderId]["workers"]>
+    remove<DropdownResponderId extends keyof ODNoGeneric<IdList>>(id:DropdownResponderId): ODDropdownResponder<IdList[DropdownResponderId]["source"],IdList[DropdownResponderId]["params"],IdList[DropdownResponderId]["workers"]>
     remove(id:ODValidId): ODDropdownResponder<"dropdown",any>|null
     
     remove(id:ODValidId): ODDropdownResponder<"dropdown",any>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
@@ -1082,21 +1082,21 @@ export class ODModalResponderManager<IdList extends ODModalResponderManagerIdCon
         return res
     }
 
-    get<ModalResponderId extends keyof IdList>(id:ModalResponderId): ODModalResponder<IdList[ModalResponderId]["source"],IdList[ModalResponderId]["params"],IdList[ModalResponderId]["workers"]>
+    get<ModalResponderId extends keyof ODNoGeneric<IdList>>(id:ModalResponderId): ODModalResponder<IdList[ModalResponderId]["source"],IdList[ModalResponderId]["params"],IdList[ModalResponderId]["workers"]>
     get(id:ODValidId): ODModalResponder<"modal",any>|null
     
     get(id:ODValidId): ODModalResponder<"modal",any>|null {
         return super.get(id)
     }
 
-    remove<ModalResponderId extends keyof IdList>(id:ModalResponderId): ODModalResponder<IdList[ModalResponderId]["source"],IdList[ModalResponderId]["params"],IdList[ModalResponderId]["workers"]>
+    remove<ModalResponderId extends keyof ODNoGeneric<IdList>>(id:ModalResponderId): ODModalResponder<IdList[ModalResponderId]["source"],IdList[ModalResponderId]["params"],IdList[ModalResponderId]["workers"]>
     remove(id:ODValidId): ODModalResponder<"modal",any>|null
     
     remove(id:ODValidId): ODModalResponder<"modal",any>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
@@ -1282,21 +1282,21 @@ export class ODContextMenuResponderManager<IdList extends ODContextMenuResponder
         return res
     }
 
-    get<ModalResponderId extends keyof IdList>(id:ModalResponderId): ODContextMenuResponder<IdList[ModalResponderId]["source"],IdList[ModalResponderId]["params"],IdList[ModalResponderId]["workers"]>
+    get<ModalResponderId extends keyof ODNoGeneric<IdList>>(id:ModalResponderId): ODContextMenuResponder<IdList[ModalResponderId]["source"],IdList[ModalResponderId]["params"],IdList[ModalResponderId]["workers"]>
     get(id:ODValidId): ODContextMenuResponder<"context-menu",any>|null
     
     get(id:ODValidId): ODContextMenuResponder<"context-menu",any>|null {
         return super.get(id)
     }
 
-    remove<ModalResponderId extends keyof IdList>(id:ModalResponderId): ODContextMenuResponder<IdList[ModalResponderId]["source"],IdList[ModalResponderId]["params"],IdList[ModalResponderId]["workers"]>
+    remove<ModalResponderId extends keyof ODNoGeneric<IdList>>(id:ModalResponderId): ODContextMenuResponder<IdList[ModalResponderId]["source"],IdList[ModalResponderId]["params"],IdList[ModalResponderId]["workers"]>
     remove(id:ODValidId): ODContextMenuResponder<"context-menu",any>|null
     
     remove(id:ODValidId): ODContextMenuResponder<"context-menu",any>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
@@ -1468,21 +1468,21 @@ export class ODAutocompleteResponderManager<IdList extends ODAutocompleteRespond
         return res
     }
 
-    get<AutocompleteResponderId extends keyof IdList>(id:AutocompleteResponderId): ODAutocompleteResponder<IdList[AutocompleteResponderId]["source"],IdList[AutocompleteResponderId]["params"],IdList[AutocompleteResponderId]["workers"]>
+    get<AutocompleteResponderId extends keyof ODNoGeneric<IdList>>(id:AutocompleteResponderId): ODAutocompleteResponder<IdList[AutocompleteResponderId]["source"],IdList[AutocompleteResponderId]["params"],IdList[AutocompleteResponderId]["workers"]>
     get(id:ODValidId): ODAutocompleteResponder<"autocomplete",any>|null
     
     get(id:ODValidId): ODAutocompleteResponder<"autocomplete",any>|null {
         return super.get(id)
     }
 
-    remove<AutocompleteResponderId extends keyof IdList>(id:AutocompleteResponderId): ODAutocompleteResponder<IdList[AutocompleteResponderId]["source"],IdList[AutocompleteResponderId]["params"],IdList[AutocompleteResponderId]["workers"]>
+    remove<AutocompleteResponderId extends keyof ODNoGeneric<IdList>>(id:AutocompleteResponderId): ODAutocompleteResponder<IdList[AutocompleteResponderId]["source"],IdList[AutocompleteResponderId]["params"],IdList[AutocompleteResponderId]["workers"]>
     remove(id:ODValidId): ODAutocompleteResponder<"autocomplete",any>|null
     
     remove(id:ODValidId): ODAutocompleteResponder<"autocomplete",any>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

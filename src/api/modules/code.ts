@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //CODE MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base"
 import { ODDebugger } from "./console"
 
 
@@ -61,21 +61,21 @@ export class ODCodeManager<IdList extends ODCodeManagerIdConstraint = ODCodeMana
         }
     }
 
-    get<CodeId extends keyof IdList>(id:CodeId): IdList[CodeId]
+    get<CodeId extends keyof ODNoGeneric<IdList>>(id:CodeId): IdList[CodeId]
     get(id:ODValidId): ODCode|null
     
     get(id:ODValidId): ODCode|null {
         return super.get(id)
     }
 
-    remove<CodeId extends keyof IdList>(id:CodeId): IdList[CodeId]
+    remove<CodeId extends keyof ODNoGeneric<IdList>>(id:CodeId): IdList[CodeId]
     remove(id:ODValidId): ODCode|null
     
     remove(id:ODValidId): ODCode|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

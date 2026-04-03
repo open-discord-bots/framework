@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //SESSION MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base"
 import { ODDebugger } from "./console"
 import * as crypto from "crypto"
 
@@ -23,21 +23,21 @@ export class ODSessionManager<IdList extends ODSessionManagerIdConstraint = ODSe
         super(debug,"session")
     }
 
-    get<SessionId extends keyof IdList>(id:SessionId): IdList[SessionId]
+    get<SessionId extends keyof ODNoGeneric<IdList>>(id:SessionId): IdList[SessionId]
     get(id:ODValidId): ODSession|null
     
     get(id:ODValidId): ODSession|null {
         return super.get(id)
     }
 
-    remove<SessionId extends keyof IdList>(id:SessionId): IdList[SessionId]
+    remove<SessionId extends keyof ODNoGeneric<IdList>>(id:SessionId): IdList[SessionId]
     remove(id:ODValidId): ODSession|null
     
     remove(id:ODValidId): ODSession|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

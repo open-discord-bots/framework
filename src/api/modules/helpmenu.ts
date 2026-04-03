@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //HELP MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base"
 import { ODDebugger } from "./console"
 
 /**## ODHelpMenuComponentRenderer `type`
@@ -144,21 +144,21 @@ export class ODHelpMenuCategory<IdList extends ODHelpMenuCategoryIdConstraint = 
         return result.filter((component) => component !== "").join("\n\n")
     }
 
-    get<HelpMenuComponentId extends keyof IdList>(id:HelpMenuComponentId): IdList[HelpMenuComponentId]
+    get<HelpMenuComponentId extends keyof ODNoGeneric<IdList>>(id:HelpMenuComponentId): IdList[HelpMenuComponentId]
     get(id:ODValidId): ODHelpMenuComponent|null
     
     get(id:ODValidId): ODHelpMenuComponent|null {
         return super.get(id)
     }
 
-    remove<HelpMenuComponentId extends keyof IdList>(id:HelpMenuComponentId): IdList[HelpMenuComponentId]
+    remove<HelpMenuComponentId extends keyof ODNoGeneric<IdList>>(id:HelpMenuComponentId): IdList[HelpMenuComponentId]
     remove(id:ODValidId): ODHelpMenuComponent|null
     
     remove(id:ODValidId): ODHelpMenuComponent|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
@@ -246,21 +246,21 @@ export class ODHelpMenuManager<IdList extends ODHelpMenuManagerIdConstraint = OD
         return result
     }
 
-    get<HelpMenuCategoryId extends keyof IdList>(id:HelpMenuCategoryId): IdList[HelpMenuCategoryId]
+    get<HelpMenuCategoryId extends keyof ODNoGeneric<IdList>>(id:HelpMenuCategoryId): IdList[HelpMenuCategoryId]
     get(id:ODValidId): ODHelpMenuCategory|null
     
     get(id:ODValidId): ODHelpMenuCategory|null {
         return super.get(id)
     }
 
-    remove<HelpMenuCategoryId extends keyof IdList>(id:HelpMenuCategoryId): IdList[HelpMenuCategoryId]
+    remove<HelpMenuCategoryId extends keyof ODNoGeneric<IdList>>(id:HelpMenuCategoryId): IdList[HelpMenuCategoryId]
     remove(id:ODValidId): ODHelpMenuCategory|null
     
     remove(id:ODValidId): ODHelpMenuCategory|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

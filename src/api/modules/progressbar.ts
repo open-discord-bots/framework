@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //PROGRESS BAR MODULE
 ///////////////////////////////////////
-import { ODSystemError, ODManager, ODManagerData, ODValidId } from "./base"
+import { ODSystemError, ODManager, ODManagerData, ODValidId, ODNoGeneric } from "./base"
 import { ODDebugger, ODValidConsoleColor } from "./console"
 import readline from "readline"
 import ansis from "ansis"
@@ -23,21 +23,21 @@ export class ODProgressBarRendererManager<IdList extends ODProgressBarRendererMa
         super(debug,"progress bar renderer")
     }
 
-    get<RendererId extends keyof IdList>(id:RendererId): IdList[RendererId]
+    get<RendererId extends keyof ODNoGeneric<IdList>>(id:RendererId): IdList[RendererId]
     get(id:ODValidId): ODProgressBarRenderer<{}>|null
     
     get(id:ODValidId): ODProgressBarRenderer<{}>|null {
         return super.get(id)
     }
 
-    remove<RendererId extends keyof IdList>(id:RendererId): IdList[RendererId]
+    remove<RendererId extends keyof ODNoGeneric<IdList>>(id:RendererId): IdList[RendererId]
     remove(id:ODValidId): ODProgressBarRenderer<{}>|null
     
     remove(id:ODValidId): ODProgressBarRenderer<{}>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
@@ -66,21 +66,21 @@ export class ODProgressBarManager<IdList extends ODProgressBarManagerIdConstrain
         this.renderers = new ODProgressBarRendererManager(debug)
     }
 
-    get<ProgressBarId extends keyof IdList>(id:ProgressBarId): IdList[ProgressBarId]
+    get<ProgressBarId extends keyof ODNoGeneric<IdList>>(id:ProgressBarId): IdList[ProgressBarId]
     get(id:ODValidId): ODProgressBar|null
     
     get(id:ODValidId): ODProgressBar|null {
         return super.get(id)
     }
 
-    remove<ProgressBarId extends keyof IdList>(id:ProgressBarId): IdList[ProgressBarId]
+    remove<ProgressBarId extends keyof ODNoGeneric<IdList>>(id:ProgressBarId): IdList[ProgressBarId]
     remove(id:ODValidId): ODProgressBar|null
     
     remove(id:ODValidId): ODProgressBar|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

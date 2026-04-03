@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //LANGUAGE MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODPromiseVoid, ODSystemError, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODPromiseVoid, ODSystemError, ODValidId } from "./base"
 import nodepath from "path"
 import { ODDebugger } from "./console"
 import fs from "fs"
@@ -52,7 +52,7 @@ export class ODLanguageManager<IdList extends ODLanguageManagerIdConstraint = OD
     }
 
     /**Set the current language by providing the ID of a language which is registered in this manager. */
-    setCurrentLanguage(id:keyof IdList): void
+    setCurrentLanguage(id:keyof ODNoGeneric<IdList>): void
     setCurrentLanguage(id:ODValidId): void
     setCurrentLanguage(id:ODValidId){
         this.current = this.get(id)
@@ -68,7 +68,7 @@ export class ODLanguageManager<IdList extends ODLanguageManagerIdConstraint = OD
         return (this.current) ? this.current : null
     }
     /**Set the backup language by providing the ID of a language which is registered in this manager. */
-    setBackupLanguage(id:keyof IdList): void
+    setBackupLanguage(id:keyof ODNoGeneric<IdList>): void
     setBackupLanguage(id:ODValidId): void
     setBackupLanguage(id:ODValidId){
         this.backup = this.get(id)
@@ -155,21 +155,21 @@ export class ODLanguageManager<IdList extends ODLanguageManagerIdConstraint = OD
         }
     }
 
-    get<LanguageId extends keyof IdList>(id:LanguageId): IdList[LanguageId]
+    get<LanguageId extends keyof ODNoGeneric<IdList>>(id:LanguageId): IdList[LanguageId]
     get(id:ODValidId): ODLanguage|null
     
     get(id:ODValidId): ODLanguage|null {
         return super.get(id)
     }
 
-    remove<LanguageId extends keyof IdList>(id:LanguageId): IdList[LanguageId]
+    remove<LanguageId extends keyof ODNoGeneric<IdList>>(id:LanguageId): IdList[LanguageId]
     remove(id:ODValidId): ODLanguage|null
     
     remove(id:ODValidId): ODLanguage|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

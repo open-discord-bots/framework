@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //EVENT MODULE
 ///////////////////////////////////////
-import { ODManagerData, ODManager, ODValidId, ODPromiseVoid } from "./base"
+import { ODManagerData, ODManager, ODValidId, ODPromiseVoid, ODNoGeneric } from "./base"
 import { ODConsoleWarningMessage, ODDebugger } from "./console"
 
 /**## ODEventCallback `type`
@@ -102,14 +102,14 @@ export class ODEventManager<IdList extends ODEventManagerIdConstraint = ODEventM
         return super.add(data,overwrite)
     }
 
-    get<EventId extends keyof IdList>(id:EventId): IdList[EventId]
+    get<EventId extends keyof ODNoGeneric<IdList>>(id:EventId): IdList[EventId]
     get(id:ODValidId): ODEvent|null
     
     get(id:ODValidId): ODEvent|null {
         return super.get(id)
     }
 
-    remove<EventId extends keyof IdList>(id:EventId): IdList[EventId]
+    remove<EventId extends keyof ODNoGeneric<IdList>>(id:EventId): IdList[EventId]
     remove(id:ODValidId): ODEvent|null
     
     remove(id:ODValidId): ODEvent|null {
@@ -118,7 +118,7 @@ export class ODEventManager<IdList extends ODEventManagerIdConstraint = ODEventM
         return data
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

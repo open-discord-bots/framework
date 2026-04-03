@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //CONFIG MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODPromiseVoid, ODSystemError, ODValidId, ODValidJsonType } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODPromiseVoid, ODSystemError, ODValidId, ODValidJsonType } from "./base"
 import nodepath from "path"
 import { ODDebugger } from "./console"
 import fs from "fs"
@@ -43,21 +43,21 @@ export class ODConfigManager<IdList extends ODConfigManagerIdConstraint = ODConf
         }
     }
 
-    get<ConfigId extends keyof IdList>(id:ConfigId): IdList[ConfigId]
+    get<ConfigId extends keyof ODNoGeneric<IdList>>(id:ConfigId): IdList[ConfigId]
     get(id:ODValidId): ODConfig<any>|null
     
     get(id:ODValidId): ODConfig<any>|null {
         return super.get(id)
     }
     
-    remove<ConfigId extends keyof IdList>(id:ConfigId): IdList[ConfigId]
+    remove<ConfigId extends keyof ODNoGeneric<IdList>>(id:ConfigId): IdList[ConfigId]
     remove(id:ODValidId): ODConfig<any>|null
     
     remove(id:ODValidId): ODConfig<any>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //VERIFYBAR MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base"
 import { ODMessage } from "./builder"
 import { ODDebugger } from "./console"
 import { ODButtonResponderInstance } from "./responder"
@@ -64,21 +64,21 @@ export class ODVerifyBarManager<IdList extends ODVerifyBarManagerIdConstraint = 
         super(debug,"verifybar")
     }
 
-    get<VerifyBarId extends keyof IdList>(id:VerifyBarId): ODVerifyBar<IdList[VerifyBarId]["successWorkerIds"],IdList[VerifyBarId]["failureWorkerIds"]>
+    get<VerifyBarId extends keyof ODNoGeneric<IdList>>(id:VerifyBarId): ODVerifyBar<IdList[VerifyBarId]["successWorkerIds"],IdList[VerifyBarId]["failureWorkerIds"]>
     get(id:ODValidId): ODVerifyBar|null
     
     get(id:ODValidId): ODVerifyBar|null {
         return super.get(id)
     }
 
-    remove<VerifyBarId extends keyof IdList>(id:VerifyBarId): ODVerifyBar<IdList[VerifyBarId]["successWorkerIds"],IdList[VerifyBarId]["failureWorkerIds"]>
+    remove<VerifyBarId extends keyof ODNoGeneric<IdList>>(id:VerifyBarId): ODVerifyBar<IdList[VerifyBarId]["successWorkerIds"],IdList[VerifyBarId]["failureWorkerIds"]>
     remove(id:ODValidId): ODVerifyBar|null
     
     remove(id:ODValidId): ODVerifyBar|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

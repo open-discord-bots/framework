@@ -2,7 +2,7 @@
 //BASE MODULE
 ///////////////////////////////////////
 import * as fs from "fs"
-import { ODConsoleWarningMessage, ODDebugger } from "./console"
+import { ODDebugger } from "./console"
 import type { ODMain } from "../main"
 
 /**## ODPromiseVoid `type`
@@ -15,7 +15,6 @@ export type ODPromiseVoid = void|Promise<void>
  */
 export type ODOptionalPromise<T> = T|Promise<T>
 
-
 /**## ODValidButtonColor `type`
  * This is a collection of all the possible button colors.
  */
@@ -27,22 +26,21 @@ export type ODValidButtonColor = "gray"|"red"|"green"|"blue"
 export type ODProjectType = "openticket"|"openmoderation"
 
 /**## ODValidId `type`
- * This is a valid Open Discord identifier. It can be an `ODId` or `string`!
+ * A valid Open Discord identifier. It can be an `ODId` or `string`!
  * 
  * You will see this type in many functions from Open Discord.
  */
 export type ODValidId = string|number|symbol|ODId
 
 /**## ODValidJsonType `type`
- * This is a collection of all types that can be stored in a JSON file!
+ * A collection of all types that can be stored in a JSON file!
  * 
  * list: `string`, `number`, `boolean`, `array`, `object`, `null`
  */
 export type ODValidJsonType = string|number|boolean|object|ODValidJsonType[]|null
 
-
 /**## ODInterfaceWithPartialProperty `type`
- * This is a utility type to create an interface where some properties are optional!
+ * A utility type to create an interface where some properties are optional!
  */
 export type ODInterfaceWithPartialProperty<Interface,Key extends keyof Interface> = Omit<Interface,Key> & Partial<Pick<Interface,Key>>
 
@@ -50,6 +48,13 @@ export type ODInterfaceWithPartialProperty<Interface,Key extends keyof Interface
  * A list of all available discord ID types. Used in the config checker.
  */
 export type ODDiscordIdType = "role"|"server"|"channel"|"category"|"user"|"member"|"interaction"|"message"
+
+/**## ODNoGeneric `type`
+ * A utility type to remove generic index signatures from interfaces. This is required for providing autocomplete in all `IdList`'s of the `ODManagers`.
+ */
+export type ODNoGeneric<T extends Record<string|number|symbol,any>> = {  
+    [K in keyof T as string extends K ? never : number extends K ? never : symbol extends K ? never : K]: T[K]
+}
 
 /**## ODId `class`
  * This is an Open Discord identifier.
@@ -210,7 +215,7 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
         this.#debug = debug
         this.#debugname = debugname
     }
-    
+
     /**Add data to the manager. The `ODId` in the data class will be used as identifier! You can optionally select to overwrite existing data!*/
     add(data:DataType|DataType[], overwrite?:boolean): boolean {
         //repeat same command when data is an array
@@ -407,21 +412,21 @@ export class ODVersionManager<IdList extends ODVersionManagerIdConstraint = ODVe
         super()
     }
 
-    get<VersionId extends keyof IdList>(id:VersionId): IdList[VersionId]
+    get<VersionId extends keyof ODNoGeneric<IdList>>(id:VersionId): IdList[VersionId]
     get(id:ODValidId): ODVersion|null
     
     get(id:ODValidId): ODVersion|null {
         return super.get(id)
     }
 
-    remove<VersionId extends keyof IdList>(id:VersionId): IdList[VersionId]
+    remove<VersionId extends keyof ODNoGeneric<IdList>>(id:VersionId): IdList[VersionId]
     remove(id:ODValidId): ODVersion|null
     
     remove(id:ODValidId): ODVersion|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

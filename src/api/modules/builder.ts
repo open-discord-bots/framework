@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //BUILDER MODULE
 ///////////////////////////////////////
-import { ODId, ODValidButtonColor, ODValidId, ODSystemError, ODInterfaceWithPartialProperty, ODManagerWithSafety, ODManagerData } from "./base"
+import { ODId, ODValidButtonColor, ODValidId, ODSystemError, ODInterfaceWithPartialProperty, ODManagerWithSafety, ODManagerData, ODNoGeneric } from "./base"
 import * as discord from "discord.js"
 import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker"
 import { ODDebugger } from "./console"
@@ -137,28 +137,28 @@ export class ODButtonManager<IdList extends ODButtonManagerIdConstraint = ODButt
         }
     }
 
-    get<ButtonId extends keyof IdList>(id:ButtonId): ODButton<IdList[ButtonId]["source"],IdList[ButtonId]["params"],IdList[ButtonId]["workers"]>
+    get<ButtonId extends keyof ODNoGeneric<IdList>>(id:ButtonId): ODButton<IdList[ButtonId]["source"],IdList[ButtonId]["params"],IdList[ButtonId]["workers"]>
     get(id:ODValidId): ODButton<string,{},string>|null
     
     get(id:ODValidId): ODButton<string,{},string>|null {
         return super.get(id)
     }
 
-    remove<ButtonId extends keyof IdList>(id:ButtonId): ODButton<IdList[ButtonId]["source"],IdList[ButtonId]["params"],IdList[ButtonId]["workers"]>
+    remove<ButtonId extends keyof ODNoGeneric<IdList>>(id:ButtonId): ODButton<IdList[ButtonId]["source"],IdList[ButtonId]["params"],IdList[ButtonId]["workers"]>
     remove(id:ODValidId): ODButton<string,{},string>|null
     
     remove(id:ODValidId): ODButton<string,{},string>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
         return super.exists(id)
     }
 
-    getSafe<ButtonId extends keyof IdList>(id:ButtonId): ODButton<IdList[ButtonId]["source"],IdList[ButtonId]["params"],IdList[ButtonId]["workers"]>
+    getSafe<ButtonId extends keyof ODNoGeneric<IdList>>(id:ButtonId): ODButton<IdList[ButtonId]["source"],IdList[ButtonId]["params"],IdList[ButtonId]["workers"]>
     getSafe(id:ODValidId): ODButton<string,{},string>
     
     getSafe(id:ODValidId): ODButton<string,{},string> {
@@ -367,28 +367,28 @@ export class ODDropdownManager<IdList extends ODDropdownManagerIdConstraint = OD
         }
     }
 
-    get<DropdownId extends keyof IdList>(id:DropdownId): ODDropdown<IdList[DropdownId]["source"],IdList[DropdownId]["params"],IdList[DropdownId]["workers"]>
+    get<DropdownId extends keyof ODNoGeneric<IdList>>(id:DropdownId): ODDropdown<IdList[DropdownId]["source"],IdList[DropdownId]["params"],IdList[DropdownId]["workers"]>
     get(id:ODValidId): ODDropdown<string,{},string>|null
     
     get(id:ODValidId): ODDropdown<string,{},string>|null {
         return super.get(id)
     }
 
-    remove<DropdownId extends keyof IdList>(id:DropdownId): ODDropdown<IdList[DropdownId]["source"],IdList[DropdownId]["params"],IdList[DropdownId]["workers"]>
+    remove<DropdownId extends keyof ODNoGeneric<IdList>>(id:DropdownId): ODDropdown<IdList[DropdownId]["source"],IdList[DropdownId]["params"],IdList[DropdownId]["workers"]>
     remove(id:ODValidId): ODDropdown<string,{},string>|null
     
     remove(id:ODValidId): ODDropdown<string,{},string>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
         return super.exists(id)
     }
 
-    getSafe<DropdownId extends keyof IdList>(id:DropdownId): ODDropdown<IdList[DropdownId]["source"],IdList[DropdownId]["params"],IdList[DropdownId]["workers"]>
+    getSafe<DropdownId extends keyof ODNoGeneric<IdList>>(id:DropdownId): ODDropdown<IdList[DropdownId]["source"],IdList[DropdownId]["params"],IdList[DropdownId]["workers"]>
     getSafe(id:ODValidId): ODDropdown<string,{},string>
     
     getSafe(id:ODValidId): ODDropdown<string,{},string> {
@@ -745,28 +745,28 @@ export class ODFileManager<IdList extends ODFileManagerIdConstraint = ODFileMana
         },debug,"file")
     }
 
-    get<FileId extends keyof IdList>(id:FileId): ODFile<IdList[FileId]["source"],IdList[FileId]["params"],IdList[FileId]["workers"]>
+    get<FileId extends keyof ODNoGeneric<IdList>>(id:FileId): ODFile<IdList[FileId]["source"],IdList[FileId]["params"],IdList[FileId]["workers"]>
     get(id:ODValidId): ODFile<string,{},string>|null
     
     get(id:ODValidId): ODFile<string,{},string>|null {
         return super.get(id)
     }
 
-    remove<FileId extends keyof IdList>(id:FileId): ODFile<IdList[FileId]["source"],IdList[FileId]["params"],IdList[FileId]["workers"]>
+    remove<FileId extends keyof ODNoGeneric<IdList>>(id:FileId): ODFile<IdList[FileId]["source"],IdList[FileId]["params"],IdList[FileId]["workers"]>
     remove(id:ODValidId): ODFile<string,{},string>|null
     
     remove(id:ODValidId): ODFile<string,{},string>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
         return super.exists(id)
     }
 
-    getSafe<FileId extends keyof IdList>(id:FileId): ODFile<IdList[FileId]["source"],IdList[FileId]["params"],IdList[FileId]["workers"]>
+    getSafe<FileId extends keyof ODNoGeneric<IdList>>(id:FileId): ODFile<IdList[FileId]["source"],IdList[FileId]["params"],IdList[FileId]["workers"]>
     getSafe(id:ODValidId): ODFile<string,{},string>
     
     getSafe(id:ODValidId): ODFile<string,{},string> {
@@ -939,28 +939,28 @@ export class ODEmbedManager<IdList extends ODEmbedManagerIdConstraint = ODEmbedM
         },debug,"embed")
     }
 
-    get<EmbedId extends keyof IdList>(id:EmbedId): ODEmbed<IdList[EmbedId]["source"],IdList[EmbedId]["params"],IdList[EmbedId]["workers"]>
+    get<EmbedId extends keyof ODNoGeneric<IdList>>(id:EmbedId): ODEmbed<IdList[EmbedId]["source"],IdList[EmbedId]["params"],IdList[EmbedId]["workers"]>
     get(id:ODValidId): ODEmbed<string,{},string>|null
     
     get(id:ODValidId): ODEmbed<string,{},string>|null {
         return super.get(id)
     }
 
-    remove<EmbedId extends keyof IdList>(id:EmbedId): ODEmbed<IdList[EmbedId]["source"],IdList[EmbedId]["params"],IdList[EmbedId]["workers"]>
+    remove<EmbedId extends keyof ODNoGeneric<IdList>>(id:EmbedId): ODEmbed<IdList[EmbedId]["source"],IdList[EmbedId]["params"],IdList[EmbedId]["workers"]>
     remove(id:ODValidId): ODEmbed<string,{},string>|null
     
     remove(id:ODValidId): ODEmbed<string,{},string>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
         return super.exists(id)
     }
 
-    getSafe<EmbedId extends keyof IdList>(id:EmbedId): ODEmbed<IdList[EmbedId]["source"],IdList[EmbedId]["params"],IdList[EmbedId]["workers"]>
+    getSafe<EmbedId extends keyof ODNoGeneric<IdList>>(id:EmbedId): ODEmbed<IdList[EmbedId]["source"],IdList[EmbedId]["params"],IdList[EmbedId]["workers"]>
     getSafe(id:ODValidId): ODEmbed<string,{},string>
     
     getSafe(id:ODValidId): ODEmbed<string,{},string> {
@@ -1234,28 +1234,28 @@ export class ODMessageManager<IdList extends ODMessageManagerIdConstraint = ODMe
         },debug,"message")
     }
 
-    get<MessageId extends keyof IdList>(id:MessageId): ODMessage<IdList[MessageId]["source"],IdList[MessageId]["params"],IdList[MessageId]["workers"]>
+    get<MessageId extends keyof ODNoGeneric<IdList>>(id:MessageId): ODMessage<IdList[MessageId]["source"],IdList[MessageId]["params"],IdList[MessageId]["workers"]>
     get(id:ODValidId): ODMessage<string,{},string>|null
     
     get(id:ODValidId): ODMessage<string,{},string>|null {
         return super.get(id)
     }
 
-    remove<MessageId extends keyof IdList>(id:MessageId): ODMessage<IdList[MessageId]["source"],IdList[MessageId]["params"],IdList[MessageId]["workers"]>
+    remove<MessageId extends keyof ODNoGeneric<IdList>>(id:MessageId): ODMessage<IdList[MessageId]["source"],IdList[MessageId]["params"],IdList[MessageId]["workers"]>
     remove(id:ODValidId): ODMessage<string,{},string>|null
     
     remove(id:ODValidId): ODMessage<string,{},string>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
         return super.exists(id)
     }
 
-    getSafe<MessageId extends keyof IdList>(id:MessageId): ODMessage<IdList[MessageId]["source"],IdList[MessageId]["params"],IdList[MessageId]["workers"]>
+    getSafe<MessageId extends keyof ODNoGeneric<IdList>>(id:MessageId): ODMessage<IdList[MessageId]["source"],IdList[MessageId]["params"],IdList[MessageId]["workers"]>
     getSafe(id:ODValidId): ODMessage<string,{},string>
     
     getSafe(id:ODValidId): ODMessage<string,{},string> {
@@ -1589,28 +1589,28 @@ export class ODModalManager<IdList extends ODModalManagerIdConstraint = ODModalM
         },debug,"modal")
     }
 
-    get<ModalId extends keyof IdList>(id:ModalId): ODModal<IdList[ModalId]["source"],IdList[ModalId]["params"],IdList[ModalId]["workers"]>
+    get<ModalId extends keyof ODNoGeneric<IdList>>(id:ModalId): ODModal<IdList[ModalId]["source"],IdList[ModalId]["params"],IdList[ModalId]["workers"]>
     get(id:ODValidId): ODModal<string,{},string>|null
     
     get(id:ODValidId): ODModal<string,{},string>|null {
         return super.get(id)
     }
 
-    remove<ModalId extends keyof IdList>(id:ModalId): ODModal<IdList[ModalId]["source"],IdList[ModalId]["params"],IdList[ModalId]["workers"]>
+    remove<ModalId extends keyof ODNoGeneric<IdList>>(id:ModalId): ODModal<IdList[ModalId]["source"],IdList[ModalId]["params"],IdList[ModalId]["workers"]>
     remove(id:ODValidId): ODModal<string,{},string>|null
     
     remove(id:ODValidId): ODModal<string,{},string>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
         return super.exists(id)
     }
 
-    getSafe<ModalId extends keyof IdList>(id:ModalId): ODModal<IdList[ModalId]["source"],IdList[ModalId]["params"],IdList[ModalId]["workers"]>
+    getSafe<ModalId extends keyof ODNoGeneric<IdList>>(id:ModalId): ODModal<IdList[ModalId]["source"],IdList[ModalId]["params"],IdList[ModalId]["workers"]>
     getSafe(id:ODValidId): ODModal<string,{},string>
     
     getSafe(id:ODValidId): ODModal<string,{},string> {

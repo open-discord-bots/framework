@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //ACTION MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODValidId, ODSystemError, ODManagerData } from "./base"
+import { ODId, ODManager, ODValidId, ODSystemError, ODManagerData, ODNoGeneric } from "./base"
 import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker"
 import { ODDebugger } from "./console"
 
@@ -47,21 +47,21 @@ export class ODActionManager<IdList extends ODActionManagerIdConstraint = ODActi
         super(debug,"action")
     }
 
-    get<ActionId extends keyof IdList>(id:ActionId): ODAction<IdList[ActionId]["source"],IdList[ActionId]["params"],IdList[ActionId]["result"],IdList[ActionId]["workers"]>
+    get<ActionId extends keyof ODNoGeneric<IdList>>(id:ActionId): ODAction<IdList[ActionId]["source"],IdList[ActionId]["params"],IdList[ActionId]["result"],IdList[ActionId]["workers"]>
     get(id:ODValidId): ODAction<string,{},{},string>|null
     
     get(id:ODValidId): ODAction<string,{},{},string>|null {
         return super.get(id)
     }
 
-    remove<ActionId extends keyof IdList>(id:ActionId): ODAction<IdList[ActionId]["source"],IdList[ActionId]["params"],IdList[ActionId]["result"],IdList[ActionId]["workers"]>
+    remove<ActionId extends keyof ODNoGeneric<IdList>>(id:ActionId): ODAction<IdList[ActionId]["source"],IdList[ActionId]["params"],IdList[ActionId]["result"],IdList[ActionId]["workers"]>
     remove(id:ODValidId): ODAction<string,{},{},string>|null
     
     remove(id:ODValidId): ODAction<string,{},{},string>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

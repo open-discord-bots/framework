@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //DISCORD CLIENT MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODSystemError, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODSystemError, ODValidId } from "./base"
 import * as discord from "discord.js"
 import {REST} from "@discordjs/rest"
 import { ODConsoleWarningMessage, ODDebugger } from "./console"
@@ -937,7 +937,7 @@ export class ODSlashCommandManager<IdList extends ODSlashCommandManagerIdConstra
         })
     }
     /**Callback on interaction from one or multiple slash commands. */
-    onInteraction(commandName:Extract<keyof IdList,string>, callback:ODSlashCommandInteractionCallback): void
+    onInteraction(commandName:keyof ODNoGeneric<IdList>, callback:ODSlashCommandInteractionCallback): void
     onInteraction(commandName:string|RegExp, callback:ODSlashCommandInteractionCallback): void
     onInteraction(commandName:string|RegExp, callback:ODSlashCommandInteractionCallback){
         this.#interactionListeners.push({
@@ -952,21 +952,21 @@ export class ODSlashCommandManager<IdList extends ODSlashCommandManagerIdConstra
         }
     }
 
-    get<SlashCommandId extends keyof IdList>(id:SlashCommandId): IdList[SlashCommandId]
+    get<SlashCommandId extends keyof ODNoGeneric<IdList>>(id:SlashCommandId): IdList[SlashCommandId]
     get(id:ODValidId): ODSlashCommand|null
     
     get(id:ODValidId): ODSlashCommand|null {
         return super.get(id)
     }
     
-    remove<SlashCommandId extends keyof IdList>(id:SlashCommandId): IdList[SlashCommandId]
+    remove<SlashCommandId extends keyof ODNoGeneric<IdList>>(id:SlashCommandId): IdList[SlashCommandId]
     remove(id:ODValidId): ODSlashCommand|null
     
     remove(id:ODValidId): ODSlashCommand|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
@@ -1811,7 +1811,7 @@ export class ODTextCommandManager<IdList extends ODTextCommandManagerIdConstrain
         return {valid,reason}
     }
     /**Callback on interaction from one of the registered text commands */
-    onInteraction(commandPrefix:string,commandName:Extract<keyof IdList,string>, callback:ODTextCommandInteractionCallback): void
+    onInteraction(commandPrefix:string,commandName:keyof ODNoGeneric<IdList>, callback:ODTextCommandInteractionCallback): void
     onInteraction(commandPrefix:string,commandName:string|RegExp, callback:ODTextCommandInteractionCallback): void
     onInteraction(commandPrefix:string,commandName:string|RegExp, callback:ODTextCommandInteractionCallback){
         this.#interactionListeners.push({
@@ -1831,21 +1831,21 @@ export class ODTextCommandManager<IdList extends ODTextCommandManagerIdConstrain
         this.#errorListeners.push(callback)
     }
 
-    get<TextCommandId extends keyof IdList>(id:TextCommandId): IdList[TextCommandId]
+    get<TextCommandId extends keyof ODNoGeneric<IdList>>(id:TextCommandId): IdList[TextCommandId]
     get(id:ODValidId): ODTextCommand|null
     
     get(id:ODValidId): ODTextCommand|null {
         return super.get(id)
     }
     
-    remove<TextCommandId extends keyof IdList>(id:TextCommandId): IdList[TextCommandId]
+    remove<TextCommandId extends keyof ODNoGeneric<IdList>>(id:TextCommandId): IdList[TextCommandId]
     remove(id:ODValidId): ODTextCommand|null
     
     remove(id:ODValidId): ODTextCommand|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
@@ -2190,7 +2190,7 @@ export class ODContextMenuManager<IdList extends ODContextMenuManagerIdConstrain
         })
     }
     /**Callback on interaction from one or multiple context menu's. */
-    onInteraction(menuName:Extract<keyof IdList,string>, callback:ODContextMenuInteractionCallback): void
+    onInteraction(menuName:keyof ODNoGeneric<IdList>, callback:ODContextMenuInteractionCallback): void
     onInteraction(menuName:string|RegExp, callback:ODContextMenuInteractionCallback): void
 
     onInteraction(menuName:string|RegExp, callback:ODContextMenuInteractionCallback){
@@ -2206,21 +2206,21 @@ export class ODContextMenuManager<IdList extends ODContextMenuManagerIdConstrain
         }
     }
 
-    get<ContextMenuId extends keyof IdList>(id:ContextMenuId): IdList[ContextMenuId]
+    get<ContextMenuId extends keyof ODNoGeneric<IdList>>(id:ContextMenuId): IdList[ContextMenuId]
     get(id:ODValidId): ODContextMenu|null
     
     get(id:ODValidId): ODContextMenu|null {
         return super.get(id)
     }
     
-    remove<ContextMenuId extends keyof IdList>(id:ContextMenuId): IdList[ContextMenuId]
+    remove<ContextMenuId extends keyof ODNoGeneric<IdList>>(id:ContextMenuId): IdList[ContextMenuId]
     remove(id:ODValidId): ODContextMenu|null
     
     remove(id:ODValidId): ODContextMenu|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

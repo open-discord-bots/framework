@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //FLAG MODULE
 ///////////////////////////////////////
-import { ODId, ODValidId, ODManager, ODManagerData } from "./base"
+import { ODId, ODValidId, ODManager, ODManagerData, ODNoGeneric } from "./base"
 import { ODDebugger } from "./console"
 
 /**## ODFlag `class`
@@ -76,21 +76,21 @@ export class ODFlagManager<IdList extends ODFlagManagerIdConstraint = ODFlagMana
         })
     }
 
-    get<FlagId extends keyof IdList>(id:FlagId): IdList[FlagId]
+    get<FlagId extends keyof ODNoGeneric<IdList>>(id:FlagId): IdList[FlagId]
     get(id:ODValidId): ODFlag|null
     
     get(id:ODValidId): ODFlag|null {
         return super.get(id)
     }
 
-    remove<FlagId extends keyof IdList>(id:FlagId): IdList[FlagId]
+    remove<FlagId extends keyof ODNoGeneric<IdList>>(id:FlagId): IdList[FlagId]
     remove(id:ODValidId): ODFlag|null
     
     remove(id:ODValidId): ODFlag|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

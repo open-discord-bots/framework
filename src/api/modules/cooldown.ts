@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //COOLDOWN MODULE
 ///////////////////////////////////////
-import { ODId, ODValidId, ODManager, ODSystemError, ODManagerData } from "./base"
+import { ODId, ODValidId, ODManager, ODSystemError, ODManagerData, ODNoGeneric } from "./base"
 import { ODDebugger } from "./console"
 
 /**## ODCooldownManagerIdConstraint `type`
@@ -27,21 +27,21 @@ export class ODCooldownManager<IdList extends ODCooldownManagerIdConstraint = OD
         }
     }
 
-    get<CooldownId extends keyof IdList>(id:CooldownId): IdList[CooldownId]
+    get<CooldownId extends keyof ODNoGeneric<IdList>>(id:CooldownId): IdList[CooldownId]
     get(id:ODValidId): ODCooldown<object>|null
     
     get(id:ODValidId): ODCooldown<object>|null {
         return super.get(id)
     }
 
-    remove<CooldownId extends keyof IdList>(id:CooldownId): IdList[CooldownId]
+    remove<CooldownId extends keyof ODNoGeneric<IdList>>(id:CooldownId): IdList[CooldownId]
     remove(id:ODValidId): ODCooldown<object>|null
     
     remove(id:ODValidId): ODCooldown<object>|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {

@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //CONFIG CHECKER MODULE
 ///////////////////////////////////////
-import { ODDiscordIdType, ODId, ODManager, ODManagerData, ODValidId, ODValidJsonType } from "./base"
+import { ODDiscordIdType, ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId, ODValidJsonType } from "./base"
 import { ODConfig } from "./config"
 import { ODLanguageManager } from "./language"
 import { ODDebugger } from "./console"
@@ -99,21 +99,21 @@ export class ODCheckerManager<
         return new ODChecker("opendiscord:temporary-environment",new ODCheckerStorage(),0,new ODConfig("opendiscord:temporary-environment",{}),new ODCheckerStructure("opendiscord:temporary-environment",{}))
     }
 
-    get<CheckerId extends keyof IdList>(id:CheckerId): IdList[CheckerId]
+    get<CheckerId extends keyof ODNoGeneric<IdList>>(id:CheckerId): IdList[CheckerId]
     get(id:ODValidId): ODChecker|null
     
     get(id:ODValidId): ODChecker|null {
         return super.get(id)
     }
 
-    remove<CheckerId extends keyof IdList>(id:CheckerId): IdList[CheckerId]
+    remove<CheckerId extends keyof ODNoGeneric<IdList>>(id:CheckerId): IdList[CheckerId]
     remove(id:ODValidId): ODChecker|null
     
     remove(id:ODValidId): ODChecker|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
@@ -540,21 +540,21 @@ export class ODCheckerFunctionManager<IdList extends ODCheckerFunctionManagerIdC
         return JSON.parse(JSON.stringify(trace))
     }
 
-    get<CheckerFunctionId extends keyof IdList>(id:CheckerFunctionId): IdList[CheckerFunctionId]
+    get<CheckerFunctionId extends keyof ODNoGeneric<IdList>>(id:CheckerFunctionId): IdList[CheckerFunctionId]
     get(id:ODValidId): ODCheckerFunction|null
     
     get(id:ODValidId): ODCheckerFunction|null {
         return super.get(id)
     }
 
-    remove<CheckerFunctionId extends keyof IdList>(id:CheckerFunctionId): IdList[CheckerFunctionId]
+    remove<CheckerFunctionId extends keyof ODNoGeneric<IdList>>(id:CheckerFunctionId): IdList[CheckerFunctionId]
     remove(id:ODValidId): ODCheckerFunction|null
     
     remove(id:ODValidId): ODCheckerFunction|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
 
     exists(id:ODValidId): boolean {

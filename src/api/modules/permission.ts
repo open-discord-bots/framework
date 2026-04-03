@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //PERMISSION MODULE
 ///////////////////////////////////////
-import { ODId, ODValidId, ODManager, ODSystemError, ODManagerData } from "./base"
+import { ODId, ODValidId, ODManager, ODSystemError, ODManagerData, ODNoGeneric } from "./base"
 import * as discord from "discord.js"
 import { ODDebugger } from "./console"
 import { ODClientManager } from "./client"
@@ -343,21 +343,21 @@ export class ODPermissionManager<IdList extends ODPermissionManagerIdConstraint 
         }
     }
 
-    get<PermissionId extends keyof IdList>(id:PermissionId): IdList[PermissionId]
+    get<PermissionId extends keyof ODNoGeneric<IdList>>(id:PermissionId): IdList[PermissionId]
     get(id:ODValidId): ODPermission|null
     
     get(id:ODValidId): ODPermission|null {
         return super.get(id)
     }
 
-    remove<PermissionId extends keyof IdList>(id:PermissionId): IdList[PermissionId]
+    remove<PermissionId extends keyof ODNoGeneric<IdList>>(id:PermissionId): IdList[PermissionId]
     remove(id:ODValidId): ODPermission|null
     
     remove(id:ODValidId): ODPermission|null {
         return super.remove(id)
     }
 
-    exists(id:keyof IdList): boolean
+    exists(id:keyof ODNoGeneric<IdList>): boolean
     exists(id:ODValidId): boolean
     
     exists(id:ODValidId): boolean {
