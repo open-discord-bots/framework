@@ -142,7 +142,7 @@ export class ODMain implements ODMainManagers {
     constructor(managers:ODMainManagers,project:ODProjectType){
         this.project = project
         this.versions = managers.versions
-        this.versions.add(ODVersion.fromString("opendiscord:api","v1.0.0"))
+        this.versions.add(ODVersion.fromString("opendiscord:api","v0.2.8"))
         this.versions.add(ODVersion.fromString("opendiscord:livestatus","v2.0.0"))
 
         this.debugfile = managers.debugfile

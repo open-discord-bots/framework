@@ -59,7 +59,7 @@ export type ODProgressBarManagerIdConstraint = Record<string,ODProgressBar>
  */
 export class ODProgressBarManager<IdList extends ODProgressBarManagerIdConstraint = ODProgressBarManagerIdConstraint,RendererIdList extends ODProgressBarRendererManagerIdConstraint = ODProgressBarRendererManagerIdConstraint> extends ODManager<ODProgressBar> {
     /**A collection of render types for progress bars. */
-    renderers: ODProgressBarRendererManager<ODProgressBarRendererManagerIdConstraint>
+    renderers: ODProgressBarRendererManager<RendererIdList>
 
     constructor(debug:ODDebugger){
         super(debug,"progress bar")
