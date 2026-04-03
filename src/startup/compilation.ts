@@ -73,15 +73,21 @@ export function checkFrameworkAllowed(project?:ODProjectType){
         "./languages/",
         "./config/",
         "./plugins/",
-        "./.github/",
-        "./.github/FUNDING.yml",
-        "./.github/SECURITY.md"
     ]
     for (const path of requiredStructures){
         if (!fs.existsSync(path)) throw new Error(logTitle+": Project uses invalid structure for Open Discord! (missing: "+path+")")
     }
-    if (!fs.readFileSync("./.github/FUNDING.yml").toString().startsWith("github: DJj123dj")) throw new Error(logTitle+": Please do not use this framework in third party bots outside Open Ticket/Moderation! (1)")
+
+    const licenseContents = fs.readFileSync("./LICENCE.md").toString()
     const readmeContents = fs.readFileSync("./README.md").toString()
+
+    if (
+        !licenseContents.includes("DJj123dj & Contributors") ||
+        !licenseContents.includes("GNU GENERAL PUBLIC LICENSE") ||
+        !licenseContents.includes("DJdj Development. <https://www.dj-dj.be/>") ||
+        !licenseContents.includes("Additional Terms")
+    ) throw new Error(logTitle+": Please do not use this framework in third party bots or outside Open Ticket/Moderation! (1)")
+    
     if (
         !readmeContents.includes(`<img src="https://apis.dj-dj.be/cdn/openticket/logo.png" alt="Open Ticket" width="650px">`) &&
         !readmeContents.includes(`<img src="https://apis.dj-dj.be/cdn/openmoderation/logo.png" alt="Open Moderation" width="650px">`)
