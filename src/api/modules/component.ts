@@ -1,5 +1,5 @@
 ///////////////////////////////////////
-//COMPONENT MODULE
+//COMPONENTS MODULE
 ///////////////////////////////////////
 import { ODId, ODValidId, ODSystemError, ODManagerData, ODNoGeneric, ODManager } from "./base"
 import * as discord from "discord.js"
@@ -42,10 +42,12 @@ export class ODComponentFactory<Component extends ODComponent<object,any>,Origin
         if (callback) this.workers.add(new ODWorker(callbackId ? callbackId : id,priority ?? 0,callback))
     }
     /**Run all workers and return the resulting component. */
-    async build(origin:Origin, params:Params): Promise<ODComponentFactoryInstance<Component>> {
+    async build(origin:Origin, params:Params): Promise<ODComponentInferBuildResult<Component>> {
         const instance = new ODComponentFactoryInstance<Component>()
         await this.workers.executeWorkers(instance,origin,params)
-        return instance
+        const rootComponent = instance.getComponent()
+        if (!rootComponent) throw new ODSystemError("ODComponentFactory.build() --> Failed to build component! (id: "+this.id.value+")")
+        return rootComponent.build()
     }
 }
 
@@ -157,6 +159,11 @@ export class ODComponentManager<
  * The builder function of a component.
  */
 export type ODComponentBuilderFunc<BuildResult> = () => Promise<BuildResult|null>|BuildResult|null
+
+/**## ODComponentInferBuildResult `type`
+ * Infer the build result of a certain component.
+ */
+export type ODComponentInferBuildResult<Component> = Component extends ODComponent<object,infer BuildResult> ? BuildResult : never
 
 /**## ODComponent `class`
  * An Open Discord message/modal component.
