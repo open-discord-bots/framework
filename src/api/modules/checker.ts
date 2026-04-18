@@ -759,7 +759,7 @@ export class ODCheckerObjectStructure extends ODCheckerStructure {
         super(id,options)
     }
 
-    check(checker:ODChecker, value:object, locationTrace:ODCheckerLocationTrace): boolean {
+    check(checker:ODChecker, value:Record<string,any>, locationTrace:ODCheckerLocationTrace): boolean {
         const lt = checker.locationTraceDeref(locationTrace)
 
         //check type & options
@@ -1318,7 +1318,7 @@ export class ODCheckerObjectSwitchStructure extends ODCheckerStructure {
         super(id,options)
     }
 
-    check(checker:ODChecker, value:object, locationTrace:ODCheckerLocationTrace): boolean {
+    check(checker:ODChecker, value:Record<string,any>, locationTrace:ODCheckerLocationTrace): boolean {
         const lt = checker.locationTraceDeref(locationTrace)
         
         if (this.options.objects){
@@ -1381,7 +1381,7 @@ export class ODCheckerEnabledObjectStructure extends ODCheckerStructure {
         super(id,options)
     }
 
-    check(checker:ODChecker, value:object, locationTrace:ODCheckerLocationTrace): boolean {
+    check(checker:ODChecker, value:Record<string,any>, locationTrace:ODCheckerLocationTrace): boolean {
         const lt = checker.locationTraceDeref(locationTrace)
         
         if (typeof value != "object"){

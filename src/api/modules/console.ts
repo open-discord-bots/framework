@@ -189,11 +189,11 @@ export class ODErrorConsoleMessage extends ODConsoleMessage {
  */
 export class ODError {
     /**The original error that this class wraps around */
-    error: Error|ODSystemError|ODPluginError
+    error: any
     /**The origin of the original error */
     origin: NodeJS.UncaughtExceptionOrigin
 
-    constructor(error:Error|ODSystemError|ODPluginError, origin:NodeJS.UncaughtExceptionOrigin){
+    constructor(error:any, origin:NodeJS.UncaughtExceptionOrigin){
         this.error = error
         this.origin = origin
     }
@@ -201,7 +201,7 @@ export class ODError {
     /**Render this error to the console using `console.log`! Returns `false` when something went wrong. */
     render(){
         try {
-            let prefix = (this.error["_ODErrorType"] == "plugin") ? "PLUGIN ERROR" : ((this.error["_ODErrorType"] == "system") ? "OPENTICKET ERROR" : "UNKNOWN ERROR")
+            let prefix = (this.error["_ODErrorType"] && this.error["_ODErrorType"] == "plugin") ? "PLUGIN ERROR" : ((this.error["_ODErrorType"] == "system") ? "OPENTICKET ERROR" : "UNKNOWN ERROR")
             //title
             console.log(ansis.red("["+prefix+"]: ")+this.error.message+" | origin: "+this.origin)
             //stack trace
@@ -678,9 +678,9 @@ export class ODLiveStatusRenderer {
 
 
                 if (!["red","yellow","green","blue","gray","magenta","cyan"].includes(titleColor)) var finalTitle = ansis.white(title)
-                else var finalTitle = ansis[titleColor](title)
+                else var finalTitle = ansis[(titleColor == "normal" ? "white" : titleColor)](title)
                 if (!["red","yellow","green","blue","gray","magenta","cyan"].includes(descriptionColor)) var finalDescription = ansis.white(description)
-                else var finalDescription = ansis[descriptionColor](description)
+                else var finalDescription = ansis[(descriptionColor == "normal" ? "white" : descriptionColor)](description)
 
                 final.push(finalTitle+finalDescription)
             })

@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //WORKER MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODSystemError, ODValidId } from "./base"
 
 /**## ODWorkerCallback `type`
  * This is the callback used in `ODWorker`!
@@ -71,22 +71,22 @@ export class ODWorkerManager<Instance, Origin extends string, Params,WorkerIds e
                 await worker.callback(instance,derefParams,origin,() => {
                     didCancel = true
                 })
-            }catch(err){
-                process.emit("uncaughtException",err)
+            }catch(err:any){
+                process.emit("uncaughtException",new ODSystemError(err))
                 didCrash = true
             }
         }
         if (didCancel && this.backupWorker){
             try{
                 await this.backupWorker.callback({reason:"cancel"},derefParams,origin,() => {})
-            }catch(err){
-                process.emit("uncaughtException",err)
+            }catch(err:any){
+                process.emit("uncaughtException",new ODSystemError(err))
             }
         }else if (didCrash && this.backupWorker){
             try{
                 await this.backupWorker.callback({reason:"error"},derefParams,origin,() => {})
-            }catch(err){
-                process.emit("uncaughtException",err)
+            }catch(err:any){
+                process.emit("uncaughtException",new ODSystemError(err))
             }
         }
     }

@@ -29,7 +29,7 @@ export class ODDatabaseManager<IdList extends ODDatabaseManagerIdConstraint = OD
         for (const database of this.getAll()){
             try{
                 await database.init()
-            }catch(err){
+            }catch(err:any){
                 process.emit("uncaughtException",new ODSystemError(err))
             }
         }

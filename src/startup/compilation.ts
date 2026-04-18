@@ -3,7 +3,7 @@ import ts from "typescript"
 import { createHash, Hash } from "crypto"
 import nodepath from "path"
 import ansis from "ansis"
-import type { ODProjectType } from "../api"
+import type { ODPluginData, ODProjectType } from "../api"
 
 /** ## What is this?
  * This is a function which compares `./src/` with a hash stored in `./dist/hash.txt`.
@@ -117,7 +117,7 @@ export function frameworkStartup(startupFlags:string[],project:ODProjectType,sta
                 const pluginJsonPath = nodepath.join(pluginPath, "plugin.json")
                 if (fs.existsSync(pluginJsonPath)){
                     try{
-                        const pluginData = JSON.parse(fs.readFileSync(pluginJsonPath).toString())
+                        const pluginData: ODPluginData = JSON.parse(fs.readFileSync(pluginJsonPath).toString())
                         if (pluginData.npmDependencies && Array.isArray(pluginData.npmDependencies)){
                             pluginData.npmDependencies.forEach((dep) => {
                                 if (typeof dep === "string" && dep.trim()){

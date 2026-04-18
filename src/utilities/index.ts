@@ -107,7 +107,7 @@ export function timedAwait<ReturnValue>(promise:ReturnValue,timeout:number,onErr
         try{
             const res = await promise
             if (allowResolve) resolve(res)
-        }catch(err){
+        }catch(err:any){
             onError(err)
         }
     return promise
@@ -117,7 +117,7 @@ export function timedAwait<ReturnValue>(promise:ReturnValue,timeout:number,onErr
 /**## dateString `utility function`
  * Use this function to create a short date string in the following format: `DD/MM/YYYY HH:MM:SS`
  */
-export function dateString(date): string {
+export function dateString(date:Date): string {
     return `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
 }
 
@@ -162,7 +162,7 @@ export function ordinalNumber(num:number){
 /**## trimEmojis `utility function`
  * Trim/remove all emoji's from a Javascript string.
  */
-export function trimEmojis(text){
+export function trimEmojis(text:string){
     return text.replace(/(\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?)*)/gu,"")
 }
 

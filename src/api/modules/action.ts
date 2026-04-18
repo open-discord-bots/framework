@@ -16,7 +16,7 @@ export class ODActionImplementation<Origin extends string,Params extends object,
     /**The manager that has all workers of this implementation */
     workers: ODWorkerManager<Partial<Result>,Origin,Params,WorkerIds>
 
-    constructor(id:ODValidId, callback?:ODWorkerCallback<Result,Origin,Params>, priority?:number, callbackId?:ODValidId){
+    constructor(id:ODValidId, callback?:ODWorkerCallback<Partial<Result>,Origin,Params>, priority?:number, callbackId?:ODValidId){
         super(id)
         this.workers = new ODWorkerManager("descending")
         if (callback) this.workers.add(new ODWorker(callbackId ? callbackId : id,priority ?? 0,callback))

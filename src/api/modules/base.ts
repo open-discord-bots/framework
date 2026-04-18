@@ -37,7 +37,7 @@ export type ODValidId = string|number|symbol|ODId
  * 
  * list: `string`, `number`, `boolean`, `array`, `object`, `null`
  */
-export type ODValidJsonType = string|number|boolean|object|ODValidJsonType[]|null
+export type ODValidJsonType = string|number|boolean|{[key:string]:ODValidJsonType}|ODValidJsonType[]|null
 
 /**## ODInterfaceWithPartialProperty `type`
  * A utility type to create an interface where some properties are optional!
@@ -734,9 +734,9 @@ export class ODHTTPPostRequest {
  */
 export class ODEnvHelper {
     /**All variables found in the `.env` file */
-    dotenv: object
+    dotenv: Record<string,any>
     /**All variables found in `process.env` */
-    env: object
+    env: Record<string,any>
 
     constructor(customEnvPath?:string){
         if (typeof customEnvPath != "undefined" && typeof customEnvPath != "string") throw new ODSystemError("Invalid constructor parameter => customEnvPath?:string")
@@ -767,7 +767,7 @@ export class ODEnvHelper {
     //Source: https://github.com/motdotla/dotenv/blob/master/lib/main.js#L12
     #readDotEnv(src:Buffer){
         const LINE = /(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)/mg
-        const obj = {}
+        const obj: Record<string,any> = {}
         
         // Convert buffer to string
         let lines = src.toString()
@@ -815,8 +815,10 @@ export class ODSystemError extends Error {
 
     /**Create an `ODSystemError` directly from an `Error` class */
     static fromError(err:Error){
-        err["_ODErrorType"] = "system"
-        return err as ODSystemError
+        const modifiedErr: ODSystemError = Object.assign(err,{
+            _ODErrorType:"system"
+        })
+        return modifiedErr as ODSystemError
     }
 }
 
@@ -831,8 +833,10 @@ export class ODPluginError extends Error {
 
     /**Create an `ODPluginError` directly from an `Error` class */
     static fromError(err:Error){
-        err["_ODErrorType"] = "plugin"
-        return err as ODPluginError
+        const modifiedErr: ODPluginError = Object.assign(err,{
+            _ODErrorType:"plugin"
+        })
+        return modifiedErr as ODPluginError
     }
 }
 

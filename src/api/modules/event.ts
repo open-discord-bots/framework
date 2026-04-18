@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //EVENT MODULE
 ///////////////////////////////////////
-import { ODManagerData, ODManager, ODValidId, ODPromiseVoid, ODNoGeneric } from "./base"
+import { ODManagerData, ODManager, ODValidId, ODPromiseVoid, ODNoGeneric, ODSystemError } from "./base"
 import { ODWarningConsoleMessage, ODDebugger } from "./console"
 
 /**## ODEventCallback `type`
@@ -68,8 +68,8 @@ export class ODEvent<Callback extends ODEventCallback = ODEventCallback> extends
         for (const listener of this.#getCurrentListeners()){
             try{
                 await listener(...params)
-            }catch(err){
-                process.emit("uncaughtException",err)
+            }catch(err:any){
+                process.emit("uncaughtException",new ODSystemError(err))
             }
         }
     }

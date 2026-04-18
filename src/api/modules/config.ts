@@ -37,7 +37,7 @@ export class ODConfigManager<IdList extends ODConfigManagerIdConstraint = ODConf
         for (const config of this.getAll()){
             try{
                 await config.init()
-            }catch(err){
+            }catch(err:any){
                 process.emit("uncaughtException",new ODSystemError(err))
             }
         }

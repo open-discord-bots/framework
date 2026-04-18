@@ -91,7 +91,6 @@ export class ODStatisticManager<IdList extends ODStatisticManagerIdConstraint = 
         if (!this.database) return
         const data = await this.database.getAll()
         for (const d of data){
-            if (!this.database) return
             await this.database.delete(d.category,d.key)
         }
     }

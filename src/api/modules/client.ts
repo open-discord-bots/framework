@@ -165,7 +165,7 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
                 await this.client.login(this.token)
                 this.#debug.debug("Finished discord.js client.login()")
                 this.loggedIn = true
-            }catch(err){
+            }catch(err:any){
                 if (softErrors) return resolve(false)
                 else if (err.message.toLowerCase().includes("used disallowed intents")){
                     process.emit("uncaughtException",new ODSystemError("Used disallowed intents"))
@@ -542,7 +542,7 @@ export class ODSlashCommandComparator {
         const nameLoc = choice.nameLocalizations ?? {}
         return {
             name:choice.name,
-            nameLocalizations:Object.keys(nameLoc).map((key) => {return {language:key as `${discord.Locale}`,value:nameLoc[key]}}),
+            nameLocalizations:(Object.keys(nameLoc) as discord.Locale[]).map((key) => {return {language:key as `${discord.Locale}`,value:nameLoc[key] as string}}),
             value:choice.value
         }
     }
@@ -553,9 +553,9 @@ export class ODSlashCommandComparator {
         return {
             type:option.type,
             name:option.name,
-            nameLocalizations:Object.keys(nameLoc).map((key) => {return {language:key as `${discord.Locale}`,value:nameLoc[key]}}),
+            nameLocalizations:(Object.keys(nameLoc) as discord.Locale[]).map((key) => {return {language:key as `${discord.Locale}`,value:nameLoc[key] as string}}),
             description:option.description,
-            descriptionLocalizations:Object.keys(descLoc).map((key) => {return {language:key as `${discord.Locale}`,value:descLoc[key]}}),
+            descriptionLocalizations:(Object.keys(descLoc) as discord.Locale[]).map((key) => {return {language:key as `${discord.Locale}`,value:descLoc[key] as string}}),
             required:(option.type != discord.ApplicationCommandOptionType.SubcommandGroup && option.type != discord.ApplicationCommandOptionType.Subcommand && option.required) ? true : false,
 
             autocomplete:option.autocomplete ?? false,
@@ -576,9 +576,9 @@ export class ODSlashCommandComparator {
         return {
             type:option.type,
             name:option.name,
-            nameLocalizations:Object.keys(nameLoc).map((key) => {return {language:key as `${discord.Locale}`,value:nameLoc[key]}}),
+            nameLocalizations:(Object.keys(nameLoc) as discord.Locale[]).map((key) => {return {language:key as `${discord.Locale}`,value:nameLoc[key] as string}}),
             description:option.description,
-            descriptionLocalizations:Object.keys(descLoc).map((key) => {return {language:key as `${discord.Locale}`,value:descLoc[key]}}),
+            descriptionLocalizations:(Object.keys(descLoc) as discord.Locale[]).map((key) => {return {language:key as `${discord.Locale}`,value:descLoc[key] as string}}),
             required:(option.type != discord.ApplicationCommandOptionType.SubcommandGroup && option.type != discord.ApplicationCommandOptionType.Subcommand && option.required) ? true : false,
 
             autocomplete:option.autocomplete ?? false,
@@ -599,9 +599,9 @@ export class ODSlashCommandComparator {
         return {
             type:1,
             name:builder.name,
-            nameLocalizations:Object.keys(nameLoc).map((key) => {return {language:key as `${discord.Locale}`,value:nameLoc[key]}}),
+            nameLocalizations:(Object.keys(nameLoc) as discord.Locale[]).map((key) => {return {language:key as `${discord.Locale}`,value:nameLoc[key] as string}}),
             description:builder.description,
-            descriptionLocalizations:Object.keys(descLoc).map((key) => {return {language:key as `${discord.Locale}`,value:descLoc[key]}}),
+            descriptionLocalizations:(Object.keys(descLoc) as discord.Locale[]).map((key) => {return {language:key as `${discord.Locale}`,value:descLoc[key] as string}}),
             guildId:guildId,
             nsfw:builder.nsfw ?? false,
             options:builder.options ? builder.options.map((opt) => this.#convertBuilderOption(opt)) : [],
@@ -619,9 +619,9 @@ export class ODSlashCommandComparator {
         return {
             type:1,
             name:cmd.name,
-            nameLocalizations:Object.keys(nameLoc).map((key) => {return {language:key as `${discord.Locale}`,value:nameLoc[key]}}),
+            nameLocalizations:(Object.keys(nameLoc) as discord.Locale[]).map((key) => {return {language:key as `${discord.Locale}`,value:nameLoc[key] as string}}),
             description:cmd.description,
-            descriptionLocalizations:Object.keys(descLoc).map((key) => {return {language:key as `${discord.Locale}`,value:descLoc[key]}}),
+            descriptionLocalizations:(Object.keys(descLoc) as discord.Locale[]).map((key) => {return {language:key as `${discord.Locale}`,value:descLoc[key] as string}}),
             guildId:cmd.guildId,
             nsfw:cmd.nsfw,
             options:cmd.options ? cmd.options.map((opt) => this.#convertCommandOption(opt)) : [],
@@ -1923,7 +1923,7 @@ export class ODContextMenuComparator {
         return {
             type:builder.type,
             name:builder.name,
-            nameLocalizations:Object.keys(nameLoc).map((key) => {return {language:key as `${discord.Locale}`,value:nameLoc[key]}}),
+            nameLocalizations:(Object.keys(nameLoc) as discord.Locale[]).map((key) => {return {language:key as `${discord.Locale}`,value:nameLoc[key] as string}}),
             guildId:guildId,
             nsfw:builder.nsfw ?? false,
             defaultMemberPermissions:discord.PermissionsBitField.resolve(builder.defaultMemberPermissions ?? ["ViewChannel"]),
@@ -1940,7 +1940,7 @@ export class ODContextMenuComparator {
         return {
             type:cmd.type,
             name:cmd.name,
-            nameLocalizations:Object.keys(nameLoc).map((key) => {return {language:key as `${discord.Locale}`,value:nameLoc[key]}}),
+            nameLocalizations:(Object.keys(nameLoc) as discord.Locale[]).map((key) => {return {language:key as `${discord.Locale}`,value:nameLoc[key] as string}}),
             guildId:cmd.guildId,
             nsfw:cmd.nsfw,
             defaultMemberPermissions:discord.PermissionsBitField.resolve(cmd.defaultMemberPermissions ?? ["ViewChannel"]),

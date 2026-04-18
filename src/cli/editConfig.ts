@@ -37,7 +37,7 @@ export class ODCliEditConfigInstance {
         await this.chooseConfigStructure(checker,async () => {await this.renderEditConfig(backFn)},checker.structure,configData,{},NaN,["("+checker.config.path+")"])
     }
 
-    private async chooseConfigStructure(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerStructure,data:api.ODValidJsonType,parent:object|any[],parentIndex:string|number,path:(string|number)[]){
+    private async chooseConfigStructure(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerStructure,data:api.ODValidJsonType,parent:Record<string,any>|any[],parentIndex:string|number,path:(string|number)[]){
         if (structure instanceof api.ODCheckerObjectStructure && typeof data == "object" && !Array.isArray(data) && data) await this.renderConfigObjectStructureSelector(checker,backFn,structure,data,parent,parentIndex,path)
         else if (structure instanceof api.ODCheckerEnabledObjectStructure && typeof data == "object" && !Array.isArray(data) && data) await this.renderConfigEnabledObjectStructureSelector(checker,backFn,structure,data,parent,parentIndex,path)
         else if (structure instanceof api.ODCheckerObjectSwitchStructure && typeof data == "object" && !Array.isArray(data) && data) await this.renderConfigObjectSwitchStructureSelector(checker,backFn,structure,data,parent,parentIndex,path)
@@ -50,7 +50,7 @@ export class ODCliEditConfigInstance {
         else terminal.red.bold("❌ Unable to detect type of variable! Please try to edit this property in the JSON file itself!")
     }
 
-    private async renderConfigObjectStructureSelector(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerObjectStructure,data:object,parent:object,parentIndex:string|number,path:(string|number)[]){
+    private async renderConfigObjectStructureSelector(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerObjectStructure,data:Record<string,any>,parent:Record<string,any>,parentIndex:string|number,path:(string|number)[]){
         if (typeof data != "object" || Array.isArray(data)) throw new api.ODSystemError("OD CLI => Property is not of the type 'object'. Please check your config for possible errors. (index: "+parentIndex+", path: "+path.join(".")+")")
         renderHeader(this.opts,path)
         terminal(ansis.bold.green("Please select which variable you would like to edit.\n")+ansis.italic.gray("(use arrow keys to navigate, go back using escape)\n"))
@@ -81,7 +81,7 @@ export class ODCliEditConfigInstance {
         await this.chooseConfigStructure(checker,async () => {await this.renderConfigObjectStructureSelector(checker,backFn,structure,data,parent,parentIndex,path)},subStructure.checker,subData,data,subStructure.key,[...path,subStructure.key])
     }
 
-    private async renderConfigEnabledObjectStructureSelector(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerEnabledObjectStructure,data:object,parent:object,parentIndex:string|number,path:(string|number)[]){
+    private async renderConfigEnabledObjectStructureSelector(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerEnabledObjectStructure,data:Record<string,any>,parent:Record<string,any>,parentIndex:string|number,path:(string|number)[]){
         if (typeof data != "object" || Array.isArray(data)) throw new api.ODSystemError("OD CLI => Property is not of the type 'object'. Please check your config for possible errors. (index: "+parentIndex+", path: "+path.join(".")+")")
         const enabledProperty = structure.options.property
         const subStructure = structure.options.checker
@@ -96,7 +96,7 @@ export class ODCliEditConfigInstance {
         await this.chooseConfigStructure(checker,backFn,subStructure,data,parent,parentIndex,path)
     }
 
-    private async renderConfigObjectSwitchStructureSelector(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerObjectSwitchStructure,data:object,parent:object,parentIndex:string|number,path:(string|number)[]){
+    private async renderConfigObjectSwitchStructureSelector(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerObjectSwitchStructure,data:Record<string,any>,parent:Record<string,any>,parentIndex:string|number,path:(string|number)[]){
         if (typeof data != "object" || Array.isArray(data)) throw new api.ODSystemError("OD CLI => Property is not of the type 'object'. Please check your config for possible errors. (index: "+parentIndex+", path: "+path.join(".")+")")
         if (!structure.options.objects) return await backFn()
 
@@ -174,7 +174,7 @@ export class ODCliEditConfigInstance {
         await this.chooseConfigStructure(checker,async () => {await this.renderConfigArrayStructureEditSelector(checker,backFn,arrayStructure,structure,data,parent,parentIndex,path)},structure,subData,data,dataAnswer.selectedIndex,[...path,dataAnswer.selectedIndex])
     }
 
-    private async renderConfigArrayStructureMoveSelector(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),arrayStructure:api.ODCheckerArrayStructure,structure:api.ODCheckerStructure,data:any[],parent:object,parentIndex:string|number,path:(string|number)[]){
+    private async renderConfigArrayStructureMoveSelector(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),arrayStructure:api.ODCheckerArrayStructure,structure:api.ODCheckerStructure,data:any[],parent:Record<string,any>,parentIndex:string|number,path:(string|number)[]): Promise<void> {
         const propertyName = arrayStructure.options.cliDisplayPropertyName ?? "index"
         renderHeader(this.opts,path)
         terminal(ansis.bold.green("Please select the "+propertyName+" you would like to move.\n")+ansis.italic.gray("(use arrow keys to navigate, go back using escape)\n"))
@@ -267,7 +267,7 @@ export class ODCliEditConfigInstance {
         await backFn()
     }
 
-    private async renderConfigBooleanStructureEditor(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerBooleanStructure,data:boolean,parent:object,parentIndex:string|number,path:(string|number)[]){
+    private async renderConfigBooleanStructureEditor(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerBooleanStructure,data:boolean,parent:Record<string,any>,parentIndex:string|number,path:(string|number)[]){
         if (typeof data != "boolean") throw new api.ODSystemError("OD CLI => Property is not of the type 'boolean'. Please check your config for possible errors. (index: "+parentIndex+", path: "+path.join(".")+")")
         renderHeader(this.opts,path)
         terminal(ansis.bold.green("You are now editing "+(typeof parentIndex == "string" ? "the boolean property "+ansis.blue("\""+parentIndex+"\"") : "boolean property "+ansis.blue("#"+(parentIndex+1)))+".\n")+ansis.italic.gray("(use arrow keys to navigate, go back using escape)\n"))
@@ -309,7 +309,7 @@ export class ODCliEditConfigInstance {
         }
     }
 
-    private async renderConfigNumberStructureEditor(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerNumberStructure,data:number,parent:object,parentIndex:string|number,path:(string|number)[],prefillValue?:string){
+    private async renderConfigNumberStructureEditor(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerNumberStructure,data:number,parent:Record<string,any>,parentIndex:string|number,path:(string|number)[],prefillValue?:string){
         if (typeof data != "number") throw new api.ODSystemError("OD CLI => Property is not of the type 'number'. Please check your config for possible errors. (index: "+parentIndex+", path: "+path.join(".")+")")
         renderHeader(this.opts,path)
         terminal(ansis.bold.green("You are now editing "+(typeof parentIndex == "string" ? "the number property "+ansis.blue("\""+parentIndex+"\"") : "number property "+ansis.blue("#"+(parentIndex+1)))+".\n")+ansis.italic.gray("(insert a new value and press enter, go back using escape)\n"))
@@ -348,7 +348,7 @@ export class ODCliEditConfigInstance {
         }
     }
 
-    private async renderConfigStringStructureEditor(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerStringStructure,data:string,parent:object,parentIndex:string|number,path:(string|number)[],prefillValue?:string){
+    private async renderConfigStringStructureEditor(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerStringStructure,data:string,parent:Record<string,any>,parentIndex:string|number,path:(string|number)[],prefillValue?:string){
         if (typeof data != "string") throw new api.ODSystemError("OD CLI => Property is not of the type 'string'. Please check your config for possible errors. (index: "+parentIndex+", path: "+path.join(".")+")")
         renderHeader(this.opts,path)
         terminal(ansis.bold.green("You are now editing "+(typeof parentIndex == "string" ? "the string property "+ansis.blue("\""+parentIndex+"\"") : "string property "+ansis.blue("#"+(parentIndex+1)))+".\n")+ansis.italic.gray("(insert a new value and press enter, go back using escape)\n"))
@@ -409,7 +409,7 @@ export class ODCliEditConfigInstance {
         }
     }
 
-    private async renderConfigNullStructureEditor(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerNullStructure,data:null,parent:object,parentIndex:string|number,path:(string|number)[]){
+    private async renderConfigNullStructureEditor(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),structure:api.ODCheckerNullStructure,data:null,parent:Record<string,any>,parentIndex:string|number,path:(string|number)[]){
         if (data !== null) throw new api.ODSystemError("OD CLI => Property is not of the type 'null'. Please check your config for possible errors. (index: "+parentIndex+", path: "+path.join(".")+")")
         renderHeader(this.opts,path)
         terminal(ansis.bold.green("You are now editing "+(typeof parentIndex == "string" ? "the null property "+ansis.blue("\""+parentIndex+"\"") : "null property "+ansis.blue("#"+(parentIndex+1)))+".\n")+ansis.italic.gray("(use arrow keys to navigate, go back using escape)\n"))
@@ -486,7 +486,7 @@ export class ODCliEditConfigInstance {
         else if (answer.selectedText.startsWith("Edit as null") && structure.options.null) await this.renderConfigNullStructureEditor(checker,async () => {await this.renderConfigTypeSwitchStructureEditor(checker,backFn,structure,data,parent,parentIndex,path)},structure.options.null,null,parent,parentIndex,path)
     }
 
-    private getArrayPreviewStructureNameLength(structure:api.ODCheckerStructure,data:api.ODValidJsonType,parent:object,parentIndex:string|number): number {
+    private getArrayPreviewStructureNameLength(structure:api.ODCheckerStructure,data:api.ODValidJsonType,parent:Record<string,any>,parentIndex:string|number): number {
         if (structure instanceof api.ODCheckerBooleanStructure && typeof data == "boolean") return data.toString().length
         else if (structure instanceof api.ODCheckerNumberStructure && typeof data == "number") return data.toString().length
         else if (structure instanceof api.ODCheckerStringStructure && typeof data == "string") return data.length
@@ -494,7 +494,7 @@ export class ODCliEditConfigInstance {
         else if (structure instanceof api.ODCheckerArrayStructure && Array.isArray(data)) return "Array".length
         else if (structure instanceof api.ODCheckerObjectStructure && typeof data == "object" && !Array.isArray(data) && data){
             if (!structure.options.cliDisplayKeyInParentArray) return "Object".length
-            else return data[structure.options.cliDisplayKeyInParentArray].toString().length
+            else return data[structure.options.cliDisplayKeyInParentArray]?.toString().length ?? 0
 
         }else if (structure instanceof api.ODCheckerEnabledObjectStructure && typeof data == "object" && !Array.isArray(data) && data){
             const subStructure = structure.options.checker
@@ -522,16 +522,16 @@ export class ODCliEditConfigInstance {
         }else return "<unknown-property>".length
     }
 
-    private getArrayPreviewFromStructure(structure:api.ODCheckerStructure,data:api.ODValidJsonType,parent:object,parentIndex:string|number,nameLength:number): string {
+    private getArrayPreviewFromStructure(structure:api.ODCheckerStructure,data:api.ODValidJsonType,parent:Record<string,any>,parentIndex:string|number,nameLength:number): string {
         if (structure instanceof api.ODCheckerBooleanStructure && typeof data == "boolean") return data.toString()
         else if (structure instanceof api.ODCheckerNumberStructure && typeof data == "number") return data.toString()
         else if (structure instanceof api.ODCheckerStringStructure && typeof data == "string") return data
         else if (structure instanceof api.ODCheckerNullStructure && data === null) return "Null"
         else if (structure instanceof api.ODCheckerArrayStructure && Array.isArray(data)) return "Array"
         else if (structure instanceof api.ODCheckerObjectStructure && typeof data == "object" && !Array.isArray(data) && data){
-            const additionalKeys = (structure.options.cliDisplayAdditionalKeysInParentArray ?? []).map((key) => key+": "+data[key].toString()).join(", ")
+            const additionalKeys = (structure.options.cliDisplayAdditionalKeysInParentArray ?? []).map((key) => key+": "+data[key]?.toString()).join(", ")
             if (!structure.options.cliDisplayKeyInParentArray) return "Object"
-            else return data[structure.options.cliDisplayKeyInParentArray].toString().padEnd(nameLength+5," ")+ansis.gray(additionalKeys.length > 0 ? "("+additionalKeys+")" : "")
+            else return data[structure.options.cliDisplayKeyInParentArray]?.toString().padEnd(nameLength+5," ")+ansis.gray(additionalKeys.length > 0 ? "("+additionalKeys+")" : "")
 
         }else if (structure instanceof api.ODCheckerEnabledObjectStructure && typeof data == "object" && !Array.isArray(data) && data){
             const subStructure = structure.options.checker
@@ -572,7 +572,7 @@ export class ODCliEditConfigInstance {
         else await backFn()
     }
 
-    private async renderAdditionConfigObjectStructure(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),nextFn:((data:any) => api.ODPromiseVoid),structure:api.ODCheckerObjectStructure,parent:object|any[],parentIndex:string|number,path:(string|number)[],localPath:(string|number)[],localData:object={}){
+    private async renderAdditionConfigObjectStructure(checker:api.ODChecker,backFn:(() => api.ODPromiseVoid),nextFn:((data:any) => api.ODPromiseVoid),structure:api.ODCheckerObjectStructure,parent:object|any[],parentIndex:string|number,path:(string|number)[],localPath:(string|number)[],localData:Record<string,any>={}){
         const children = structure.options.children ?? []
         const skipKeys = (structure.options.cliInitSkipKeys ?? [])
         //add skipped properties
@@ -606,7 +606,7 @@ export class ODCliEditConfigInstance {
         })
     }
 
-    private async configureAdditionObjectProperties(checker:api.ODChecker,children:{key:string,checker:api.ODCheckerStructure}[],currentIndex:number,localData:object,path:(string|number)[],localPath:(string|number)[],backFn:(() => api.ODPromiseVoid),nextFn:(() => api.ODPromiseVoid)){
+    private async configureAdditionObjectProperties(checker:api.ODChecker,children:{key:string,checker:api.ODCheckerStructure}[],currentIndex:number,localData:Record<string,any>,path:(string|number)[],localPath:(string|number)[],backFn:(() => api.ODPromiseVoid),nextFn:(() => api.ODPromiseVoid)){
         if (children.length < 1) return await nextFn()
         
         const child = children[currentIndex]
@@ -632,22 +632,15 @@ export class ODCliEditConfigInstance {
         else if (typeof enabledValue == "boolean") propertyStructure = new api.ODCheckerBooleanStructure("opendiscord:CLI-checker-enabled-object-structure",{})
         else throw new Error("OD CLI => enabled object structure has an invalid type of enabledProperty. It must be a primitive boolean/number/string.")
 
-        const localData = {}
+        const localData: Record<string,any> = {}
         await this.chooseAdditionConfigStructure(checker,backFn,async (data) => {
             if (data === enabledValue) await this.renderAdditionConfigObjectStructure(checker,async () => {await this.renderAdditionConfigEnabledObjectStructure(checker,backFn,nextFn,structure,parent,parentIndex,path,localPath)},nextFn,subStructure,parent,parentIndex,path,localPath,localData)
             else{
                 localData[enabledProperty] = data
                 //copy old object checker to new object checker => all options get de-referenced (this is needed for the new object skip keys are temporary)
-                const newStructure = new api.ODCheckerObjectStructure(subStructure.id,{children:[]})
+                const newStructure = new api.ODCheckerObjectStructure(subStructure.id,structuredClone(subStructure.options))
                 
-                //copy all options over to the new checker
-                newStructure.options.children = [...subStructure.options.children]
-                newStructure.options.cliInitSkipKeys = subStructure.options.children.map((child) => child.key)
-                for (const key of Object.keys(subStructure.options)){
-                    if (key != "children" && key != "cliInitSkipKeys") newStructure.options[key] = subStructure.options[key]
-                }
-
-                //adds all properties to object as "skipKeys", then continues to next function
+                //continues to next function
                 await this.renderAdditionConfigObjectStructure(checker,async () => {await this.renderAdditionConfigEnabledObjectStructure(checker,backFn,nextFn,structure,parent,parentIndex,path,localPath)},nextFn,newStructure,parent,parentIndex,path,localPath,localData)
                 await nextFn(localData)
             }
@@ -672,14 +665,7 @@ export class ODCliEditConfigInstance {
 
         //copy old object checker to new object checker => all options get de-referenced (this is needed for the new object switch properties which are temporary)
         const oldStructure = objectTemplate.checker
-        const newStructure = new api.ODCheckerObjectStructure(oldStructure.id,{children:[]})
-        
-        //copy all options over to the new checker
-        newStructure.options.children = [...oldStructure.options.children]
-        newStructure.options.cliInitSkipKeys = [...(oldStructure.options.cliInitSkipKeys ?? [])]
-        for (const key of Object.keys(oldStructure.options)){
-            if (key != "children" && key != "cliInitSkipKeys") newStructure.options[key] = oldStructure.options[key]
-        }
+        const newStructure = new api.ODCheckerObjectStructure(oldStructure.id,structuredClone(oldStructure.options))
 
         //add the keys of the object switch properties to the 'cliInitSkipKeys' because they need to be skipped.
         objectTemplate.properties.map((p) => p.key).forEach((p) => {

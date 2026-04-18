@@ -149,7 +149,7 @@ export class ODLanguageManager<IdList extends ODLanguageManagerIdConstraint = OD
         for (const language of this.getAll()){
             try{
                 await language.init()
-            }catch(err){
+            }catch(err:any){
                 process.emit("uncaughtException",new ODSystemError(err))
             }
         }

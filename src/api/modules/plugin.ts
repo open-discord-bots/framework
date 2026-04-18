@@ -185,7 +185,7 @@ export class ODPlugin extends ODManagerData {
                 debug.console.log("Plugin \""+this.id.value+"\" loaded successfully!","plugin")
                 this.executed = true
                 return true
-            }catch(error){
+            }catch(error:any){
                 this.crashed = true
                 this.crashReason = "executed"
 

@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //HELP MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODSystemError, ODValidId } from "./base"
 import { ODDebugger } from "./console"
 
 /**## ODHelpMenuComponentRenderer `type`
@@ -134,8 +134,8 @@ export class ODHelpMenuCategory<IdList extends ODHelpMenuCategoryIdConstraint = 
         for (const component of derefArray){
             try {
                 result.push(await component.render(page,category,i,mode))
-            }catch(err){
-                process.emit("uncaughtException",err)
+            }catch(err:any){
+                process.emit("uncaughtException",new ODSystemError(err))
             }
             i++
         }

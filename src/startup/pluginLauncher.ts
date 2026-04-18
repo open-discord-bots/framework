@@ -17,16 +17,19 @@ export const loadAllPlugins = async (opendiscord:api.ODMain) => {
     //check & validate
     for (const p of plugins){
         //prechecks
-        if (p === ".DS_Store") return //ignore MacOS DS_Store file
-        if (!fs.statSync("./plugins/"+p).isDirectory()) return opendiscord.log("Plugin is not a directory, canceling plugin execution...","plugin",[
-            {key:"plugin",value:"./plugins/"+p}
-        ])
+        if (p === ".DS_Store") continue //ignore MacOS DS_Store file
+        if (!fs.statSync("./plugins/"+p).isDirectory()){
+            opendiscord.log("Plugin is not a directory, canceling plugin execution...","plugin",[
+                {key:"plugin",value:"./plugins/"+p}
+            ])
+            continue
+        }
         if (!fs.existsSync("./plugins/"+p+"/plugin.json")){
             initPluginError = true
             opendiscord.log("Plugin doesn't have a plugin.json, canceling plugin execution...","plugin",[
                 {key:"plugin",value:"./plugins/"+p}
             ])
-            return
+            continue
         }
 
         //plugin loading
@@ -81,7 +84,7 @@ export const loadAllPlugins = async (opendiscord:api.ODMain) => {
             const plugin = new api.ODPlugin(p,rawplugindata)
             opendiscord.plugins.add(plugin)
 
-        }catch(e){
+        }catch(e:any){
             //when any of the above errors happen, crash the bot when soft mode isn't enabled
             initPluginError = true
             opendiscord.log(e.message+", canceling plugin execution...","plugin",[
