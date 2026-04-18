@@ -1,10 +1,10 @@
 ///////////////////////////////////////
 //COMPONENTS MODULE
 ///////////////////////////////////////
-import { ODId, ODValidId, ODSystemError, ODManagerData, ODNoGeneric, ODManager } from "./base"
+import { ODId, ODValidId, ODSystemError, ODManagerData, ODNoGeneric, ODManager } from "./base.js"
 import * as discord from "discord.js"
-import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker"
-import { ODDebugger } from "./console"
+import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker.js"
+import { ODDebugger } from "./console.js"
 
 /**## ODComponentFactoryInstance `class`
  * An Open Discord component factory instance.
