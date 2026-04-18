@@ -1,9 +1,9 @@
 ///////////////////////////////////////
 //CONFIG MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODNoGeneric, ODPromiseVoid, ODSystemError, ODValidId, ODValidJsonType } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODPromiseVoid, ODSystemError, ODValidId, ODValidJsonType } from "./base.js"
 import nodepath from "path"
-import { ODDebugger } from "./console"
+import { ODDebugger } from "./console.js"
 import fs from "fs"
 import * as fjs from "formatted-json-stringify"
 

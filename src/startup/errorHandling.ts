@@ -1,5 +1,5 @@
-import * as api from "../api/index"
-import * as utilities from "../utilities/index"
+import * as api from "../api/index.js"
+import * as utilities from "../utilities/index.js"
 
 export function loadErrorHandling(opendiscord:api.ODMain,project:api.ODProjectType){
     process.on("uncaughtException",async (error,origin) => {

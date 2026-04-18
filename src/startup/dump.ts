@@ -1,5 +1,5 @@
-import * as api from "../api/index"
-import * as utilities from "../utilities/index"
+import * as api from "../api/index.js"
+import * as utilities from "../utilities/index.js"
 import * as discord from "discord.js"
 import * as fs from "fs"
 

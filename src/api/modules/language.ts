@@ -1,9 +1,9 @@
 ///////////////////////////////////////
 //LANGUAGE MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODNoGeneric, ODPromiseVoid, ODSystemError, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODPromiseVoid, ODSystemError, ODValidId } from "./base.js"
 import nodepath from "path"
-import { ODDebugger } from "./console"
+import { ODDebugger } from "./console.js"
 import fs from "fs"
 
 /**## ODLanguageMetadata `interface`

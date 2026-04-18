@@ -1,10 +1,11 @@
 {
     "name": "@open-discord-bots/framework",
     "author": "DJj123dj",
-    "version": "0.2.12",
+    "version": "0.2.13",
     "description": "The core framework of the popular open-source discord bots: Open Ticket & Open Moderation.",
     "main": "dist/index.js",
     "module": "dist/index.js",
+    "type": "module",
     "scripts": {
         "build": "node ./tools/cleanup.js && tsc -p ./tsconfig.json"
     },

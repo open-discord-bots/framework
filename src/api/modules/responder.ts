@@ -1,12 +1,12 @@
 ///////////////////////////////////////
 //RESPONDER MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODValidId, ODSystemError, ODManagerData, ODNoGeneric } from "./base"
+import { ODId, ODManager, ODValidId, ODSystemError, ODManagerData, ODNoGeneric } from "./base.js"
 import * as discord from "discord.js"
-import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker"
-import { ODDebugger } from "./console"
-import { ODClientManager, ODContextMenu, ODSlashCommand, ODTextCommand, ODTextCommandInteractionOption } from "./client"
-import { ODDropdownData, ODMessageBuildResult, ODMessageBuildSentResult, ODModalBuildResult } from "./builder"
+import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker.js"
+import { ODDebugger } from "./console.js"
+import { ODClientManager, ODContextMenu, ODSlashCommand, ODTextCommand, ODTextCommandInteractionOption } from "./client.js"
+import { ODDropdownData, ODMessageBuildResult, ODMessageBuildSentResult, ODModalBuildResult } from "./builder.js"
 
 /**## ODResponderImplementation `class`
  * This is an Open Discord responder implementation.

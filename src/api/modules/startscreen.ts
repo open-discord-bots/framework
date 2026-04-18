@@ -1,10 +1,10 @@
 ///////////////////////////////////////
 //STARTSCREEN MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base"
-import { ODDebugger, ODError, ODLiveStatusManager, ODLiveStatusManagerIdConstraint } from "./console"
-import { ODFlag } from "./flag"
-import { ODPlugin, ODUnknownCrashedPlugin } from "./plugin"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base.js"
+import { ODDebugger, ODError, ODLiveStatusManager, ODLiveStatusManagerIdConstraint } from "./console.js"
+import { ODFlag } from "./flag.js"
+import { ODPlugin, ODUnknownCrashedPlugin } from "./plugin.js"
 import ansis from "ansis"
 
 /**## ODStartScreenComponentRenderCallback `type`

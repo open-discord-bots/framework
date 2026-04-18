@@ -2,8 +2,8 @@
 //BASE MODULE
 ///////////////////////////////////////
 import * as fs from "fs"
-import { ODDebugger } from "./console"
-import type { ODMain } from "../main"
+import { ODDebugger } from "./console.js"
+import type { ODMain } from "../main.js"
 
 /**## ODPromiseVoid `type`
  * This is a simple type to represent a callback return value that could be a promise or not.

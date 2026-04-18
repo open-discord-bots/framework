@@ -1,8 +1,8 @@
 ///////////////////////////////////////
 //FLAG MODULE
 ///////////////////////////////////////
-import { ODId, ODValidId, ODManager, ODManagerData, ODNoGeneric } from "./base"
-import { ODDebugger } from "./console"
+import { ODId, ODValidId, ODManager, ODManagerData, ODNoGeneric } from "./base.js"
+import { ODDebugger } from "./console.js"
 
 /**## ODFlag `class`
  * This is an Open Discord flag.

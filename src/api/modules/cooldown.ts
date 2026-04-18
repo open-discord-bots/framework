@@ -1,8 +1,8 @@
 ///////////////////////////////////////
 //COOLDOWN MODULE
 ///////////////////////////////////////
-import { ODId, ODValidId, ODManager, ODSystemError, ODManagerData, ODNoGeneric } from "./base"
-import { ODDebugger } from "./console"
+import { ODId, ODValidId, ODManager, ODSystemError, ODManagerData, ODNoGeneric } from "./base.js"
+import { ODDebugger } from "./console.js"
 
 /**## ODCooldownManagerIdConstraint `type`
  * The constraint/layout for id mappings/interfaces of the `ODCooldownManager` class.

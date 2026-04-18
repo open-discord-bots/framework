@@ -1,8 +1,8 @@
 ///////////////////////////////////////
 //EVENT MODULE
 ///////////////////////////////////////
-import { ODManagerData, ODManager, ODValidId, ODPromiseVoid, ODNoGeneric, ODSystemError } from "./base"
-import { ODWarningConsoleMessage, ODDebugger } from "./console"
+import { ODManagerData, ODManager, ODValidId, ODPromiseVoid, ODNoGeneric, ODSystemError } from "./base.js"
+import { ODWarningConsoleMessage, ODDebugger } from "./console.js"
 
 /**## ODEventCallback `type`
  * The base callback function for events.

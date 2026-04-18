@@ -1,9 +1,9 @@
 ///////////////////////////////////////
 //POST MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base"
-import { ODMessageBuildResult, ODMessageBuildSentResult } from "./builder"
-import { ODDebugger } from "./console"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base.js"
+import { ODMessageBuildResult, ODMessageBuildSentResult } from "./builder.js"
+import { ODDebugger } from "./console.js"
 import * as discord from "discord.js"
 
 /**## ODPostManagerIdConstraint `type`

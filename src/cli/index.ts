@@ -1,11 +1,11 @@
-import * as api from "../api/index"
-import * as utilities from "../utilities/index"
+import * as api from "../api/index.js"
+import * as utilities from "../utilities/index.js"
 import {Terminal, terminal} from "terminal-kit"
 import * as discord from "discord.js"
 import ansis from "ansis"
 import crypto from "crypto"
 
-export * from "./editConfig"
+export * from "./editConfig.js"
 
 /**## ODCliHeaderOpts `interface`
  * All metadata required for rendering the Interactive Setup CLI header.

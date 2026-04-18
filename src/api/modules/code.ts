@@ -1,8 +1,8 @@
 ///////////////////////////////////////
 //CODE MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base"
-import { ODDebugger } from "./console"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base.js"
+import { ODDebugger } from "./console.js"
 
 
 /**## ODCode `class`

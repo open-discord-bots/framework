@@ -1,12 +1,12 @@
 ///////////////////////////////////////
 //DISCORD CLIENT MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODNoGeneric, ODSystemError, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODSystemError, ODValidId } from "./base.js"
 import * as discord from "discord.js"
 import {REST} from "@discordjs/rest"
-import { ODWarningConsoleMessage, ODDebugger } from "./console"
-import { ODMessageBuildResult, ODMessageBuildSentResult } from "./builder"
-import { ODManualProgressBar } from "./progressbar"
+import { ODWarningConsoleMessage, ODDebugger } from "./console.js"
+import { ODMessageBuildResult, ODMessageBuildSentResult } from "./builder.js"
+import { ODManualProgressBar } from "./progressbar.js"
 
 /**## ODClientIntents `type`
  * A list of intents required when inviting the bot.

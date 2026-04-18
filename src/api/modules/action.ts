@@ -1,9 +1,9 @@
 ///////////////////////////////////////
 //ACTION MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODValidId, ODSystemError, ODManagerData, ODNoGeneric } from "./base"
-import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker"
-import { ODDebugger } from "./console"
+import { ODId, ODManager, ODValidId, ODSystemError, ODManagerData, ODNoGeneric } from "./base.js"
+import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker.js"
+import { ODDebugger } from "./console.js"
 
 /**## ODActionImplementation `class`
  * This is an Open Discord action implementation.

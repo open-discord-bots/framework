@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import ansis from "ansis"
-import * as api from "../api/index"
+import * as api from "../api/index.js"
 
 /**## sharedFuses `utility variable`
  * All shared fuses from Open Discord. Please use `opendiscord.sharedFuses` instead!

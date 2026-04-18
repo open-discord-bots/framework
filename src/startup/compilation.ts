@@ -3,7 +3,7 @@ import ts from "typescript"
 import { createHash, Hash } from "crypto"
 import nodepath from "path"
 import ansis from "ansis"
-import type { ODPluginData, ODProjectType } from "../api"
+import type { ODPluginData, ODProjectType } from "../api/index.js"
 
 /** ## What is this?
  * This is a function which compares `./src/` with a hash stored in `./dist/hash.txt`.

@@ -1,10 +1,10 @@
 ///////////////////////////////////////
 //PERMISSION MODULE
 ///////////////////////////////////////
-import { ODId, ODValidId, ODManager, ODSystemError, ODManagerData, ODNoGeneric } from "./base"
+import { ODId, ODValidId, ODManager, ODSystemError, ODManagerData, ODNoGeneric } from "./base.js"
 import * as discord from "discord.js"
-import { ODDebugger } from "./console"
-import { ODClientManager } from "./client"
+import { ODDebugger } from "./console.js"
+import { ODClientManager } from "./client.js"
 
 /**## ODPermissionType `type`
  * All available permission types/levels. Can be used in the `ODPermission` class.

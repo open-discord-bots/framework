@@ -1,9 +1,9 @@
 ///////////////////////////////////////
 //STATISTIC MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODNoGeneric, ODSystemError, ODValidId } from "./base"
-import { ODDebugger } from "./console"
-import { ODDatabase, ODDatabaseIdConstraint, ODJsonDatabaseStructure } from "./database"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODSystemError, ODValidId } from "./base.js"
+import { ODDebugger } from "./console.js"
+import { ODDatabase, ODDatabaseIdConstraint, ODJsonDatabaseStructure } from "./database.js"
 import * as discord from "discord.js"
 
 /**## ODValidStatisticValue `type`

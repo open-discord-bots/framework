@@ -1,10 +1,10 @@
 ///////////////////////////////////////
 //DATABASE MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODNoGeneric, ODOptionalPromise, ODPromiseVoid, ODSystemError, ODValidId, ODValidJsonType } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODOptionalPromise, ODPromiseVoid, ODSystemError, ODValidId, ODValidJsonType } from "./base.js"
 import fs from "fs"
 import nodepath from "path"
-import { ODDebugger } from "./console"
+import { ODDebugger } from "./console.js"
 import * as fjs from "formatted-json-stringify"
 
 /**## ODDatabaseManagerIdConstraint `type`

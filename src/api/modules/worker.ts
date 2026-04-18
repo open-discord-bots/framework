@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //WORKER MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODSystemError, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODSystemError, ODValidId } from "./base.js"
 
 /**## ODWorkerCallback `type`
  * This is the callback used in `ODWorker`!

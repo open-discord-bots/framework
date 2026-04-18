@@ -1,8 +1,8 @@
 ///////////////////////////////////////
 //PROGRESS BAR MODULE
 ///////////////////////////////////////
-import { ODSystemError, ODManager, ODManagerData, ODValidId, ODNoGeneric } from "./base"
-import { ODDebugger, ODValidConsoleColor } from "./console"
+import { ODSystemError, ODManager, ODManagerData, ODValidId, ODNoGeneric } from "./base.js"
+import { ODDebugger, ODValidConsoleColor } from "./console.js"
 import readline from "readline"
 import ansis from "ansis"
 

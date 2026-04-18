@@ -1,8 +1,8 @@
 ///////////////////////////////////////
 //HELP MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODNoGeneric, ODSystemError, ODValidId } from "./base"
-import { ODDebugger } from "./console"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODSystemError, ODValidId } from "./base.js"
+import { ODDebugger } from "./console.js"
 
 /**## ODHelpMenuComponentRenderer `type`
  * This is the callback of the help menu component renderer. It also contains information about how & where it is rendered.

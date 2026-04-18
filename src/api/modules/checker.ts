@@ -1,10 +1,10 @@
 ///////////////////////////////////////
 //CONFIG CHECKER MODULE
 ///////////////////////////////////////
-import { ODDiscordIdType, ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId, ODValidJsonType } from "./base"
-import { ODConfig } from "./config"
-import { ODLanguageManager } from "./language"
-import { ODDebugger } from "./console"
+import { ODDiscordIdType, ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId, ODValidJsonType } from "./base.js"
+import { ODConfig } from "./config.js"
+import { ODLanguageManager } from "./language.js"
+import { ODDebugger } from "./console.js"
 import ansis from "ansis"
 
 /**## ODCheckerResult `interface`

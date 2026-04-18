@@ -1,8 +1,8 @@
 ///////////////////////////////////////
 //PLUGIN MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId, ODVersion } from "./base"
-import { ODDebugger } from "./console"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId, ODVersion } from "./base.js"
+import { ODDebugger } from "./console.js"
 import nodepath from "path"
 
 /**## ODUnknownCrashedPlugin `interface`
@@ -180,7 +180,7 @@ export class ODPlugin extends ODManagerData {
         if ((this.enabled && !this.crashed) || force){
             try{
                 //import relative plugin directory path (works on windows & unix based systems)
-                const pluginPath = nodepath.join("../../../../plugins/",this.getStartFile()).replaceAll("\\","/")
+                const pluginPath = nodepath.join(process.cwd(),"./dist/plugins/",this.getStartFile()).replaceAll("\\","/")
                 await import(pluginPath)
                 debug.console.log("Plugin \""+this.id.value+"\" loaded successfully!","plugin")
                 this.executed = true

@@ -1,28 +1,28 @@
 //BASE MODULES
-import { ODEnvHelper, ODProjectType, ODVersion, ODVersionManager } from "./modules/base"
-import { ODConsoleManager, ODConsoleMessage, ODConsoleMessageParam, ODConsoleMessageTypes, ODDebugFileManager, ODDebugger, ODError, ODLiveStatusManager } from "./modules/console"
-import { ODCheckerManager } from "./modules/checker"
-import { ODEventManager } from "./modules/event"
-import { ODPluginManager } from "./modules/plugin"
-import { ODFlagManager } from "./modules/flag"
-import { ODProgressBarManager } from "./modules/progressbar"
-import { ODConfigManager } from "./modules/config"
-import { ODDatabaseManager } from "./modules/database"
-import { ODSessionManager } from "./modules/session"
-import { ODLanguageManager } from "./modules/language"
-import { ODBuilderManager } from "./modules/builder"
-import { ODResponderManager } from "./modules/responder"
-import { ODActionManager } from "./modules/action"
-import { ODVerifyBarManager } from "./modules/verifybar"
-import { ODPermissionManager } from "./modules/permission"
-import { ODCooldownManager } from "./modules/cooldown"
-import { ODHelpMenuManager } from "./modules/helpmenu"
-import { ODStatisticManager } from "./modules/statistic"
-import { ODCodeManager } from "./modules/code"
-import { ODPostManager } from "./modules/post"
-import { ODClientManager } from "./modules/client"
-import { ODSharedFuseManager } from "./modules/fuse"
-import { ODStartScreenManager } from "./modules/startscreen"
+import { ODEnvHelper, ODProjectType, ODVersion, ODVersionManager } from "./modules/base.js"
+import { ODConsoleManager, ODConsoleMessage, ODConsoleMessageParam, ODConsoleMessageTypes, ODDebugFileManager, ODDebugger, ODError, ODLiveStatusManager } from "./modules/console.js"
+import { ODCheckerManager } from "./modules/checker.js"
+import { ODEventManager } from "./modules/event.js"
+import { ODPluginManager } from "./modules/plugin.js"
+import { ODFlagManager } from "./modules/flag.js"
+import { ODProgressBarManager } from "./modules/progressbar.js"
+import { ODConfigManager } from "./modules/config.js"
+import { ODDatabaseManager } from "./modules/database.js"
+import { ODSessionManager } from "./modules/session.js"
+import { ODLanguageManager } from "./modules/language.js"
+import { ODBuilderManager } from "./modules/builder.js"
+import { ODResponderManager } from "./modules/responder.js"
+import { ODActionManager } from "./modules/action.js"
+import { ODVerifyBarManager } from "./modules/verifybar.js"
+import { ODPermissionManager } from "./modules/permission.js"
+import { ODCooldownManager } from "./modules/cooldown.js"
+import { ODHelpMenuManager } from "./modules/helpmenu.js"
+import { ODStatisticManager } from "./modules/statistic.js"
+import { ODCodeManager } from "./modules/code.js"
+import { ODPostManager } from "./modules/post.js"
+import { ODClientManager } from "./modules/client.js"
+import { ODSharedFuseManager } from "./modules/fuse.js"
+import { ODStartScreenManager } from "./modules/startscreen.js"
 
 /**## ODMainManagers `interface`
  * The global properties for the main class of the bot.
@@ -142,7 +142,7 @@ export class ODMain implements ODMainManagers {
     constructor(managers:ODMainManagers,project:ODProjectType){
         this.project = project
         this.versions = managers.versions
-        this.versions.add(ODVersion.fromString("opendiscord:api","v0.2.12"))
+        this.versions.add(ODVersion.fromString("opendiscord:api","v0.2.13"))
         this.versions.add(ODVersion.fromString("opendiscord:livestatus","v2.0.0"))
 
         this.debugfile = managers.debugfile

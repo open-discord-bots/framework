@@ -1,10 +1,10 @@
 ///////////////////////////////////////
 //BUILDER MODULE
 ///////////////////////////////////////
-import { ODId, ODValidButtonColor, ODValidId, ODSystemError, ODInterfaceWithPartialProperty, ODManagerWithSafety, ODManagerData, ODNoGeneric } from "./base"
+import { ODId, ODValidButtonColor, ODValidId, ODSystemError, ODInterfaceWithPartialProperty, ODManagerWithSafety, ODManagerData, ODNoGeneric } from "./base.js"
 import * as discord from "discord.js"
-import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker"
-import { ODDebugger } from "./console"
+import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker.js"
+import { ODDebugger } from "./console.js"
 
 /**## ODBuilderImplementation `class`
  * This is an Open Discord builder implementation.

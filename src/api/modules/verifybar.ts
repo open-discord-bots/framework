@@ -1,12 +1,12 @@
 ///////////////////////////////////////
 //VERIFYBAR MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base"
-import { ODMessage } from "./builder"
-import { ODDebugger } from "./console"
-import { ODButtonResponderInstance } from "./responder"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base.js"
+import { ODMessage } from "./builder.js"
+import { ODDebugger } from "./console.js"
+import { ODButtonResponderInstance } from "./responder.js"
 import * as discord from "discord.js"
-import { ODWorkerManager } from "./worker"
+import { ODWorkerManager } from "./worker.js"
 
 /**## ODVerifyBar `class`
  * This is an Open Discord verifybar.

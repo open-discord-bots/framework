@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "target": "ES2022",
+        "target": "es2025",
         "strictNullChecks": true,
         "strictPropertyInitialization": true,
         "declaration": true,

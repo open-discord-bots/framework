@@ -1,8 +1,8 @@
 ///////////////////////////////////////
 //CONSOLE MODULE
 ///////////////////////////////////////
-import { ODHTTPGetRequest, ODVersion, ODSystemError, ODPluginError, ODManager, ODManagerData, ODValidId, ODNoGeneric } from "./base"
-import { ODMain } from "../main"
+import { ODHTTPGetRequest, ODVersion, ODSystemError, ODPluginError, ODManager, ODManagerData, ODValidId, ODNoGeneric } from "./base.js"
+import { ODMain } from "../main.js"
 import nodepath from "path"
 import fs from "fs"
 import ansis from "ansis"
