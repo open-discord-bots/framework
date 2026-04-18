@@ -25,7 +25,7 @@ export function checkNodeVersion(project:api.ODProjectType){
  */
 export function moduleInstalled(id:string,throwError?:boolean): boolean {
     try{
-        require.resolve(id)
+        import.meta.resolve(id)
         return true
     }catch{
         if (throwError) throw new Error("npm module \""+id+"\" is not installed! Install it via 'npm install "+id+"'")

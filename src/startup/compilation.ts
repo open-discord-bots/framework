@@ -136,7 +136,7 @@ export function frameworkStartup(startupFlags:string[],project:ODProjectType,sta
                 const missingDeps: string[] = []
                 for (const dep of requiredDependencies){
                     try{
-                        require.resolve(dep)
+                        import.meta.resolve(dep)
                     }catch(err){
                         missingDeps.push(dep)
                     }

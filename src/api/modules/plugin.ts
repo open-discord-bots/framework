@@ -203,7 +203,7 @@ export class ODPlugin extends ODManagerData {
     /**Check if a npm dependency exists. */
     #checkDependency(id:string){
         try{
-            require.resolve(id)
+            import.meta.resolve(id)
             return true
         }catch{
             return false
