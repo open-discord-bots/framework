@@ -37,7 +37,7 @@ export type ODValidId = string|number|symbol|ODId
  * 
  * list: `string`, `number`, `boolean`, `array`, `object`, `null`
  */
-export type ODValidJsonType = string|number|boolean|{[key:string]:ODValidJsonType}|ODValidJsonType[]|null
+export type ODValidJsonType = string|number|boolean|{[key:string]:ODValidJsonType}|ODValidJsonType[]|null|object
 
 /**## ODInterfaceWithPartialProperty `type`
  * A utility type to create an interface where some properties are optional!

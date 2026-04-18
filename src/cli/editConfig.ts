@@ -486,7 +486,7 @@ export class ODCliEditConfigInstance {
         else if (answer.selectedText.startsWith("Edit as null") && structure.options.null) await this.renderConfigNullStructureEditor(checker,async () => {await this.renderConfigTypeSwitchStructureEditor(checker,backFn,structure,data,parent,parentIndex,path)},structure.options.null,null,parent,parentIndex,path)
     }
 
-    private getArrayPreviewStructureNameLength(structure:api.ODCheckerStructure,data:api.ODValidJsonType,parent:Record<string,any>,parentIndex:string|number): number {
+    private getArrayPreviewStructureNameLength(structure:api.ODCheckerStructure,data:any,parent:Record<string,any>,parentIndex:string|number): number {
         if (structure instanceof api.ODCheckerBooleanStructure && typeof data == "boolean") return data.toString().length
         else if (structure instanceof api.ODCheckerNumberStructure && typeof data == "number") return data.toString().length
         else if (structure instanceof api.ODCheckerStringStructure && typeof data == "string") return data.length
@@ -522,7 +522,7 @@ export class ODCliEditConfigInstance {
         }else return "<unknown-property>".length
     }
 
-    private getArrayPreviewFromStructure(structure:api.ODCheckerStructure,data:api.ODValidJsonType,parent:Record<string,any>,parentIndex:string|number,nameLength:number): string {
+    private getArrayPreviewFromStructure(structure:api.ODCheckerStructure,data:any,parent:Record<string,any>,parentIndex:string|number,nameLength:number): string {
         if (structure instanceof api.ODCheckerBooleanStructure && typeof data == "boolean") return data.toString()
         else if (structure instanceof api.ODCheckerNumberStructure && typeof data == "number") return data.toString()
         else if (structure instanceof api.ODCheckerStringStructure && typeof data == "string") return data
