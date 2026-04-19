@@ -1366,7 +1366,9 @@ export interface ODCheckerEnabledObjectStructureOptions extends ODCheckerStructu
     /**The value of the property to be enabled. (e.g. `true`) */
     enabledValue:boolean|string|number,
     /**The object checker to use once the property has been matched. */
-    checker:ODCheckerObjectStructure
+    checker:ODCheckerObjectStructure,
+    /**Ignore the `checker` if the object is disabled (`property` doesn't match `enabledValue`) */
+    ignoreCheckIfDisabled?:boolean
 }
 
 /**## ODCheckerEnabledObjectStructure `class`
@@ -1402,7 +1404,8 @@ export class ODCheckerEnabledObjectStructure extends ODCheckerStructure {
         }else{
             //this object is disabled
             if (this.options.property) checker.createMessage("opendiscord:object-disabled","info",`This object is disabled, enable it using "${this.options.property}"!`,lt,null,[`"${this.options.property}"`],this.id,(this.options.docs ?? null))
-            return super.check(checker,value,locationTrace)
+            if (this.options.checker && !this.options.ignoreCheckIfDisabled) return this.options.checker.check(checker,value,lt)
+            else return super.check(checker,value,locationTrace)
         }
     }
 }
