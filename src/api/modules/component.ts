@@ -102,7 +102,7 @@ export class ODSharedComponentManager<IdList extends ODComponentManagerIdConstra
  * A special class with types for `ODMessageComponent`'s.  
  * Create message templates to use as replies and make use of shared components.
  */
-export class ODMessageComponentManager<IdList extends ODComponentManagerIdConstraint = ODComponentManagerIdConstraint> extends ODBaseComponentManager<IdList,TODO> {
+export class ODMessageComponentManager<IdList extends ODComponentManagerIdConstraint = ODComponentManagerIdConstraint> extends ODBaseComponentManager<IdList,ODMessageComponent> {
     constructor(debug:ODDebugger){
         super(debug,"message component")
     }
@@ -294,6 +294,108 @@ export class ODParentComponent<Data extends object,ChildComponent extends ODComp
 //   GLOBAL COMPONENT DEFINITIONS   //
 //////////////////////////////////////
 
+/**## ODMessageComponentData `type`
+ * The configurable settings/options for the `ODMessageComponent`.
+ */
+export interface ODMessageComponentData {
+    /**Should the message be sent as ephemeral? */
+    ephemeral?:boolean,
+    /**Suppress/hide embeds. */
+    supressEmbeds?:boolean,
+    /**Do not send notifications to mentioned users or roles. */
+    supressNotifications?:boolean
+    /**Additional options that aren't covered by the Open Discord api!*/
+    additionalOptions?:Omit<discord.MessageCreateOptions,"poll"|"content"|"embeds"|"components"|"files"|"flags">,
+    /**Add additional files which can be used in components as `attachment://...`  */
+    additionalAttachments?:discord.AttachmentBuilder[]
+}
+
+/**## ODValidMessageComponents `type`
+ * A collection of all valid top-level components that can be sent in a message.
+ */
+export type ODValidMessageComponents = ODTextComponent|ODFileComponent|ODGalleryComponent
+
+/**## ODMessageComponentBuildResult `type`
+ * The constructed message from an `ODMessageComponent`.
+ */
+export interface ODMessageComponentBuildResult {
+    /**The message to send. */
+    msg:discord.MessageCreateOptions,
+    /**Is this message using Components V2? */
+    componentsV2:boolean,
+    /**Should the message be sent as ephemeral? */
+    ephemeral:boolean,
+    /**Suppress/hide embeds. */
+    supressEmbeds:boolean,
+    /**Do not send notifications to mentioned users or roles. */
+    supressNotifications:boolean
+}
+
+/**## ODMessageComponent `class`
+ * A message builder with **components v2** support.
+ * Add items to this message using `addComponent()`.
+ * 
+ * Use `ODSimpleMessageComponent` for components v1, polls, embeds, etc
+ */
+export class ODMessageComponent extends ODGroupComponent<ODMessageComponentData,ODValidMessageComponents,ODMessageComponentBuildResult> {
+    constructor(id:ODValidId,data?:Partial<ODMessageComponentData>){
+        const initData: ODMessageComponentData = {...data}
+        super(id,initData,async () => {
+            if (this.children.length < 1) return null
+            
+            const attachments: discord.AttachmentBuilder[] = [...(this.data.additionalAttachments ?? [])]
+            const components: discord.JSONEncodable<discord.APIMessageTopLevelComponent>[] = []
+
+            for (const component of this.children){
+                if (component instanceof ODFileComponent){
+                    //ODFileComponent (special)
+                    const res = await component.build()
+                    if (res) components.push(res.file)
+                    if (res?.attachment) attachments.push(res.attachment)
+
+                }else if (component instanceof ODGalleryComponent){
+                    //ODGalleryComponent (special)
+                    const res = await component.build()
+                    if (res) components.push(res.gallery)
+                    if (res?.attachments) attachments.push(...res.attachments)
+                }else{
+                    //general ODComponent's
+                    const res = await component.build()
+                    if (res) components.push(res)
+                }
+            }
+            
+            return {
+                msg:{
+                    components,
+                    ...this.data.additionalOptions
+                },
+                componentsV2:true,
+                ephemeral:this.data.ephemeral ?? false,
+                supressEmbeds:this.data.supressEmbeds ?? false,
+                supressNotifications:this.data.supressNotifications ?? false
+            }
+        })
+    }
+
+    /**Enable/disable ephemeral mode. */
+    setEphemeral(value:boolean){
+        this.data.ephemeral = value
+    }
+    /**Enable supress (hide) embeds mode. */
+    setSupressEmbeds(value:boolean){
+        this.data.supressEmbeds = value
+    }
+    /**Enable supress (hide) notifications mode. */
+    setSupressNotifications(value:boolean){
+        this.data.supressNotifications = value
+    }
+    /**Add an additional attachment which can be used in components as `attachment://...` */
+    addAdditionalAttachments(...attachments:discord.AttachmentBuilder[]){
+        if (!this.data.additionalAttachments) this.data.additionalAttachments = []
+        this.data.additionalAttachments.push(...attachments)
+    }
+}
 
 
 //////////////////////////////////////
@@ -334,6 +436,151 @@ export class ODTextComponent extends ODComponent<ODTextComponentData,discord.Tex
     }
 }
 
+/**## ODFileComponentData `type`
+ * The configurable settings/options for the `ODFileComponent`.
+ */
+export interface ODFileComponentData {
+    /**The name of this file. */
+    name:string,
+    /**The description of this file. */
+    description?:string,
+    /**Should this file be marked as a spoiler? */
+    spoiler?:boolean,
+    /**The binary/text contents of the file. Ignored when `externalUrl` is used. */
+    content?:discord.BufferResolvable,
+    /**A URL to an external file or image. When specified, the `content` (setContent) will be ignored. */
+    externalUrl?:string
+}
+
+/**## ODFileComponent `class`
+ * A text component which renders markdown text in a message.
+ */
+export class ODFileComponent extends ODComponent<ODFileComponentData,{file:discord.FileBuilder,attachment:discord.AttachmentBuilder|null}> {
+    constructor(id:ODValidId,data:Partial<ODFileComponentData>){
+        const initData: ODFileComponentData = {name:"file.txt",...data}
+        super(id,initData,() => {
+            if (!this.data.content && !this.data.externalUrl) return null
+
+            const attachment = (this.data.content) ? new discord.AttachmentBuilder(this.data.content,{
+                name:this.data.name,
+                description:this.data.description
+            }) : null
+
+            return {
+                attachment,
+                file:new discord.FileBuilder({
+                    file:{
+                        url:(this.data.externalUrl ?? "attachment://"+this.data.name)
+                    }
+                })
+            }
+        })
+    }
+
+    /**Set the filename + extension. */
+    setName(value:string){
+        this.data.name = value
+    }
+    /**Set the file description. */
+    setDescription(value:string|null){
+        this.data.description = value ?? undefined
+    }
+    /**Set the text/binary contents of the file. */
+    setContent(value:discord.BufferResolvable|null){
+        this.data.content = value ?? undefined
+    }
+    /**Set a URL to an external file or image. When used, `setContent()` will be ignored! */
+    setExternalUrl(value:string|null){
+        this.data.externalUrl = value ?? undefined
+    }
+    /**Mark the file as spoiler. */
+    setSpoiler(value:boolean){
+        this.data.spoiler = value
+    }
+}
+
+/**## ODGalleryComponentData `type`
+ * The configurable settings/options for the `ODGalleryComponent`.
+ */
+export interface ODGalleryComponentData {
+    //no additional top-level data
+}
+
+/**## ODGalleryComponent `class`
+ * A gallery component which renders a grid of media items (images/videos) in a message.
+ * Add items to this gallery using `addComponent()`.
+ */
+export class ODGalleryComponent extends ODGroupComponent<ODGalleryComponentData,ODFileComponent,{gallery:discord.MediaGalleryBuilder,attachments:discord.AttachmentBuilder[]}> {
+    constructor(id:ODValidId,data?:Partial<ODGalleryComponentData>){
+        const initData: ODGalleryComponentData = {...data}
+        super(id,initData,() => {
+            if (this.children.length < 1) return null
+
+            const gallery = new discord.MediaGalleryBuilder()
+            const attachments: discord.AttachmentBuilder[] = []
+            
+            for (const file of this.children){
+                if (file.data.content) attachments.push(new discord.AttachmentBuilder(file.data.content,{
+                    name:file.data.name,
+                    description:file.data.description
+                }))
+                gallery.addItems(new discord.MediaGalleryItemBuilder({
+                    description:file.data.description,
+                    spoiler:file.data.spoiler,
+                    media:{
+                        url:(file.data.externalUrl ?? "attachment://"+file.data.name)
+                    }
+                }))
+            }
+            
+            return {gallery,attachments}
+        })
+    }
+}
+
+/**## ODThumbnailComponentData `type`
+ * The configurable settings/options for the `ODThumbnailComponent`.
+ */
+export interface ODThumbnailComponentData {
+    /**The URL of the thumbnail image. Can be an external URL or `attachment://filename.ext`. */
+    url:string,
+    /**The alt text/description of the thumbnail image. */
+    description?:string,
+    /**Should this thumbnail be marked as a spoiler? */
+    spoiler?:boolean
+}
+
+/**## ODThumbnailComponent `class`
+ * A thumbnail component which renders a small image as an accessory inside an `ODSectionComponent`.
+ * This component must be used via `ODSectionComponent.setComponent()`
+ */
+export class ODThumbnailComponent extends ODComponent<ODThumbnailComponentData,discord.ThumbnailBuilder> {
+    constructor(id:ODValidId,data:Partial<ODThumbnailComponentData>){
+        const initData:ODThumbnailComponentData = {url:"",...data}
+        super(id,initData,() => {
+            if (this.data.url.length < 1) return null
+
+            return new discord.ThumbnailBuilder({
+                media:{ url:this.data.url },
+                description:this.data.description,
+                spoiler:this.data.spoiler
+            })
+        })
+    }
+
+    /**Set the URL of the thumbnail image. */
+    setUrl(value:string){
+        this.data.url = value
+    }
+    /**Set the alt text/description of the thumbnail image. */
+    setDescription(value:string|null){
+        this.data.description = value ?? undefined
+    }
+    /**Mark the thumbnail as a spoiler. */
+    setSpoiler(value:boolean){
+        this.data.spoiler = value
+    }
+}
 ///////////////////////////////////////////
 //   INTERACTIVE COMPONENT DEFINITIONS   //
 ///////////////////////////////////////////
