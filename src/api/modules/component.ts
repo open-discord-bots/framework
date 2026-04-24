@@ -112,7 +112,7 @@ export class ODMessageComponentManager<IdList extends ODComponentManagerIdConstr
  * A special class with types for `ODModalComponent`'s.  
  * Create modal templates to use as forms and make use of shared components.
  */
-export class ODModalComponentManager<IdList extends ODComponentManagerIdConstraint = ODComponentManagerIdConstraint> extends ODBaseComponentManager<IdList,TODO> {
+export class ODModalComponentManager<IdList extends ODComponentManagerIdConstraint = ODComponentManagerIdConstraint> extends ODBaseComponentManager<IdList,ODModalComponent> {
     constructor(debug:ODDebugger){
         super(debug,"modal component")
     }
@@ -341,7 +341,7 @@ export class ODMessageComponent extends ODGroupComponent<ODMessageComponentData,
     constructor(id:ODValidId,data?:Partial<ODMessageComponentData>){
         const initData: ODMessageComponentData = {...data}
         super(id,initData,async () => {
-            if (this.children.length < 1) return null
+            if (this.children.length < 1) throw new ODSystemError("ODMessageComponent:build('"+this.id.value+"') => Requires at least one child component.")
             
             const attachments: discord.AttachmentBuilder[] = [...(this.data.additionalAttachments ?? [])]
             const components: discord.JSONEncodable<discord.APIMessageTopLevelComponent>[] = []
@@ -394,6 +394,67 @@ export class ODMessageComponent extends ODGroupComponent<ODMessageComponentData,
     addAdditionalAttachments(...attachments:discord.AttachmentBuilder[]){
         if (!this.data.additionalAttachments) this.data.additionalAttachments = []
         this.data.additionalAttachments.push(...attachments)
+    }
+}
+
+
+/**## ODModalComponentData `type`
+ * The configurable settings/options for the `ODModalComponent`.
+ */
+export interface ODModalComponentData {
+    /**The title of the modal (max 45 characters). */
+    title:string,
+    /**The custom id of this modal. */
+    customId?:string
+}
+
+/**## ODValidModalComponents `type`
+ * A collection of all valid top-level components that can be sent in a message.
+ */
+export type ODValidModalComponents = ODLabelComponent|ODTextComponent
+
+/**## ODModalComponent `class`
+ * A modal builder with **components v2** support.
+ * Add questions, select menu's & labels to this modal using `addComponent()`.
+ */
+export class ODModalComponent extends ODGroupComponent<ODModalComponentData,ODValidModalComponents,discord.ModalBuilder> {
+    constructor(id:ODValidId,data?:Partial<ODModalComponentData>){
+        const initData: ODModalComponentData = {title:"<empty>",...data}
+        super(id,initData,async () => {
+            if (this.children.length < 1) throw new ODSystemError("ODModalComponent:build('"+this.id.value+"') => Requires at least one child component.")
+            if (this.children.length > 5) throw new ODSystemError("ODModalComponent:build('"+this.id.value+"') => A modal doesn't support more than 5 components.")
+            
+            const components: (discord.APITextDisplayComponent|discord.APILabelComponent)[] = []
+
+            for (const component of this.children){
+                if (component instanceof ODLabelComponent){
+                    //ODLabelComponent (special)
+                    const res = await component.build()
+                    if (res) components.push(res.toJSON())
+
+                }else{
+                    //ODTextComponent (special)
+                    const res = await component.build()
+                    if (res) components.push(res.toJSON())
+                }
+            }
+            
+            return new discord.ModalBuilder({
+                components,
+                title:this.data.title,
+                customId:this.data.customId
+            })
+        })
+    }
+
+    /**Set the title of the modal. */
+    setTitle(title:string){
+        this.data.title = title
+    }
+    /**Set the custom id of this modal. */
+    setCustomId(id:string|null){
+        this.data.customId = id ?? undefined
+        return this
     }
 }
 
