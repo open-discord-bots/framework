@@ -423,7 +423,7 @@ export class ODTextComponent extends ODComponent<ODTextComponentData,discord.Tex
     constructor(id:ODValidId,data:Partial<ODTextComponentData>){
         const initData: ODTextComponentData = {content:"",...data}
         super(id,initData,() => {
-            if (this.data.content.length < 1) return null
+            if (this.data.content.length < 1) throw new ODSystemError("ODTextComponent:build('"+this.id.value+"') => Unable to display text component without contents.")
             return new discord.TextDisplayBuilder({
                 content:this.data.content
             })
@@ -453,13 +453,13 @@ export interface ODFileComponentData {
 }
 
 /**## ODFileComponent `class`
- * A text component which renders markdown text in a message.
+ * A file component which adds a file in a message.
  */
 export class ODFileComponent extends ODComponent<ODFileComponentData,{file:discord.FileBuilder,attachment:discord.AttachmentBuilder|null}> {
     constructor(id:ODValidId,data:Partial<ODFileComponentData>){
         const initData: ODFileComponentData = {name:"file.txt",...data}
         super(id,initData,() => {
-            if (!this.data.content && !this.data.externalUrl) return null
+            if (!this.data.content && !this.data.externalUrl) throw new ODSystemError("ODFileComponent:build('"+this.id.value+"') => Unable to display file component without binary or url.")
 
             const attachment = (this.data.content) ? new discord.AttachmentBuilder(this.data.content,{
                 name:this.data.name,
@@ -471,7 +471,8 @@ export class ODFileComponent extends ODComponent<ODFileComponentData,{file:disco
                 file:new discord.FileBuilder({
                     file:{
                         url:(this.data.externalUrl ?? "attachment://"+this.data.name)
-                    }
+                    },
+                    spoiler:this.data.spoiler
                 })
             }
         })
@@ -514,12 +515,13 @@ export class ODGalleryComponent extends ODGroupComponent<ODGalleryComponentData,
     constructor(id:ODValidId,data?:Partial<ODGalleryComponentData>){
         const initData: ODGalleryComponentData = {...data}
         super(id,initData,() => {
-            if (this.children.length < 1) return null
+            if (this.children.length < 1) throw new ODSystemError("ODGalleryComponent:build('"+this.id.value+"') => Requires at least one child component.")
 
             const gallery = new discord.MediaGalleryBuilder()
             const attachments: discord.AttachmentBuilder[] = []
             
             for (const file of this.children){
+                if (!file.data.content && !file.data.externalUrl) continue
                 if (file.data.content) attachments.push(new discord.AttachmentBuilder(file.data.content,{
                     name:file.data.name,
                     description:file.data.description
@@ -556,9 +558,9 @@ export interface ODThumbnailComponentData {
  */
 export class ODThumbnailComponent extends ODComponent<ODThumbnailComponentData,discord.ThumbnailBuilder> {
     constructor(id:ODValidId,data:Partial<ODThumbnailComponentData>){
-        const initData:ODThumbnailComponentData = {url:"",...data}
+        const initData: ODThumbnailComponentData = {url:"",...data}
         super(id,initData,() => {
-            if (this.data.url.length < 1) return null
+            if (this.data.url.length < 1) throw new ODSystemError("ODThumbnailComponent:build('"+this.id.value+"') => Thumbnail component requires an image URL.")
 
             return new discord.ThumbnailBuilder({
                 media:{ url:this.data.url },
