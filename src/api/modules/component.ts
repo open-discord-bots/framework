@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //COMPONENTS MODULE
 ///////////////////////////////////////
-import { ODId, ODValidId, ODSystemError, ODManagerData, ODNoGeneric, ODManager } from "./base.js"
+import { ODId, ODValidId, ODSystemError, ODManagerData, ODNoGeneric, ODManager, ODValidButtonColor } from "./base.js"
 import * as discord from "discord.js"
 import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker.js"
 import { ODDebugger } from "./console.js"
@@ -585,3 +585,579 @@ export class ODThumbnailComponent extends ODComponent<ODThumbnailComponentData,d
 //   INTERACTIVE COMPONENT DEFINITIONS   //
 ///////////////////////////////////////////
 
+
+/**## ODButtonComponentData `type`
+ * The configurable settings/options for the `ODButtonComponent`.
+ */
+export interface ODButtonComponentData {
+    /**The custom id of this button. Ignored when `url` is specified. */
+    customId?:string,
+    /**The url of this button. Disables interactions & customId */
+    url?:string,
+    /**The button color. Ignored when `url` is specified. */
+    color:ODValidButtonColor,
+    /**The button label */
+    label?:string,
+    /**The button emoji */
+    emoji?:string,
+    /**Is the button disabled? */
+    disabled:boolean
+}
+
+/**## ODButtonComponent `class`
+ * A button component which renders an interactive button inside the message.
+ * A reply can be sent using Open Discord responders.
+ */
+export class ODButtonComponent extends ODComponent<ODButtonComponentData,discord.ButtonBuilder> {
+    constructor(id:ODValidId,data:Partial<ODButtonComponentData>){
+        const initData: ODButtonComponentData = {color:"gray",disabled:false,...data}
+        super(id,initData,() => {
+            if (!this.data.emoji && !this.data.label) throw new ODSystemError("ODButtonComponent:build('"+this.id.value+"') => A button must include at least one label or emoji.")
+            if (this.data.customId && this.data.customId.length > 100) throw new ODSystemError("ODButtonComponent:build('"+this.id.value+"') => A custom ID '"+this.data.customId+"' must be shorter than 100 characters.")
+
+            return new discord.ButtonBuilder({
+                customId:(!this.data.url) ? this.data.customId : undefined,
+                label:this.data.label,
+                emoji:this.data.emoji ? discord.resolvePartialEmoji(this.data.emoji) : undefined,
+                disabled:this.data.disabled,
+                url:(this.data.url) ? this.data.url : undefined,
+                style:this.getButtonStyle(),
+            })
+        })
+    }
+
+    /**Get the `discord.ButtonStyle` for the specified `ODValidButtonColor` */
+    protected getButtonStyle(): discord.ButtonStyle {
+        if (this.data.url) return discord.ButtonStyle.Link
+        else if (this.data.color == "blue") return discord.ButtonStyle.Primary
+        else if (this.data.color == "green") return discord.ButtonStyle.Success
+        else if (this.data.color == "red") return discord.ButtonStyle.Danger
+        else return discord.ButtonStyle.Secondary
+    }
+
+    /**Set the custom id of this button. Ignored when `setUrl()` is used. */
+    setCustomId(id:string|null){
+        this.data.customId = id ?? undefined
+        return this
+    }
+    /**Set the url of this button. */
+    setUrl(url:string|null){
+        this.data.url = url ?? undefined
+        return this
+    }
+    /**Set the color of this button. Ignored when `setUrl()` is used. */
+    setColor(color:ODValidButtonColor){
+        this.data.color = color
+        return this
+    }
+    /**Set the label of this button. */
+    setLabel(label:string|null){
+        this.data.label = label ?? undefined
+        return this
+    }
+    /**Set the emoji of this button. */
+    setEmoji(emoji:string|null){
+        this.data.emoji = emoji ?? undefined
+        return this
+    }
+    /**Disable this button. */
+    setDisabled(disabled:boolean){
+        this.data.disabled = disabled
+        return this
+    }
+}
+
+
+/**## ODShortInputComponentData `type`
+ * The configurable settings/options for the `ODShortInputComponent`.
+ */
+export interface ODShortInputComponentData {
+    /**The custom id of this modal text input. */
+    customId?:string
+    /**The min length of this modal text input. */
+    minLength?:number,
+    /**The max length of this modal text input. */
+    maxLength?:number,
+    /**Is this modal text input required? */
+    required:boolean,
+    /**The placeholder of this modal text input. */
+    placeholder?:string,
+    /**The initial value of this modal text input. */
+    initialValue?:string
+}
+
+/**## ODShortInputComponent `class`
+ * A short text input component for modals.
+ * It must be placed inside an `ODLabelComponent`.
+ */
+export class ODShortInputComponent extends ODComponent<ODShortInputComponentData,discord.TextInputBuilder> {
+    constructor(id:ODValidId,data:Partial<ODShortInputComponentData>){
+        const initData: ODShortInputComponentData = {required:false,...data}
+        super(id,initData,() => {
+            
+            return new discord.TextInputBuilder({
+                style:discord.TextInputStyle.Short,
+                customId:this.data.customId,
+                minLength:this.data.minLength,
+                maxLength:this.data.maxLength,
+                required:this.data.required,
+                placeholder:this.data.placeholder,
+                value:this.data.initialValue
+            })
+        })
+    }
+
+    /**Set the custom id of this modal text input. */
+    setCustomId(id:string|null){
+        this.data.customId = id ?? undefined
+        return this
+    }
+    /**Set the minimum amount of characters of this modal text input. */
+    setMinLength(length:number|null){
+        this.data.minLength = length ?? undefined
+        return this
+    }
+    /**Set the maximum amount of characters of this modal text input. */
+    setMaxLength(length:number|null){
+        this.data.maxLength = length ?? undefined
+        return this
+    }
+    /**Set the placeholder of this modal text input. */
+    setPlaceholder(placeholder:string|null){
+        this.data.placeholder = placeholder ?? undefined
+        return this
+    }
+    /**Set the initial value of this modal text input. */
+    setInitialValue(initialValue:string|null){
+        this.data.initialValue = initialValue ?? undefined
+        return this
+    }
+    /**Mark this modal text input as required. */
+    setRequired(required:boolean){
+        this.data.required = required
+        return this
+    }
+}
+
+/**## ODParagraphInputComponentData `type`
+ * The configurable settings/options for the `ODParagraphInputComponent`.
+ */
+export interface ODParagraphInputComponentData {
+    /**The custom id of this modal text input. */
+    customId?:string
+    /**The min length of this modal text input. */
+    minLength?:number,
+    /**The max length of this modal text input. */
+    maxLength?:number,
+    /**Is this modal text input required? */
+    required:boolean,
+    /**The placeholder of this modal text input. */
+    placeholder?:string,
+    /**The initial value of this modal text input. */
+    initialValue?:string
+}
+
+/**## ODParagraphInputComponent `class`
+ * A paragraph text input component for modals.
+ * It must be placed inside an `ODLabelComponent`.
+ */
+export class ODParagraphInputComponent extends ODComponent<ODParagraphInputComponentData,discord.TextInputBuilder> {
+    constructor(id:ODValidId,data:Partial<ODParagraphInputComponentData>){
+        const initData: ODParagraphInputComponentData = {required:false,...data}
+        super(id,initData,() => {
+            
+            return new discord.TextInputBuilder({
+                style:discord.TextInputStyle.Paragraph,
+                customId:this.data.customId,
+                minLength:this.data.minLength,
+                maxLength:this.data.maxLength,
+                required:this.data.required,
+                placeholder:this.data.placeholder,
+                value:this.data.initialValue
+            })
+        })
+    }
+
+    /**Set the custom id of this modal text input. */
+    setCustomId(id:string|null){
+        this.data.customId = id ?? undefined
+        return this
+    }
+    /**Set the minimum amount of characters of this modal text input. */
+    setMinLength(length:number|null){
+        this.data.minLength = length ?? undefined
+        return this
+    }
+    /**Set the maximum amount of characters of this modal text input. */
+    setMaxLength(length:number|null){
+        this.data.maxLength = length ?? undefined
+        return this
+    }
+    /**Set the placeholder of this modal text input. */
+    setPlaceholder(placeholder:string|null){
+        this.data.placeholder = placeholder ?? undefined
+        return this
+    }
+    /**Set the initial value of this modal text input. */
+    setInitialValue(initialValue:string|null){
+        this.data.initialValue = initialValue ?? undefined
+        return this
+    }
+    /**Mark this modal text input as required. */
+    setRequired(required:boolean){
+        this.data.required = required
+        return this
+    }
+}
+
+
+/**## ODDropdownComponentData `type`
+ * The configurable settings/options for the `ODDropdownComponent`.
+ */
+export interface ODDropdownComponentData {
+    /**The type of this dropdown. */
+    type:"string"|"role"|"channel"|"user"|"mentionable",
+    /**The custom id of this dropdown. */
+    customId?:string,
+    /**The placeholder of this dropdown. */
+    placeholder?:string,
+    /**The minimum amount of items to be selected in this dropdown. */
+    minValues?:number,
+    /**The maximum amount of items to be selected in this dropdown. */
+    maxValues?:number,
+    /**Is this dropdown disabled? */
+    disabled?:boolean,
+
+    /**Allowed channel types when the type is "channel" */
+    channelTypes?:discord.ChannelType[]
+    /**The options when the type is "string" */
+    options?:discord.SelectMenuComponentOptionData[],
+    /**The options when the type is "user" */
+    users?:discord.User[],
+    /**The options when the type is "role" */
+    roles?:discord.Role[],
+    /**The options when the type is "channel" */
+    channels?:discord.Channel[],
+    /**The options when the type is "mentionable" */
+    mentionables?:(discord.User|discord.Role)[],
+}
+
+/**## ODDropdownComponent `class`
+ * A dropdown component which renders an interactive dropdown inside the message/modal.
+ * A reply can be sent using Open Discord responders.
+ */
+export class ODDropdownComponent extends ODComponent<ODDropdownComponentData,discord.BaseSelectMenuBuilder<discord.APISelectMenuComponent>> {
+    constructor(id:ODValidId,data:Partial<ODDropdownComponentData>){
+        const initData: ODDropdownComponentData = {type:"string",...data}
+        super(id,initData,() => {
+
+            const genericOpts = {
+                customId:this.data.customId,
+                disabled:this.data.disabled,
+                placeholder:this.data.placeholder,
+                minValues:this.data.minValues,
+                maxValues:this.data.maxValues,
+            }
+
+            if (this.data.type == "string"){
+                if (!this.data.options || this.data.options.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one string option using setOptions().")
+                return new discord.StringSelectMenuBuilder({
+                    ...genericOpts,
+                    options:this.data.options
+                })
+            }else if (this.data.type == "user"){
+                if (!this.data.users || this.data.users.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one user option using setUsers().")
+                return new discord.UserSelectMenuBuilder({
+                    ...genericOpts,
+                    defaultValues:this.data.users.map((u) => ({id:u.id,type:discord.SelectMenuDefaultValueType.User}))
+                })
+            }else if (this.data.type == "role"){
+                if (!this.data.roles || this.data.roles.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one role option using setRoles().")
+                return new discord.RoleSelectMenuBuilder({
+                    ...genericOpts,
+                    defaultValues:this.data.roles.map((r) => ({id:r.id,type:discord.SelectMenuDefaultValueType.Role}))
+                })
+            }else if (this.data.type == "channel"){
+                if (!this.data.channels || this.data.channels.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one channel option using setChannels().")
+                return new discord.ChannelSelectMenuBuilder({
+                    ...genericOpts,
+                    channelTypes:this.data.channelTypes,
+                    defaultValues:this.data.channels.map((c) => ({id:c.id,type:discord.SelectMenuDefaultValueType.Channel}))
+                })
+            }else if (this.data.type == "mentionable"){
+                if (!this.data.mentionables || this.data.mentionables.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one role/user option using setMentionables().")
+                return new discord.MentionableSelectMenuBuilder({
+                    ...genericOpts,
+                    defaultValues:this.data.mentionables.map((m) => (m instanceof discord.User ? {id:m.id,type:discord.SelectMenuDefaultValueType.User} : {id:m.id,type:discord.SelectMenuDefaultValueType.Role}))
+                })
+            }else throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please set the dropdown type to one of the following: string, user, role, channel, mentionable.") 
+        })
+    }
+
+    /**Set the custom id of this dropdown. */
+    setCustomId(id:string|null){
+        this.data.customId = id ?? undefined
+        return this
+    }
+    /**Set the type of this dropdown. */
+    setType(type:"string"|"role"|"channel"|"user"|"mentionable"){
+        this.data.type = type
+        return this
+    }
+    /**Set the minimum selection amount of this dropdown. */
+    setMinValues(amount:number|null){
+        this.data.minValues = amount ?? undefined
+        return this
+    }
+    /**Set the maximum selection amount of this dropdown. */
+    setMaxValues(amount:number|null){
+        this.data.maxValues = amount ?? undefined
+        return this
+    }
+    /**Set the placeholder of this dropdown. */
+    setPlaceholder(placeholder:string|null){
+        this.data.placeholder = placeholder ?? undefined
+        return this
+    }
+    /**Disable this dropdown. */
+    setDisabled(disabled:boolean){
+        this.data.disabled = disabled
+        return this
+    }
+    /**Set the available channel types of this dropdown. */
+    setChannelTypes(channelTypes:discord.ChannelType[]){
+        this.data.channelTypes = channelTypes
+        return this
+    }
+    /**Set the options of this dropdown (when `type == "string"`) */
+    setOptions(options:discord.SelectMenuComponentOptionData[]){
+        this.data.options = options
+        return this
+    }
+    /**Set the users of this dropdown (when `type == "user"`) */
+    setUsers(users:discord.User[]){
+        this.data.users = users
+        return this
+    }
+    /**Set the roles of this dropdown (when `type == "role"`) */
+    setRoles(roles:discord.Role[]){
+        this.data.roles = roles
+        return this
+    }
+    /**Set the channels of this dropdown (when `type == "channel"`) */
+    setChannels(channels:discord.Channel[]){
+        this.data.channels = channels
+        return this
+    }
+    /**Set the mentionables of this dropdown (when `type == "mentionable"`) */
+    setMentionables(mentionables:(discord.User|discord.Role)[]){
+        this.data.mentionables = mentionables
+        return this
+    }
+}
+
+
+/**## ODRadioGroupComponentData `type`
+ * The configurable settings/options for the `ODRadioGroupComponent`.
+ */
+export interface ODRadioGroupComponentData {
+    /**The custom id of this radio group. */
+    customId?:string,
+    /**Is this radio group required? (At least one option must be selected) */
+    required:boolean,
+    /**The available radio options. (min 2, max 10) */
+    options:discord.APIRadioGroupOption[]
+}
+
+/**## ODRadioGroupComponent `class`
+ * A radio group component which renders an interactive radio group input inside a modal.
+ */
+export class ODRadioGroupComponent extends ODComponent<ODRadioGroupComponentData,discord.RadioGroupBuilder> {
+    constructor(id:ODValidId,data:Partial<ODRadioGroupComponentData>){
+        const initData: ODRadioGroupComponentData = {required:false,options:[],...data}
+        super(id,initData,() => {
+            if (!this.data.options || this.data.options.length < 2) throw new ODSystemError("ODRadioGroupComponent:build('"+this.id.value+"') => Please provide at least 2 radio options using setOptions().")
+            
+            return new discord.RadioGroupBuilder({
+                custom_id:this.data.customId,
+                required:this.data.required,
+                options:this.data.options
+            })
+        })
+    }
+
+    /**Set the custom id of this radio group. */
+    setCustomId(id:string|null){
+        this.data.customId = id ?? undefined
+        return this
+    }
+    /**Mark this radio group as required (At least one option must be selected). */
+    setRequired(required:boolean){
+        this.data.required = required
+        return this
+    }
+    /**Set the available radio options (min 2, max 10) */
+    setOptions(options:discord.APIRadioGroupOption[]){
+        this.data.options = options
+        return this
+    }
+}
+
+
+/**## ODCheckboxGroupComponentData `type`
+ * The configurable settings/options for the `ODCheckboxGroupComponent`.
+ */
+export interface ODCheckboxGroupComponentData {
+    /**The custom id of this checkbox group. */
+    customId?:string,
+    /**Is this checkbox group required? (At least one option must be selected) */
+    required:boolean,
+    /**The available checkbox options. (min 1, max 10) */
+    options:discord.APICheckboxGroupOption[],
+    /**The minimum amount of checkboxes to be selected. */
+    minValues?:number,
+    /**The maximum amount of checkboxes to be selected. */
+    maxValues?:number
+}
+
+/**## ODCheckboxGroupComponent `class`
+ * A checkbox group component which renders an interactive checkbox group input inside a modal.
+ */
+export class ODCheckboxGroupComponent extends ODComponent<ODCheckboxGroupComponentData,discord.CheckboxGroupBuilder> {
+    constructor(id:ODValidId,data:Partial<ODCheckboxGroupComponentData>){
+        const initData: ODCheckboxGroupComponentData = {required:false,options:[],...data}
+        super(id,initData,() => {
+            if (!this.data.options || this.data.options.length < 2) throw new ODSystemError("ODCheckboxGroupComponent:build('"+this.id.value+"') => Please provide at least 2 radio options using setOptions().")
+            
+            return new discord.CheckboxGroupBuilder({
+                custom_id:this.data.customId,
+                required:this.data.required,
+                options:this.data.options,
+                min_values:this.data.minValues,
+                max_values:this.data.maxValues
+            })
+        })
+    }
+
+    /**Set the custom id of this checkbox group. */
+    setCustomId(id:string|null){
+        this.data.customId = id ?? undefined
+        return this
+    }
+    /**Mark this checkbox group as required (At least one option must be selected). */
+    setRequired(required:boolean){
+        this.data.required = required
+        return this
+    }
+    /**Set the available checkbox options (min 2, max 10) */
+    setOptions(options:discord.APICheckboxGroupOption[]){
+        this.data.options = options
+        return this
+    }
+    /**Set the minimum amount of selected checkboxes. */
+    setMinValues(amount:number|null){
+        this.data.minValues = amount ?? undefined
+        return this
+    }
+    /**Set the maximum amount of selected checkboxes. */
+    setMaxValues(amount:number|null){
+        this.data.maxValues = amount ?? undefined
+        return this
+    }
+}
+
+
+/**## ODCheckboxComponentData `type`
+ * The configurable settings/options for the `ODCheckboxComponent`.
+ */
+export interface ODCheckboxComponentData {
+    /**The custom id of this checkbox. */
+    customId?:string,
+    /**Is this checkbox enabled by default? */
+    default:boolean,
+}
+
+/**## ODCheckboxComponent `class`
+ * A checkbox component which renders an interactive checkbox input inside a modal.
+ * The label & description should be set via an `ODLabelComponent`
+ */
+export class ODCheckboxComponent extends ODComponent<ODCheckboxComponentData,discord.CheckboxBuilder> {
+    constructor(id:ODValidId,data:Partial<ODCheckboxComponentData>){
+        const initData: ODCheckboxComponentData = {default:false,...data}
+        super(id,initData,() => {
+            
+            return new discord.CheckboxBuilder({
+                custom_id:this.data.customId,
+                default:this.data.default
+            })
+        })
+    }
+
+    /**Set the custom id of this checkbox. */
+    setCustomId(id:string|null){
+        this.data.customId = id ?? undefined
+        return this
+    }
+    /**Mark this checkbox as enabled by default. */
+    setDefault(enabledByDefault:boolean){
+        this.data.default = enabledByDefault
+        return this
+    }
+}
+
+
+/**## ODFileUploadComponentData `type`
+ * The configurable settings/options for the `ODFileUploadComponent`.
+ */
+export interface ODFileUploadComponentData {
+    /**The custom id of this file upload. */
+    customId?:string,
+    /**Is this file upload required? */
+    required:boolean,
+    /**The minimum amount of files to upload (0-10). */
+    minAmount?:number,
+    /**The maximum amount of files to upload (1-10). */
+    maxAmount?:number
+}
+
+/**## ODFileUploadComponent `class`
+ * A file upload component which allows users to upload one or multiple files inside a modal.
+ * The label & description should be set via an `ODLabelComponent`
+ */
+export class ODFileUploadComponent extends ODComponent<ODFileUploadComponentData,discord.FileUploadBuilder> {
+    constructor(id:ODValidId,data:Partial<ODFileUploadComponentData>){
+        const initData: ODFileUploadComponentData = {required:false,...data}
+        super(id,initData,() => {
+            if (typeof this.data.minAmount == "number" && !(this.data.minAmount >= 0 && this.data.minAmount <= 10)) throw new ODSystemError("ODFileUploadComponent:build('"+this.id.value+"') => Minimum upload amount must be a value from 0 to 10.")
+            if (typeof this.data.maxAmount == "number" && !(this.data.maxAmount >= 1 && this.data.maxAmount <= 10)) throw new ODSystemError("ODFileUploadComponent:build('"+this.id.value+"') => Maximum upload amount must be a value from 1 to 10.")
+
+            return new discord.FileUploadBuilder({
+                custom_id:this.data.customId,
+                required:this.data.required,
+                min_values:this.data.minAmount,
+                max_values:this.data.maxAmount
+            })
+        })
+    }
+
+    /**Set the custom id of this dropdown. */
+    setCustomId(id:string|null){
+        this.data.customId = id ?? undefined
+        return this
+    }
+    /**Mark this file upload as required. */
+    setRequired(required:boolean){
+        this.data.required = required
+        return this
+    }
+    /**Set the minimum amount of files to upload (0-10). */
+    setMinAmount(amount:number|null){
+        this.data.minAmount = amount ?? undefined
+        return this
+    }
+    /**Set the maximum amount of files to upload (1-10). */
+    setMaxAmount(amount:number|null){
+        this.data.maxAmount = amount ?? undefined
+        return this
+    }
+}
