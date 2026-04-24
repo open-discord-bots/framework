@@ -402,7 +402,235 @@ export class ODMessageComponent extends ODGroupComponent<ODMessageComponentData,
 //   LAYOUT COMPONENT DEFINITIONS   //
 //////////////////////////////////////
 
+/**## ODActionRowComponentData `type`
+ * The configurable settings/options for the `ODActionRowComponent`.
+ */
+export interface ODActionRowComponentData {
+    //no additional top-level data
+}
 
+/**## ODValidActionRowComponents `type`
+ * A collection of all valid action row components.
+ */
+export type ODValidActionRowComponents = ODButtonComponent|ODDropdownComponent
+
+/**## ODActionRowComponent `class`
+ * An actionrow component which is a container for buttons, a select menu or inputs in a message or modal.
+ */
+export class ODActionRowComponent extends ODGroupComponent<ODActionRowComponentData,ODValidActionRowComponents,discord.ActionRowBuilder<discord.MessageActionRowComponentBuilder>> {
+    constructor(id:ODValidId,data?:Partial<ODActionRowComponentData>){
+        const initData: ODActionRowComponentData = {...data}
+        super(id,initData,async () => {
+            if (this.children.length < 1) throw new ODSystemError("ODActionRowComponent:build('"+this.id.value+"') => Requires at least one child component.")
+            if (this.children.length > 5) throw new ODSystemError("ODActionRowComponent:build('"+this.id.value+"') => An action row doesn't support more than 5 components.")
+            
+            const components: discord.JSONEncodable<discord.APIComponentInMessageActionRow>[] = []
+
+            for (const component of this.children){
+                //actionrow ODComponent's
+                const res = await component.build()
+                if (res) components.push(res)
+            }
+            
+            return new discord.ActionRowBuilder({components})
+        })
+    }
+}
+
+/**## ODContainerComponentData `type`
+ * The configurable settings/options for the `ODContainerComponent`.
+ */
+export interface ODContainerComponentData {
+    /**The color of this container. */
+    color?:discord.ColorResolvable,
+    /**Mark the contents of this container as spoiler. */
+    spoiler:boolean
+}
+
+/**## ODValidContainerComponents `type`
+ * A collection of all valid container components.
+ */
+export type ODValidContainerComponents = ODActionRowComponent|ODTextComponent|ODSectionComponent|ODGalleryComponent|ODSeparatorComponent|ODFileComponent
+
+/**## ODContainerComponent `class`
+ * An embed-like container for text, titles, buttons, sections, separators and other components.
+ */
+export class ODContainerComponent extends ODGroupComponent<ODContainerComponentData,ODValidContainerComponents,{container:discord.ContainerBuilder,attachments:discord.AttachmentBuilder[]}> {
+    constructor(id:ODValidId,data?:Partial<ODContainerComponentData>){
+        const initData: ODContainerComponentData = {spoiler:false,...data}
+        super(id,initData,async () => {
+            if (this.children.length < 1) throw new ODSystemError("ODContainerComponent:build('"+this.id.value+"') => Requires at least one child component.")
+            
+            const components: discord.APIComponentInContainer[] = []
+            const attachments: discord.AttachmentBuilder[] = []
+
+            for (const component of this.children){
+                if (component instanceof ODFileComponent){
+                    //ODFileComponent (special)
+                    const res = await component.build()
+                    if (res) components.push(res.file.toJSON())
+                    if (res?.attachment) attachments.push(res.attachment)
+
+                }else if (component instanceof ODGalleryComponent){
+                    //ODGalleryComponent (special)
+                    const res = await component.build()
+                    if (res) components.push(res.gallery.toJSON())
+                    if (res?.attachments) attachments.push(...res.attachments)
+                }else{
+                    //general ODComponent's
+                    const res = await component.build()
+                    if (res) components.push(res.toJSON())
+                }
+            }
+            
+            return {
+                container:new discord.ContainerBuilder({
+                    components,
+                    accent_color:this.data.color ? discord.resolveColor(this.data.color) : undefined,
+                    spoiler:this.data.spoiler
+                }),
+                attachments
+            }
+        })
+    }
+
+    /**Set the accent color of this embed-like container. */
+    setColor(color:discord.ColorResolvable|null){
+        this.data.color = color ?? undefined
+    }
+    /**Mark the contents of this container as spoiler. */
+    setSpoiler(spoiler:boolean){
+        this.data.spoiler = spoiler
+    }
+}
+
+
+/**## ODSectionComponentData `type`
+ * The configurable settings/options for the `ODSectionComponent`.
+ */
+export interface ODSectionComponentData {
+    /**The accessory component shown on the right side of the section. */
+    accessory?:ODButtonComponent|ODThumbnailComponent
+}
+
+/**## ODSectionComponent `class`
+ * A layout component that allows you to contextually associate content with an accessory component.
+ * - Components: Left
+ * - Accessory: Right
+ */
+export class ODSectionComponent extends ODGroupComponent<ODSectionComponentData,ODTextComponent,discord.SectionBuilder> {
+    constructor(id:ODValidId,data?:Partial<ODSectionComponentData>){
+        const initData: ODSectionComponentData = {...data}
+        super(id,initData,async () => {
+            if (this.children.length < 1) throw new ODSystemError("ODSectionComponent:build('"+this.id.value+"') => Requires at least one child component.")
+            if (this.children.length > 3) throw new ODSystemError("ODSectionComponent:build('"+this.id.value+"') => A maximum of 3 child components are allowed in a section.")
+            
+            const components: discord.APITextDisplayComponent[] = []
+
+            for (const component of this.children){
+                //section ODComponent's
+                const res = await component.build()
+                if (res) components.push(res.toJSON())
+                
+            }
+
+            let accessory: discord.APISectionAccessoryComponent|undefined = undefined
+            if (this.data.accessory){
+                const accessoryRes = await this.data.accessory.build()
+                if (accessoryRes) accessory = accessoryRes.toJSON()
+            }
+            
+            return new discord.SectionBuilder({components,accessory})
+        })
+    }
+
+    /**Set the accessory component shown on the right side of the section. */
+    setAccessory(accessory:ODButtonComponent|ODThumbnailComponent|null){
+        this.data.accessory = accessory ?? undefined
+    }
+}
+
+/**## ODLabelComponentData `type`
+ * The configurable settings/options for the `ODLabelComponent`.
+ */
+export interface ODLabelComponentData {
+    /**The title for the child component in the modal. */
+    title:string,
+    /**An option description for the child component in the modal. */
+    description?:string
+}
+
+/**## ODValidLabelComponents `type`
+ * A collection of all valid label components.
+ */
+export type ODValidLabelComponents = ODShortInputComponent|ODParagraphInputComponent|ODDropdownComponent|ODRadioGroupComponent|ODCheckboxGroupComponent|ODCheckboxComponent|ODFileUploadComponent
+
+/**## ODLabelComponent `class`
+ * A visual separator between components. The visibility and padding of this separator can be changed.
+ */
+export class ODLabelComponent extends ODParentComponent<ODLabelComponentData,ODValidLabelComponents,discord.LabelBuilder> {
+    constructor(id:ODValidId,data:Partial<ODLabelComponentData>){
+        const initData: ODLabelComponentData = {title:"<empty>",...data}
+        super(id,initData,async () => {
+
+            let component: discord.APIComponentInLabel|undefined = undefined
+            if (this.child){
+                const accessoryRes = await this.child.build()
+                if (accessoryRes) component = accessoryRes.toJSON()
+            }
+
+            return new discord.LabelBuilder({
+                label:this.data.title,
+                description:this.data.description,
+                component
+            })
+        })
+    }
+
+    /**Set the title of the child component in the modal. */
+    setTitle(title:string){
+        this.data.title = title
+    }
+    /**Set the description of the child component in the modal. */
+    setDescription(description:string|null){
+        this.data.description = description ?? undefined
+    }
+}
+
+
+/**## ODSeparatorComponentData `type`
+ * The configurable settings/options for the `ODSeparatorComponent`.
+ */
+export interface ODSeparatorComponentData {
+    /**Whether a visual divider should be displayed in the component. (Default: `true`) */
+    divider:boolean,
+    /**Size of separator padding (Default: `small`) */
+    spacing:"small"|"large"
+}
+
+/**## ODSeparatorComponent `class`
+ * A visual separator between components. The visibility and padding of this separator can be changed.
+ */
+export class ODSeparatorComponent extends ODComponent<ODSeparatorComponentData,discord.SeparatorBuilder> {
+    constructor(id:ODValidId,data:Partial<ODSeparatorComponentData>){
+        const initData: ODSeparatorComponentData = {divider:true,spacing:"small",...data}
+        super(id,initData,() => {
+            return new discord.SeparatorBuilder({
+                divider:this.data.divider,
+                spacing:(this.data.spacing == "small") ? discord.SeparatorSpacingSize.Small : discord.SeparatorSpacingSize.Large
+            })
+        })
+    }
+
+    /**Set whether a visual divider should be displayed in the component. (Default: `true`). */
+    setDivider(divider:boolean){
+        this.data.divider = divider
+    }
+    /**Set the size of separator padding (Default `small`). */
+    setSpacing(spacing:"small"|"large"){
+        this.data.spacing = spacing
+    }
+}
 
 ///////////////////////////////////////
 //   CONTENT COMPONENT DEFINITIONS   //
