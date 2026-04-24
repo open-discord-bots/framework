@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //COMPONENTS MODULE
 ///////////////////////////////////////
-import { ODId, ODValidId, ODSystemError, ODManagerData, ODNoGeneric, ODManager, ODValidButtonColor } from "./base.js"
+import { ODId, ODValidId, ODSystemError, ODManagerData, ODNoGeneric, ODManager, ODValidButtonColor, ODInterfaceWithPartialProperty } from "./base.js"
 import * as discord from "discord.js"
 import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker.js"
 import { ODDebugger } from "./console.js"
@@ -102,7 +102,7 @@ export class ODSharedComponentManager<IdList extends ODComponentManagerIdConstra
  * A special class with types for `ODMessageComponent`'s.  
  * Create message templates to use as replies and make use of shared components.
  */
-export class ODMessageComponentManager<IdList extends ODComponentManagerIdConstraint = ODComponentManagerIdConstraint> extends ODBaseComponentManager<IdList,ODMessageComponent> {
+export class ODMessageComponentManager<IdList extends ODComponentManagerIdConstraint = ODComponentManagerIdConstraint> extends ODBaseComponentManager<IdList,ODMessageComponent|ODSimpleMessageComponent> {
     constructor(debug:ODDebugger){
         super(debug,"message component")
     }
@@ -305,7 +305,7 @@ export interface ODMessageComponentData {
     /**Do not send notifications to mentioned users or roles. */
     supressNotifications?:boolean
     /**Additional options that aren't covered by the Open Discord api!*/
-    additionalOptions?:Omit<discord.MessageCreateOptions,"poll"|"content"|"embeds"|"components"|"files"|"flags">,
+    additionalOptions?:Omit<discord.MessageCreateOptions,"poll"|"content"|"embeds"|"components"|"files"|"flags"|"stickers">,
     /**Add additional files which can be used in components as `attachment://...`  */
     additionalAttachments?:discord.AttachmentBuilder[]
 }
@@ -368,9 +368,107 @@ export class ODMessageComponent extends ODGroupComponent<ODMessageComponentData,
             return {
                 msg:{
                     components,
+                    files:attachments,
                     ...this.data.additionalOptions
                 },
                 componentsV2:true,
+                ephemeral:this.data.ephemeral ?? false,
+                supressEmbeds:this.data.supressEmbeds ?? false,
+                supressNotifications:this.data.supressNotifications ?? false
+            }
+        })
+    }
+
+    /**Enable/disable ephemeral mode. */
+    setEphemeral(value:boolean){
+        this.data.ephemeral = value
+    }
+    /**Enable supress (hide) embeds mode. */
+    setSupressEmbeds(value:boolean){
+        this.data.supressEmbeds = value
+    }
+    /**Enable supress (hide) notifications mode. */
+    setSupressNotifications(value:boolean){
+        this.data.supressNotifications = value
+    }
+    /**Add an additional attachment which can be used in components as `attachment://...` */
+    addAdditionalAttachments(...attachments:discord.AttachmentBuilder[]){
+        if (!this.data.additionalAttachments) this.data.additionalAttachments = []
+        this.data.additionalAttachments.push(...attachments)
+    }
+}
+
+
+/**## ODSimpleMessageComponentData `type`
+ * The configurable settings/options for the `ODSimpleMessageComponent`.
+ */
+export interface ODSimpleMessageComponentData {
+    /**Should the message be sent as ephemeral? */
+    ephemeral?:boolean,
+    /**Suppress/hide embeds. */
+    supressEmbeds?:boolean,
+    /**Do not send notifications to mentioned users or roles. */
+    supressNotifications?:boolean
+    /**Additional options that aren't covered by the Open Discord api!*/
+    additionalOptions?:Omit<discord.MessageCreateOptions,"poll"|"content"|"embeds"|"components"|"files"|"flags">,
+    /**Add additional files which can be used in components as `attachment://...`  */
+    additionalAttachments?:discord.AttachmentBuilder[]
+}
+
+/**## ODValidSimpleMessageComponents `type`
+ * A collection of all valid top-level components that can be sent in a simple message (components v1).
+ */
+export type ODValidSimpleMessageComponents = ODContentComponent|ODEmbedComponent|ODFileComponent|ODPollComponent
+
+/**## ODSimpleMessageComponent `class`
+ * A message builder with **components v1** support.
+ * Add items to this message using `addComponent()`.
+ * 
+ * Use `ODMessageComponent` for components v2, components, containers, etc
+ */
+export class ODSimpleMessageComponent extends ODGroupComponent<ODSimpleMessageComponentData,ODValidSimpleMessageComponents,ODMessageComponentBuildResult> {
+    constructor(id:ODValidId,data?:Partial<ODMessageComponentData>){
+        const initData: ODMessageComponentData = {...data}
+        super(id,initData,async () => {
+            if (this.children.length < 1) throw new ODSystemError("ODMessageComponent:build('"+this.id.value+"') => Requires at least one child component.")
+            
+            const attachments: discord.AttachmentBuilder[] = [...(this.data.additionalAttachments ?? [])]
+            const embeds: discord.EmbedBuilder[] = []
+            let content: string|undefined = undefined
+            let poll: discord.PollData|undefined = undefined
+
+            for (const component of this.children){
+                if (component instanceof ODFileComponent){
+                    //ODFileComponent (special)
+                    const res = await component.build()
+                    if (res?.attachment) attachments.push(res.attachment)
+
+                }else if (component instanceof ODContentComponent){
+                    //ODContentComponent (special)
+                    const res = await component.build()
+                    if (res) content = res.content
+                    
+                }else if (component instanceof ODEmbedComponent){
+                    //ODEmbedComponent (special)
+                    const res = await component.build()
+                    if (res) embeds.push(res)
+                    
+                }else{
+                    //ODPollComponent (special)
+                    const res = await component.build()
+                    if (res) poll = res
+                }
+            }
+            
+            return {
+                msg:{
+                    content,
+                    embeds,
+                    poll,
+                    files:attachments,
+                    ...this.data.additionalOptions
+                },
+                componentsV2:false,
                 ephemeral:this.data.ephemeral ?? false,
                 supressEmbeds:this.data.supressEmbeds ?? false,
                 supressNotifications:this.data.supressNotifications ?? false
@@ -872,6 +970,240 @@ export class ODThumbnailComponent extends ODComponent<ODThumbnailComponentData,d
         this.data.spoiler = value
     }
 }
+
+/**## ODContentComponentData `type`
+ * The configurable settings/options for the `ODContentComponent`.
+ */
+export interface ODContentComponentData {
+    /**The text to display. */
+    content:string
+}
+
+/**## ODContentComponent `class`
+ * A text component which renders markdown text in a message without `Components V2` enabled. (Old behaviour)
+ */
+export class ODContentComponent extends ODComponent<ODContentComponentData,{content:string}> {
+    constructor(id:ODValidId,data:Partial<ODContentComponentData>){
+        const initData: ODContentComponentData = {content:"",...data}
+        super(id,initData,() => {
+            if (this.data.content.length < 1) throw new ODSystemError("ODContentComponent:build('"+this.id.value+"') => Unable to display content component without contents.")
+            return {
+                content:this.data.content
+            }
+        })
+    }
+
+    /**Set the text to display. */
+    setContent(value:string){
+        this.data.content = value
+    }
+}
+
+
+/**## ODEmbedComponentData `type`
+ * The configurable settings/options for the `ODEmbedComponent`.
+ */
+export interface ODEmbedComponentData {
+    /**The title of the embed. */
+    title?:string,
+    /**The color of the embed. */
+    color?:discord.ColorResolvable,
+    /**The url of the embed. */
+    url?:string,
+    /**The description of the embed. */
+    description?:string,
+    /**The author text of the embed. */
+    authorText?:string,
+    /**The author image of the embed. */
+    authorImage?:string,
+    /**The author url of the embed. */
+    authorUrl?:string,
+    /**The footer text of the embed. */
+    footerText?:string,
+    /**The footer image of the embed. */
+    footerImage?:string,
+    /**The image of the embed. */
+    image?:string,
+    /**The thumbnail of the embed. */
+    thumbnail?:string,
+    /**The fields of the embed. */
+    fields?:ODInterfaceWithPartialProperty<discord.EmbedField,"inline">[],
+    /**The timestamp of the embed. */
+    timestamp?:number|Date
+}
+
+/**## ODEmbedComponent `class`
+ * An embed component which renders an embed in a message without `Components V2` enabled. (Old behaviour)
+ */
+export class ODEmbedComponent extends ODComponent<ODEmbedComponentData,discord.EmbedBuilder> {
+    constructor(id:ODValidId,data:Partial<ODEmbedComponentData>){
+        const initData: ODEmbedComponentData = {...data}
+        super(id,initData,() => {
+            if (this.data.title && this.data.title.length > 256) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => An embed title can't exceed 256 characters.")
+            if (this.data.description && this.data.description.length > 4096) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => An embed description can't exceed 4096 characters.")
+            if (this.data.fields && this.data.fields.length > 25) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => An embed can't contain more than 25 fields.")
+            if (this.data.footerText && this.data.footerText.length > 2048) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => An embed footer can't exceed 2048 characters.")
+            if (this.data.authorText && this.data.authorText.length > 256) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => An embed author can't exceed 256 characters.")
+            
+            return new discord.EmbedBuilder({
+                title:this.data.title,
+                color:(this.data.color) ? discord.resolveColor(this.data.color) : undefined,
+                url:this.data.url,
+                description:this.data.description,
+                author:(this.data.authorText) ? {
+                    name:this.data.authorText,
+                    icon_url:this.data.authorImage,
+                    url:this.data.authorUrl
+                } : undefined,
+                footer:(this.data.footerText) ? {
+                    text:this.data.footerText,
+                    icon_url:this.data.footerImage
+                } : undefined,
+                image:(this.data.image) ? {
+                    url:this.data.image
+                } : undefined,
+                thumbnail:(this.data.thumbnail) ? {
+                    url:this.data.thumbnail
+                } : undefined,
+                fields:this.data.fields,
+                timestamp:(this.data.timestamp) ? new Date(this.data.timestamp).toISOString() : undefined
+            })
+        })
+    }
+
+    /**Set the title of this embed */
+    setTitle(title:string|null){
+        this.data.title = title ?? undefined
+        return this
+    }
+    /**Set the color of this embed */
+    setColor(color:discord.ColorResolvable|null){
+        this.data.color = color ?? undefined
+        return this
+    }
+    /**Set the url of this embed */
+    setUrl(url:string|null){
+        this.data.url = url ?? undefined
+        return this
+    }
+    /**Set the description of this embed */
+    setDescription(description:string|null){
+        this.data.description = description ?? undefined
+        return this
+    }
+    /**Set the author of this embed */
+    setAuthor(text:string|null, image?:string|null, url?:string|null){
+        this.data.authorText = text ?? undefined
+        this.data.authorImage = image ?? undefined
+        this.data.authorUrl = url ?? undefined
+        return this
+    }
+    /**Set the footer of this embed */
+    setFooter(text:string|null, image?:string|null){
+        this.data.footerText = text ?? undefined
+        this.data.footerImage = image ?? undefined
+        return this
+    }
+    /**Set the image of this embed */
+    setImage(image:string|null){
+        this.data.image = image ?? undefined
+        return this
+    }
+    /**Set the thumbnail of this embed */
+    setThumbnail(thumbnail:string|null){
+        this.data.thumbnail = thumbnail ?? undefined
+        return this
+    }
+    /**Set the fields of this embed */
+    setFields(fields:ODInterfaceWithPartialProperty<discord.EmbedField,"inline">[]){
+        //Check field properties
+        for (const [index,field] of fields.entries()){
+            if (field.value.length >= 1024) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => field "+index+" reached 1024 character limit!")
+            if (field.name.length >= 256) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => field "+index+" reached 256 name character limit!")
+        }
+        this.data.fields = fields
+        return this
+    }
+    /**Add fields to this embed */
+    addFields(...fields:ODInterfaceWithPartialProperty<discord.EmbedField,"inline">[]){
+        //Check field properties
+        for (const [index,field] of fields.entries()){
+            if (field.value.length >= 1024) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => field "+index+" reached 1024 character limit!")
+            if (field.name.length >= 256) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => field "+index+" reached 256 name character limit!")
+        }
+
+        if (!this.data.fields) this.data.fields = []
+        this.data.fields.push(...fields)
+        return this
+    }
+    /**Clear all fields from this embed */
+    clearFields(){
+        this.data.fields = []
+        return this
+    }
+    /**Set the timestamp of this embed. When set to `true`, the current timestamp is used. */
+    setTimestamp(timestamp:number|Date|true|null){
+        if (timestamp === true) this.data.timestamp = new Date()
+        else this.data.timestamp = timestamp ?? undefined
+        return this
+    }
+}
+
+/**## ODPollComponentData `type`
+ * The configurable settings/options for the `ODPollComponent`.
+ */
+export interface ODPollComponentData {
+    /**The poll question. */
+    question:string,
+    /**The duration of the poll in hours. */
+    durationHours:number,
+    /**Available poll answers. */
+    answers:discord.PollAnswerData[],
+    /**Allow selecting multiple answers. */
+    allowMultiSelect:boolean
+}
+
+/**## ODPollComponent `class`
+ * A poll component which adds a poll to a message without `Components V2` enabled. (Old behaviour)
+ */
+export class ODPollComponent extends ODComponent<ODPollComponentData,discord.PollData> {
+    constructor(id:ODValidId,data:Partial<ODPollComponentData>){
+        const initData: ODPollComponentData = {question:"<empty>",durationHours:1,allowMultiSelect:false,answers:[],...data}
+        super(id,initData,() => {
+            if (this.data.question.length < 1) throw new ODSystemError("ODPollComponent:build('"+this.id.value+"') => Please provide a valid poll question.")
+            if (this.data.answers.length < 1) throw new ODSystemError("ODPollComponent:build('"+this.id.value+"') => Please provide at least one answer to the poll.")
+            return {
+                layoutType:discord.PollLayoutType.Default,
+                allowMultiselect:this.data.allowMultiSelect,
+                duration:this.data.durationHours,
+                question:{text:this.data.question},
+                answers:this.data.answers
+            }
+        })
+    }
+
+    /**Set the poll question. */
+    setQuestion(question:string){
+        this.data.question = question
+    }
+    /**Set the poll duration in hours. */
+    setDurationHours(duration:number){
+        this.data.durationHours = duration
+    }
+    /**Allow selecting multiple answers. */
+    setMultiSelect(multi:boolean){
+        this.data.allowMultiSelect = multi
+    }
+    /**Set the poll answers. */
+    setAnswers(answers:discord.PollAnswerData[]){
+        this.data.answers = answers
+    }
+    /**Add additional poll answers. */
+    addAnswers(...answers:discord.PollAnswerData[]){
+        this.data.answers.push(...answers)
+    }
+}
+
 ///////////////////////////////////////////
 //   INTERACTIVE COMPONENT DEFINITIONS   //
 ///////////////////////////////////////////

@@ -23,12 +23,13 @@ import { ODPostManager } from "./modules/post.js"
 import { ODClientManager } from "./modules/client.js"
 import { ODSharedFuseManager } from "./modules/fuse.js"
 import { ODStartScreenManager } from "./modules/startscreen.js"
+import { ODComponentManager } from "./modules/component.js"
 
 /**## ODMainManagers `interface`
  * The global properties for the main class of the bot.
  */
 export interface ODMainManagers {
-    /**The manager that handles all versions in the bot. */
+    /**A collection of versions of the bot, systems, frameworks & services. */
     versions: ODVersionManager
 
     /**The timestamp that the (node.js) process of the bot started. */
@@ -49,49 +50,55 @@ export interface ODMainManagers {
     plugins: ODPluginManager
     /**The manager that manages & checks all the console flags of the bot. (like `--debug`) */
     flags: ODFlagManager
-    /**The manager responsible for progress bars in the console. */
+    /**The manager responsible for displaying progress bars in the console. */
     progressbars: ODProgressBarManager
-    /**The manager that manages & contains all the config files of the bot. (like `config/general.json`) */
+    /**A collection of all the config files of the bot and plugins. (like `config/general.json`) */
     configs: ODConfigManager
-    /**The manager that manages & contains all the databases of the bot. (like `database/global.json`) */
+    /**A collection of all the databases of the bot and plugins. (like `database/global.json`) */
     databases: ODDatabaseManager
-    /**The manager that manages all the data sessions of the bot. (it's a temporary database) */
+    /**A collection of all the sessions of the bot. (Sessions are temporary objects stored in memory) */
     sessions: ODSessionManager
-    /**The manager that manages all languages & translations of the bot. (but not for plugins) */
+    /**The global translation manager which manges all language files, translations & switches between them. (Does not manage translations for plugins) */
     languages: ODLanguageManager
     
-    /**The manager that handles & executes all config checkers in the bot. (the code that checks if you have something wrong in your config) */
+    /**The manager responsible for checking the bot & plugin configs. (it checks for mistakes in your config) */
     checkers: ODCheckerManager
-    /**The manager that manages all builders in the bot. (e.g. buttons, dropdowns, messages, modals, etc) */
+    /**A collection of button, dropdown, embed, ... templates which can be used to construct messages and modals.
+     * ### (🚨 Better alternative: `opendiscord.components (ODComponentManager)`)
+     */
     builders: ODBuilderManager
-    /**The manager that manages all responders in the bot. (e.g. commands, buttons, dropdowns, modals) */
+    /**A collection of building blocks and templates for messages & modals with native support for Discord Components v2. (e.g. buttons, dropdowns, checkboxes, radio groups, file uploads, ...)
+     * ### (✅ New replacement for: `opendiscord.builders (ODBuilderManager)`)
+     */
+    components: ODComponentManager
+    /**The manager that handles responses to all interactions of the bot. (e.g. slash/text commands, buttons, dropdowns, modals) */
     responders: ODResponderManager
-    /**The manager that manages all actions or procedures in the bot. (e.g. ticket-creation, ticket-deletion, ticket-claiming, etc) */
+    /**A collection of procedures. A procedure is a complex task which can be executed from multiple responders or events. (e.g. ticket-creation, ticket-deletion, ticket-claiming, ...) */
     actions: ODActionManager
-    /**The manager that manages all verify bars in the bot. (the ✅ ❌ buttons) */
+    /**A collection of verify bars from the bot. (the ✅ ❌ buttons in messages) */
     verifybars: ODVerifyBarManager
-    /**The manager that contains all permissions for commands & actions in the bot. (use it to check if someone has admin perms or not) */
+    /**A manager which will help with calculating permissions for commands & actions. */
     permissions: ODPermissionManager
-    /**The manager that contains all cooldowns of the bot. (e.g. ticket-cooldowns) */
+    /**The manager which will manage cooldowns in the bot. (e.g. ticket-create cooldowns) */
     cooldowns: ODCooldownManager
-    /**The manager that manages & renders the Open Discord help menu. (not the embed, but the text) */
+    /**The manager that collects & renders the Open Discord help menu contents. (not the final embed) */
     helpmenu: ODHelpMenuManager
-    /**The manager that manages, saves & renders the Open Discord statistics. (not the embed, but the text & database) */
+    /**The manager that registers, saves & updates statistics in the database. */
     statistics: ODStatisticManager
-    /**This manager is a place where you can put code that executes when the bot almost finishes the setup. (can be used for less important stuff that doesn't require an exact time-order) */
+    /**A place where you can put general-purpose code which will start on startup of the bot. (Perfect for background tasks) */
     code: ODCodeManager
-    /**The manager that manages all posts (static discord channels) in the bot. (e.g. transcripts, logs, etc) */
+    /**A collection of static Discord post channels. It allows the bot to find back log, transcript or configured channels based on a linked ID. */
     posts: ODPostManager
     
-    /**The manager responsible for everything related to the client. (e.g. status, login, slash & text commands, etc) */
+    /**A wrapper around the `discord.Client` class. It handles client login, activity and registering text/slash commands. */
     client: ODClientManager
-    /**Shared fuses between Open Discord bots. With these fuses/switches, you can turn off "default behaviours" from the bot. Useful for replacing default behaviour with a custom implementation.  */
+    /**Shared fuses between Open Discord bots. Turn off "default behaviours" from the bot which is useful for replacing default behaviour with a custom implementation.  */
     sharedFuses: ODSharedFuseManager
-    /**This manager manages all the variables in the ENV. It reads from both the `.env` file & the `process.env`. (these 2 will be combined)  */
+    /**A manager which collects variables from the Process ENV and `.env` file. */
     env: ODEnvHelper
-    /**The manager responsible for the livestatus system. (remote console logs) */
+    /**LiveStatus is a protocol which displays live updates from DJdj Development in the startscreen of the bot. (e.g. new version available) */
     livestatus: ODLiveStatusManager
-    /**The manager responsible for the livestatus system. (remote console logs) */
+    /**The manager responsible for rendering the startscreen of the bot. */
     startscreen: ODStartScreenManager
 }
 
@@ -123,6 +130,7 @@ export class ODMain implements ODMainManagers {
     
     readonly checkers: ODCheckerManager
     readonly builders: ODBuilderManager
+    readonly components: ODComponentManager
     readonly responders: ODResponderManager
     readonly actions: ODActionManager
     readonly verifybars: ODVerifyBarManager
@@ -160,6 +168,7 @@ export class ODMain implements ODMainManagers {
         
         this.checkers = managers.checkers
         this.builders = managers.builders
+        this.components = managers.components
         this.client = managers.client
         this.responders = managers.responders
         this.actions = managers.actions
