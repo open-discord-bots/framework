@@ -119,14 +119,13 @@ export class ODProgressBarRenderer<Settings extends {}> extends ODManagerData {
             return "<PROGRESS-BAR-ERROR>"
         }
     }
-
+    /**Create a clone of this progress bar renderer, but with additional settings. */
     withAdditionalSettings(settings:Partial<Settings>): ODProgressBarRenderer<Settings> {
         const newSettings: Settings = {...this.settings}
         for (const key of Object.keys(settings) as (keyof Partial<Settings>)[]){
             if (typeof settings[key] != "undefined") newSettings[key] = settings[key]
         }
 
-        const idk = Object.keys(settings)
         return new ODProgressBarRenderer(this.id,this.#render,newSettings)
     }
 }
@@ -139,7 +138,7 @@ export class ODProgressBarRenderer<Settings extends {}> extends ODManagerData {
  * 
  * Use other classes as existing templates or create your own progress bar from scratch using this class.
  */
-export class ODProgressBar extends ODManagerData {
+export abstract class ODProgressBar extends ODManagerData {
     /**The renderer of this progress bar. */
     renderer: ODProgressBarRenderer<{}>
     /**Is this progress bar currently active? */

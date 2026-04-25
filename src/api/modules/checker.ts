@@ -181,11 +181,10 @@ export class ODCheckerStorage {
  * 
  * Use this class to change the config checker looks!
  */
-export class ODCheckerRenderer {
+export abstract class ODCheckerRenderer {
     /**Get all config checker render components. These can be combined and rendered to the console. */
-    getComponents(compact:boolean, renderEmpty:boolean, translation:ODCheckerTranslationRegister<string,string>, data:ODCheckerResult): string[] {
-        return []
-    }
+    abstract getComponents(compact:boolean, renderEmpty:boolean, translation:ODCheckerTranslationRegister<string,string>, data:ODCheckerResult): string[] 
+    
     /**Render all config checker render components to the console. */
     render(components:string[]){
         if (components.length < 1) return

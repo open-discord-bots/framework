@@ -45,9 +45,9 @@ export class ODLanguageManager<IdList extends ODLanguageManagerIdConstraint = OD
     
     constructor(debug:ODDebugger, presets:boolean){
         super(debug,"language")
-        if (presets) this.add(new ODLanguage("english","english.json"))
-        this.current = presets ? new ODLanguage("english","english.json") : null
-        this.backup = presets ? new ODLanguage("english","english.json") : null
+        if (presets) this.add(new ODJsonLanguage("english","english.json"))
+        this.current = presets ? new ODJsonLanguage("english","english.json") : null
+        this.backup = presets ? new ODJsonLanguage("english","english.json") : null
         this.#debug = debug
     }
 
@@ -185,7 +185,7 @@ export class ODLanguageManager<IdList extends ODLanguageManagerIdConstraint = OD
  * 
  * JSON languages should be created using the `ODJsonLanguage` class instead!
  */
-export class ODLanguage extends ODManagerData {
+export abstract class ODLanguage extends ODManagerData {
     /**The name of the file with extension. */
     file: string = ""
     /**The path to the file relative to the main directory. */
@@ -201,9 +201,7 @@ export class ODLanguage extends ODManagerData {
     }
 
     /**Init the language. */
-    init(): ODPromiseVoid {
-        //nothing
-    }
+    abstract init(): ODPromiseVoid
 }
 
 /**## ODJsonLanguage `class`

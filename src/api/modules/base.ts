@@ -140,7 +140,7 @@ export class ODId {
  * It is used to let the "onChange" event in the `ODManager` class work.
  * You can use this class when extending your own `ODManager`
  */
-export class ODManagerChangeHelper {
+export abstract class ODManagerChangeHelper {
     #change: (() => void)|null = null
 
     /**Trigger an `onChange()` event in the parent `ODManager` of this class. */
@@ -167,7 +167,7 @@ export class ODManagerChangeHelper {
  * 
  * There is an `id:ODId` property & also some events used in the manager.
  */
-export class ODManagerData extends ODManagerChangeHelper {
+export abstract class ODManagerData extends ODManagerChangeHelper {
     /**The id of this data. */
     id: ODId
 

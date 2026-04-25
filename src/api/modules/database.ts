@@ -70,50 +70,42 @@ export type ODDatabaseIdConstraint = Record<string,ODValidJsonType>
  * 
  * You can use this class if you want to create your own database implementation (e.g. `mongodb`, `mysql`,...)!
  */
-export class ODDatabase<IdList extends ODDatabaseIdConstraint = ODDatabaseIdConstraint> extends ODManagerData {
+export abstract class ODDatabase<IdList extends ODDatabaseIdConstraint = ODDatabaseIdConstraint> extends ODManagerData {
     /**The name of the file with extension. */
     file: string = ""
     /**The path to the file relative to the main directory. */
     path: string = ""
 
     /**Init the database. */
-    init(): ODPromiseVoid {
-        //nothing
-    }
+    abstract init(): ODPromiseVoid
+    
     /**Add/Overwrite a specific category & key in the database. Returns `true` when overwritten. */
-    set<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string, value:IdList[CategoryId]): ODOptionalPromise<boolean>
-    set(category:string, key:string, value:ODValidJsonType): ODOptionalPromise<boolean>
-    set(category:string, key:string, value:ODValidJsonType): ODOptionalPromise<boolean> {
-        return false
-    }
+    abstract set<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string, value:IdList[CategoryId]): ODOptionalPromise<boolean>
+    abstract set(category:string, key:string, value:ODValidJsonType): ODOptionalPromise<boolean>
+    abstract set(category:string, key:string, value:ODValidJsonType): ODOptionalPromise<boolean>
+    
     /**Get a specific category & key in the database */
-    get<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string): ODOptionalPromise<IdList[CategoryId]|undefined>
-    get(category:string, key:string): ODOptionalPromise<ODValidJsonType|undefined>
-    get(category:string, key:string): ODOptionalPromise<ODValidJsonType|undefined> {
-        return undefined
-    }
+    abstract get<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string): ODOptionalPromise<IdList[CategoryId]|undefined>
+    abstract get(category:string, key:string): ODOptionalPromise<ODValidJsonType|undefined>
+    abstract get(category:string, key:string): ODOptionalPromise<ODValidJsonType|undefined>
+    
     /**Delete a specific category & key in the database */
-    delete<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string): ODOptionalPromise<boolean>
-    delete(category:string, key:string): ODOptionalPromise<boolean>
-    delete(category:string, key:string): ODOptionalPromise<boolean> {
-        return false
-    }
+    abstract delete<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string): ODOptionalPromise<boolean>
+    abstract delete(category:string, key:string): ODOptionalPromise<boolean>
+    abstract delete(category:string, key:string): ODOptionalPromise<boolean>
+    
     /**Check if a specific category & key exists in the database */
-    exists(category:keyof ODNoGeneric<IdList>, key:string): ODOptionalPromise<boolean>
-    exists(category:string, key:string): ODOptionalPromise<boolean>
-    exists(category:string, key:string): ODOptionalPromise<boolean> {
-        return false
-    }
+    abstract exists(category:keyof ODNoGeneric<IdList>, key:string): ODOptionalPromise<boolean>
+    abstract exists(category:string, key:string): ODOptionalPromise<boolean>
+    abstract exists(category:string, key:string): ODOptionalPromise<boolean>
+    
     /**Get a specific category in the database */
-    getCategory<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId): ODOptionalPromise<{key:string, value:IdList[CategoryId]}[]|undefined>
-    getCategory(category:string): ODOptionalPromise<{key:string, value:ODValidJsonType}[]|undefined>
-    getCategory(category:string): ODOptionalPromise<{key:string, value:ODValidJsonType}[]|undefined> {
-        return undefined
-    }
+    abstract getCategory<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId): ODOptionalPromise<{key:string, value:IdList[CategoryId]}[]|undefined>
+    abstract getCategory(category:string): ODOptionalPromise<{key:string, value:ODValidJsonType}[]|undefined>
+    abstract getCategory(category:string): ODOptionalPromise<{key:string, value:ODValidJsonType}[]|undefined>
+    
     /**Get all values in the database */
-    getAll(): ODOptionalPromise<ODJsonDatabaseStructure> {
-        return []
-    }
+    abstract getAll(): ODOptionalPromise<ODJsonDatabaseStructure>
 }
 
 /**## ODJsonDatabaseStructure `type`

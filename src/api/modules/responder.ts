@@ -15,7 +15,7 @@ import { ODDropdownData, ODMessageBuildResult, ODMessageBuildSentResult, ODModal
  * 
  * This class can't be used stand-alone & needs to be extended from!
  */
-export class ODResponderImplementation<Instance,Origin extends string,Params,WorkerIds extends string = string> extends ODManagerData {
+export abstract class ODResponderImplementation<Instance,Origin extends string,Params,WorkerIds extends string = string> extends ODManagerData {
     /**The manager that has all workers of this implementation */
     workers: ODWorkerManager<Instance,Origin,Params,WorkerIds>
     /**The `commandName` or `customId` needs to match this string or regex for this responder to be executed. */
@@ -28,9 +28,7 @@ export class ODResponderImplementation<Instance,Origin extends string,Params,Wor
         if (callback) this.workers.add(new ODWorker(callbackId ? callbackId : id,priority ?? 0,callback))
     }
     /**Execute all workers & return the result. */
-    async respond(instance:Instance, origin:Origin, params:Params): Promise<void> {
-        throw new ODSystemError("Tried to build an unimplemented ODResponderImplementation")
-    }
+    abstract respond(instance:Instance, origin:Origin, params:Params): Promise<void>
 }
 
 /**## ODResponderTimeoutErrorCallback `type`

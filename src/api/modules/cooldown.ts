@@ -75,7 +75,7 @@ export class ODCooldownData<Data extends object> extends ODManagerData {
  * 
  * There are also premade cooldowns available in the bot!
  */
-export class ODCooldown<Data extends object> extends ODManagerData {
+export abstract class ODCooldown<Data extends object> extends ODManagerData {
     data: ODManager<ODCooldownData<Data>> = new ODManager()
     /**Is this cooldown already initialized? */
     ready: boolean = false
@@ -85,21 +85,16 @@ export class ODCooldown<Data extends object> extends ODManagerData {
     }
 
     /**Check this id and start cooldown when it exeeds the limit! Returns `true` when on cooldown! */
-    use(id:string): boolean {
-        throw new ODSystemError("Tried to use an unimplemented ODCooldown!")
-    }
+    abstract use(id:string): boolean
+    
     /**Check this id without starting or updating the cooldown. Returns `true` when on cooldown! */
-    check(id:string): boolean {
-        throw new ODSystemError("Tried to use an unimplemented ODCooldown!")
-    }
+    abstract check(id:string): boolean
+    
     /**Remove the cooldown for an id when available.*/
-    delete(id:string){
-        throw new ODSystemError("Tried to use an unimplemented ODCooldown!")
-    }
+    abstract delete(id:string): void
+    
     /**Initialize the internal systems of this cooldown. */
-    async init(){
-        throw new ODSystemError("Tried to use an unimplemented ODCooldown!")
-    }
+    abstract init(): Promise<void>|void
 }
 
 /**## ODCounterCooldown `class`

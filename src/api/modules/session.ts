@@ -67,7 +67,7 @@ export type ODSessionTimeoutCallback = (id:string, timeout:"default"|"custom", d
 /**## ODSession `class`
  * This is an Open Discord session.
  * 
- * It can be used to create 100% unique id's for usage in the bot. An id can also store additional data which isn't saved to the filesystem.
+ * It can be used to create unique user sessions with an ID. Each session can store additional data which isn't saved to the filesystem.
  * You can almost compare it to the PHP session system.
  */
 export class ODSession extends ODManagerData {

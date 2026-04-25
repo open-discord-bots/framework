@@ -12,7 +12,7 @@ import { ODDebugger } from "./console.js"
  * 
  * This class can't be used stand-alone & needs to be extended from!
  */
-export class ODActionImplementation<Origin extends string,Params extends object,Result extends object,WorkerIds extends string = string> extends ODManagerData {
+export abstract class ODActionImplementation<Origin extends string,Params extends object,Result extends object,WorkerIds extends string = string> extends ODManagerData {
     /**The manager that has all workers of this implementation */
     workers: ODWorkerManager<Partial<Result>,Origin,Params,WorkerIds>
 
@@ -22,9 +22,7 @@ export class ODActionImplementation<Origin extends string,Params extends object,
         if (callback) this.workers.add(new ODWorker(callbackId ? callbackId : id,priority ?? 0,callback))
     }
     /**Execute all workers & return the result. */
-    async run(origin:Origin, params:Params): Promise<Partial<Result>> {
-        throw new ODSystemError("Tried to build an unimplemented ODResponderImplementation")
-    }
+    abstract run(origin:Origin, params:Params): Promise<Partial<Result>>
 }
 
 /**## ODActionManagerIdConstraint `type`

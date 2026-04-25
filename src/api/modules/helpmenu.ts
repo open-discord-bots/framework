@@ -4,27 +4,22 @@
 import { ODId, ODManager, ODManagerData, ODNoGeneric, ODSystemError, ODValidId } from "./base.js"
 import { ODDebugger } from "./console.js"
 
-/**## ODHelpMenuComponentRenderer `type`
- * This is the callback of the help menu component renderer. It also contains information about how & where it is rendered.
- */
-export type ODHelpMenuComponentRenderer = (page:number, category:number, location:number, mode:"slash"|"text") => string|Promise<string>
-
 /**## ODHelpMenuComponent `class`
  * This is an Open Discord help menu component.
  * 
  * It can render something on the Open Discord help menu.
  */
-export class ODHelpMenuComponent extends ODManagerData {
+export abstract class ODHelpMenuComponent extends ODManagerData {
     /**The priority of this component. The higher, the earlier it will appear in the help menu. */
     priority: number
-    /**The render function for this component. */
-    render: ODHelpMenuComponentRenderer
 
-    constructor(id:ODValidId, priority:number, render:ODHelpMenuComponentRenderer){
+    constructor(id:ODValidId, priority:number){
         super(id)
         this.priority = priority
-        this.render = render
     }
+
+    /**The render function for this component. */
+    abstract render(page:number, category:number, location:number, mode:"slash"|"text"): string|Promise<string>
 }
 
 /**## ODHelpMenuTextComponent `class`
@@ -33,10 +28,16 @@ export class ODHelpMenuComponent extends ODManagerData {
  * It can render a static piece of text on the Open Discord help menu.
  */
 export class ODHelpMenuTextComponent extends ODHelpMenuComponent {
+    /**The text of this help menu component. */
+    text: string
+
     constructor(id:ODValidId, priority:number, text:string){
-        super(id,priority,() => {
-            return text
-        })
+        super(id,priority)
+        this.text = text
+    }
+
+    render(page:number,category:number,location:number,mode:"slash"|"text"){
+        return this.text
     }
 }
 
@@ -74,16 +75,22 @@ export interface ODHelpMenuCommandComponentSettings {
  * It contains a useful helper to render a command in the Open Discord help menu.
  */
 export class ODHelpMenuCommandComponent extends ODHelpMenuComponent {
+    /**The settings for this help menu component. */
+    settings:ODHelpMenuCommandComponentSettings
+
     constructor(id:ODValidId, priority:number, settings:ODHelpMenuCommandComponentSettings){
-        super(id,priority,(page,category,location,mode) => {
-            if (mode == "slash" && settings.slashName){
-                return `\`${settings.slashName}${(settings.slashOptions) ? this.#renderOptions(settings.slashOptions) : ""}\` ➜ ${settings.slashDescription ?? ""}`
-            
-            }else if (mode == "text" && settings.textName){
-                return `\`${settings.textName}${(settings.textOptions) ? this.#renderOptions(settings.textOptions) : ""}\` ➜ ${settings.textDescription ?? ""}`
-            
-            }else return ""
-        })
+        super(id,priority)
+        this.settings = settings
+    }
+
+    render(page:number,category:number,location:number,mode:"slash"|"text"){
+        if (mode == "slash" && this.settings.slashName){
+            return `\`${this.settings.slashName}${(this.settings.slashOptions) ? this.#renderOptions(this.settings.slashOptions) : ""}\` ➜ ${this.settings.slashDescription ?? ""}`
+        
+        }else if (mode == "text" && this.settings.textName){
+            return `\`${this.settings.textName}${(this.settings.textOptions) ? this.#renderOptions(this.settings.textOptions) : ""}\` ➜ ${this.settings.textDescription ?? ""}`
+        
+        }else return ""
     }
     
     /**Utility function to render all command options. */

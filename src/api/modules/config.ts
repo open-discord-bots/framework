@@ -72,7 +72,7 @@ export class ODConfigManager<IdList extends ODConfigManagerIdConstraint = ODConf
  * 
  * You can use this class if you want to create your own config implementation (e.g. `yml`, `xml`,...)!
  */
-export class ODConfig<Data extends any> extends ODManagerData {
+export abstract class ODConfig<Data extends any> extends ODManagerData {
     /**The name of the file with extension. */
     file: string = ""
     /**The path to the file relative to the main directory. */

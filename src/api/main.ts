@@ -108,7 +108,7 @@ export interface ODMainManagers {
  * 
  * This class can't be overwritten or extended & is available as the global variable `opendiscord`!
  */
-export class ODMain implements ODMainManagers {
+export abstract class ODMain implements ODMainManagers {
     readonly project: ODProjectType
 
     readonly versions: ODVersionManager

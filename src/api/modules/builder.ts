@@ -13,7 +13,7 @@ import { ODDebugger } from "./console.js"
  * 
  * This class can't be used stand-alone & needs to be extended from!
  */
-export class ODBuilderImplementation<Instance,Origin extends string,Params,BuildType extends {id:ODId},WorkerIds extends string = string> extends ODManagerData {
+export abstract class ODBuilderImplementation<Instance,Origin extends string,Params,BuildType extends {id:ODId},WorkerIds extends string = string> extends ODManagerData {
     /**The manager that has all workers of this implementation */
     workers: ODWorkerManager<Instance,Origin,Params,WorkerIds>
     /**Cache a build or create it every time from scratch when this.build() gets executed. */
@@ -42,9 +42,7 @@ export class ODBuilderImplementation<Instance,Origin extends string,Params,Build
         return this
     }
     /**Execute all workers & return the result. */
-    async build(origin:Origin, params:Params): Promise<BuildType> {
-        throw new ODSystemError("Tried to build an unimplemented ODBuilderImplementation")
-    }
+    abstract build(origin:Origin, params:Params): Promise<BuildType>
 }
 
 /**## ODBuilderManager `class`

@@ -155,11 +155,6 @@ export class ODComponentManager<
 //   GENERIC COMPONENT DEFINITIONS   //
 ///////////////////////////////////////
 
-/**## ODComponentBuilderFunc `type`
- * The builder function of a component.
- */
-export type ODComponentBuilderFunc<BuildResult> = () => Promise<BuildResult|null>|BuildResult|null
-
 /**## ODComponentInferBuildResult `type`
  * Infer the build result of a certain component.
  */
@@ -171,20 +166,19 @@ export type ODComponentInferBuildResult<Component> = Component extends ODCompone
  * This class itself doesn't do anything, but is a blueprint for other   
  * `ODComponent` classes which represent the new Discord message/modal components.
  */
-export class ODComponent<Data extends object,BuildResult> {
+export abstract class ODComponent<Data extends object,BuildResult> {
     /**The id of this message/modal component. */
     id: ODId
-    /** */
     /**The data or configuration of this message/modal component. */
     readonly data: Data
-    /**Build this component. Returns `null` when invalid. */
-    readonly build: ODComponentBuilderFunc<BuildResult>
 
-    constructor(id:ODValidId,data:Data,build:ODComponentBuilderFunc<BuildResult>){
+    constructor(id:ODValidId,data:Data){
         this.id = new ODId(id)
         this.data = data
-        this.build = build
     }
+
+    /**Build this component. Returns `null` when invalid. */
+    abstract build(): Promise<BuildResult|null>|BuildResult|null
 }
 
 /**## ODGroupComponent `class`
@@ -193,7 +187,7 @@ export class ODComponent<Data extends object,BuildResult> {
  * This class itself doesn't do anything, but is a blueprint for other   
  * `ODGroupComponent` classes which represent the new Discord message/modal components.
  */
-export class ODGroupComponent<Data extends object,ChildComponent extends ODComponent<object,any>,BuildResult> extends ODComponent<Data,BuildResult> {
+export abstract class ODGroupComponent<Data extends object,ChildComponent extends ODComponent<object,any>,BuildResult> extends ODComponent<Data,BuildResult> {
     /**The collection of child components. */
     readonly children: ChildComponent[] = []
 
@@ -276,7 +270,7 @@ export class ODGroupComponent<Data extends object,ChildComponent extends ODCompo
  * This class itself doesn't do anything, but is a blueprint for other   
  * `ODParentComponent` classes which represent the new Discord message/modal components.
  */
-export class ODParentComponent<Data extends object,ChildComponent extends ODComponent<object,any>,BuildResult> extends ODComponent<Data,BuildResult> {
+export abstract class ODParentComponent<Data extends object,ChildComponent extends ODComponent<object,any>,BuildResult> extends ODComponent<Data,BuildResult> {
     /**The child component of this parent. */
     #child: ChildComponent|null = null
     
@@ -340,43 +334,46 @@ export interface ODMessageComponentBuildResult {
 export class ODMessageComponent extends ODGroupComponent<ODMessageComponentData,ODValidMessageComponents,ODMessageComponentBuildResult> {
     constructor(id:ODValidId,data?:Partial<ODMessageComponentData>){
         const initData: ODMessageComponentData = {...data}
-        super(id,initData,async () => {
-            if (this.children.length < 1) throw new ODSystemError("ODMessageComponent:build('"+this.id.value+"') => Requires at least one child component.")
-            
-            const attachments: discord.AttachmentBuilder[] = [...(this.data.additionalAttachments ?? [])]
-            const components: discord.JSONEncodable<discord.APIMessageTopLevelComponent>[] = []
+        super(id,initData)
+    }
 
-            for (const component of this.children){
-                if (component instanceof ODFileComponent){
-                    //ODFileComponent (special)
-                    const res = await component.build()
-                    if (res) components.push(res.file)
-                    if (res?.attachment) attachments.push(res.attachment)
+    async build(){
+        if (this.children.length < 1) throw new ODSystemError("ODMessageComponent:build('"+this.id.value+"') => Requires at least one child component.")
+        
+        const attachments: discord.AttachmentBuilder[] = [...(this.data.additionalAttachments ?? [])]
+        const components: discord.JSONEncodable<discord.APIMessageTopLevelComponent>[] = []
 
-                }else if (component instanceof ODGalleryComponent){
-                    //ODGalleryComponent (special)
-                    const res = await component.build()
-                    if (res) components.push(res.gallery)
-                    if (res?.attachments) attachments.push(...res.attachments)
-                }else{
-                    //general ODComponent's
-                    const res = await component.build()
-                    if (res) components.push(res)
-                }
+        for (const component of this.children){
+            if (component instanceof ODFileComponent){
+                //ODFileComponent (special)
+                const res = await component.build()
+                if (res) components.push(res.file)
+                if (res?.attachment) attachments.push(res.attachment)
+
+            }else if (component instanceof ODGalleryComponent){
+                //ODGalleryComponent (special)
+                const res = await component.build()
+                if (res) components.push(res.gallery)
+                if (res?.attachments) attachments.push(...res.attachments)
+            }else{
+                //general ODComponent's
+                const res = await component.build()
+                if (res) components.push(res)
             }
-            
-            return {
-                msg:{
-                    components,
-                    files:attachments,
-                    ...this.data.additionalOptions
-                },
-                componentsV2:true,
-                ephemeral:this.data.ephemeral ?? false,
-                supressEmbeds:this.data.supressEmbeds ?? false,
-                supressNotifications:this.data.supressNotifications ?? false
-            }
-        })
+        }
+        
+        return {
+            msg:{
+                components,
+                files:attachments,
+                ...this.data.additionalOptions
+            },
+            componentsV2:true,
+            ephemeral:this.data.ephemeral ?? false,
+            supressEmbeds:this.data.supressEmbeds ?? false,
+            supressNotifications:this.data.supressNotifications ?? false
+        }
+    
     }
 
     /**Enable/disable ephemeral mode. */
@@ -429,51 +426,53 @@ export type ODValidSimpleMessageComponents = ODContentComponent|ODEmbedComponent
 export class ODSimpleMessageComponent extends ODGroupComponent<ODSimpleMessageComponentData,ODValidSimpleMessageComponents,ODMessageComponentBuildResult> {
     constructor(id:ODValidId,data?:Partial<ODMessageComponentData>){
         const initData: ODMessageComponentData = {...data}
-        super(id,initData,async () => {
-            if (this.children.length < 1) throw new ODSystemError("ODMessageComponent:build('"+this.id.value+"') => Requires at least one child component.")
-            
-            const attachments: discord.AttachmentBuilder[] = [...(this.data.additionalAttachments ?? [])]
-            const embeds: discord.EmbedBuilder[] = []
-            let content: string|undefined = undefined
-            let poll: discord.PollData|undefined = undefined
+        super(id,initData)
+    }
 
-            for (const component of this.children){
-                if (component instanceof ODFileComponent){
-                    //ODFileComponent (special)
-                    const res = await component.build()
-                    if (res?.attachment) attachments.push(res.attachment)
+    async build(){
+        if (this.children.length < 1) throw new ODSystemError("ODMessageComponent:build('"+this.id.value+"') => Requires at least one child component.")
+        
+        const attachments: discord.AttachmentBuilder[] = [...(this.data.additionalAttachments ?? [])]
+        const embeds: discord.EmbedBuilder[] = []
+        let content: string|undefined = undefined
+        let poll: discord.PollData|undefined = undefined
 
-                }else if (component instanceof ODContentComponent){
-                    //ODContentComponent (special)
-                    const res = await component.build()
-                    if (res) content = res.content
-                    
-                }else if (component instanceof ODEmbedComponent){
-                    //ODEmbedComponent (special)
-                    const res = await component.build()
-                    if (res) embeds.push(res)
-                    
-                }else{
-                    //ODPollComponent (special)
-                    const res = await component.build()
-                    if (res) poll = res
-                }
+        for (const component of this.children){
+            if (component instanceof ODFileComponent){
+                //ODFileComponent (special)
+                const res = await component.build()
+                if (res?.attachment) attachments.push(res.attachment)
+
+            }else if (component instanceof ODContentComponent){
+                //ODContentComponent (special)
+                const res = await component.build()
+                if (res) content = res.content
+                
+            }else if (component instanceof ODEmbedComponent){
+                //ODEmbedComponent (special)
+                const res = await component.build()
+                if (res) embeds.push(res)
+                
+            }else{
+                //ODPollComponent (special)
+                const res = await component.build()
+                if (res) poll = res
             }
-            
-            return {
-                msg:{
-                    content,
-                    embeds,
-                    poll,
-                    files:attachments,
-                    ...this.data.additionalOptions
-                },
-                componentsV2:false,
-                ephemeral:this.data.ephemeral ?? false,
-                supressEmbeds:this.data.supressEmbeds ?? false,
-                supressNotifications:this.data.supressNotifications ?? false
-            }
-        })
+        }
+        
+        return {
+            msg:{
+                content,
+                embeds,
+                poll,
+                files:attachments,
+                ...this.data.additionalOptions
+            },
+            componentsV2:false,
+            ephemeral:this.data.ephemeral ?? false,
+            supressEmbeds:this.data.supressEmbeds ?? false,
+            supressNotifications:this.data.supressNotifications ?? false
+        }
     }
 
     /**Enable/disable ephemeral mode. */
@@ -518,30 +517,32 @@ export type ODValidModalComponents = ODLabelComponent|ODTextComponent
 export class ODModalComponent extends ODGroupComponent<ODModalComponentData,ODValidModalComponents,discord.ModalBuilder> {
     constructor(id:ODValidId,data?:Partial<ODModalComponentData>){
         const initData: ODModalComponentData = {title:"<empty>",...data}
-        super(id,initData,async () => {
-            if (this.children.length < 1) throw new ODSystemError("ODModalComponent:build('"+this.id.value+"') => Requires at least one child component.")
-            if (this.children.length > 5) throw new ODSystemError("ODModalComponent:build('"+this.id.value+"') => A modal doesn't support more than 5 components.")
-            
-            const components: (discord.APITextDisplayComponent|discord.APILabelComponent)[] = []
+        super(id,initData)
+    }
 
-            for (const component of this.children){
-                if (component instanceof ODLabelComponent){
-                    //ODLabelComponent (special)
-                    const res = await component.build()
-                    if (res) components.push(res.toJSON())
+    async build(){
+        if (this.children.length < 1) throw new ODSystemError("ODModalComponent:build('"+this.id.value+"') => Requires at least one child component.")
+        if (this.children.length > 5) throw new ODSystemError("ODModalComponent:build('"+this.id.value+"') => A modal doesn't support more than 5 components.")
+        
+        const components: (discord.APITextDisplayComponent|discord.APILabelComponent)[] = []
 
-                }else{
-                    //ODTextComponent (special)
-                    const res = await component.build()
-                    if (res) components.push(res.toJSON())
-                }
+        for (const component of this.children){
+            if (component instanceof ODLabelComponent){
+                //ODLabelComponent (special)
+                const res = await component.build()
+                if (res) components.push(res.toJSON())
+
+            }else{
+                //ODTextComponent (special)
+                const res = await component.build()
+                if (res) components.push(res.toJSON())
             }
-            
-            return new discord.ModalBuilder({
-                components,
-                title:this.data.title,
-                customId:this.data.customId
-            })
+        }
+        
+        return new discord.ModalBuilder({
+            components,
+            title:this.data.title,
+            customId:this.data.customId
         })
     }
 
@@ -579,20 +580,22 @@ export type ODValidActionRowComponents = ODButtonComponent|ODDropdownComponent
 export class ODActionRowComponent extends ODGroupComponent<ODActionRowComponentData,ODValidActionRowComponents,discord.ActionRowBuilder<discord.MessageActionRowComponentBuilder>> {
     constructor(id:ODValidId,data?:Partial<ODActionRowComponentData>){
         const initData: ODActionRowComponentData = {...data}
-        super(id,initData,async () => {
-            if (this.children.length < 1) throw new ODSystemError("ODActionRowComponent:build('"+this.id.value+"') => Requires at least one child component.")
-            if (this.children.length > 5) throw new ODSystemError("ODActionRowComponent:build('"+this.id.value+"') => An action row doesn't support more than 5 components.")
-            
-            const components: discord.JSONEncodable<discord.APIComponentInMessageActionRow>[] = []
+        super(id,initData)
+    }
 
-            for (const component of this.children){
-                //actionrow ODComponent's
-                const res = await component.build()
-                if (res) components.push(res)
-            }
-            
-            return new discord.ActionRowBuilder({components})
-        })
+    async build(){
+        if (this.children.length < 1) throw new ODSystemError("ODActionRowComponent:build('"+this.id.value+"') => Requires at least one child component.")
+        if (this.children.length > 5) throw new ODSystemError("ODActionRowComponent:build('"+this.id.value+"') => An action row doesn't support more than 5 components.")
+        
+        const components: discord.JSONEncodable<discord.APIComponentInMessageActionRow>[] = []
+
+        for (const component of this.children){
+            //actionrow ODComponent's
+            const res = await component.build()
+            if (res) components.push(res)
+        }
+        
+        return new discord.ActionRowBuilder<discord.MessageActionRowComponentBuilder>({components})
     }
 }
 
@@ -617,40 +620,42 @@ export type ODValidContainerComponents = ODActionRowComponent|ODTextComponent|OD
 export class ODContainerComponent extends ODGroupComponent<ODContainerComponentData,ODValidContainerComponents,{container:discord.ContainerBuilder,attachments:discord.AttachmentBuilder[]}> {
     constructor(id:ODValidId,data?:Partial<ODContainerComponentData>){
         const initData: ODContainerComponentData = {spoiler:false,...data}
-        super(id,initData,async () => {
-            if (this.children.length < 1) throw new ODSystemError("ODContainerComponent:build('"+this.id.value+"') => Requires at least one child component.")
-            
-            const components: discord.APIComponentInContainer[] = []
-            const attachments: discord.AttachmentBuilder[] = []
+        super(id,initData)
+    }
 
-            for (const component of this.children){
-                if (component instanceof ODFileComponent){
-                    //ODFileComponent (special)
-                    const res = await component.build()
-                    if (res) components.push(res.file.toJSON())
-                    if (res?.attachment) attachments.push(res.attachment)
+    async build(){
+        if (this.children.length < 1) throw new ODSystemError("ODContainerComponent:build('"+this.id.value+"') => Requires at least one child component.")
+        
+        const components: discord.APIComponentInContainer[] = []
+        const attachments: discord.AttachmentBuilder[] = []
 
-                }else if (component instanceof ODGalleryComponent){
-                    //ODGalleryComponent (special)
-                    const res = await component.build()
-                    if (res) components.push(res.gallery.toJSON())
-                    if (res?.attachments) attachments.push(...res.attachments)
-                }else{
-                    //general ODComponent's
-                    const res = await component.build()
-                    if (res) components.push(res.toJSON())
-                }
+        for (const component of this.children){
+            if (component instanceof ODFileComponent){
+                //ODFileComponent (special)
+                const res = await component.build()
+                if (res) components.push(res.file.toJSON())
+                if (res?.attachment) attachments.push(res.attachment)
+
+            }else if (component instanceof ODGalleryComponent){
+                //ODGalleryComponent (special)
+                const res = await component.build()
+                if (res) components.push(res.gallery.toJSON())
+                if (res?.attachments) attachments.push(...res.attachments)
+            }else{
+                //general ODComponent's
+                const res = await component.build()
+                if (res) components.push(res.toJSON())
             }
-            
-            return {
-                container:new discord.ContainerBuilder({
-                    components,
-                    accent_color:this.data.color ? discord.resolveColor(this.data.color) : undefined,
-                    spoiler:this.data.spoiler
-                }),
-                attachments
-            }
-        })
+        }
+        
+        return {
+            container:new discord.ContainerBuilder({
+                components,
+                accent_color:this.data.color ? discord.resolveColor(this.data.color) : undefined,
+                spoiler:this.data.spoiler
+            }),
+            attachments
+        }
     }
 
     /**Set the accent color of this embed-like container. */
@@ -680,27 +685,29 @@ export interface ODSectionComponentData {
 export class ODSectionComponent extends ODGroupComponent<ODSectionComponentData,ODTextComponent,discord.SectionBuilder> {
     constructor(id:ODValidId,data?:Partial<ODSectionComponentData>){
         const initData: ODSectionComponentData = {...data}
-        super(id,initData,async () => {
-            if (this.children.length < 1) throw new ODSystemError("ODSectionComponent:build('"+this.id.value+"') => Requires at least one child component.")
-            if (this.children.length > 3) throw new ODSystemError("ODSectionComponent:build('"+this.id.value+"') => A maximum of 3 child components are allowed in a section.")
-            
-            const components: discord.APITextDisplayComponent[] = []
+        super(id,initData)
+    }
 
-            for (const component of this.children){
-                //section ODComponent's
-                const res = await component.build()
-                if (res) components.push(res.toJSON())
-                
-            }
+    async build(){
+        if (this.children.length < 1) throw new ODSystemError("ODSectionComponent:build('"+this.id.value+"') => Requires at least one child component.")
+        if (this.children.length > 3) throw new ODSystemError("ODSectionComponent:build('"+this.id.value+"') => A maximum of 3 child components are allowed in a section.")
+        
+        const components: discord.APITextDisplayComponent[] = []
 
-            let accessory: discord.APISectionAccessoryComponent|undefined = undefined
-            if (this.data.accessory){
-                const accessoryRes = await this.data.accessory.build()
-                if (accessoryRes) accessory = accessoryRes.toJSON()
-            }
+        for (const component of this.children){
+            //section ODComponent's
+            const res = await component.build()
+            if (res) components.push(res.toJSON())
             
-            return new discord.SectionBuilder({components,accessory})
-        })
+        }
+
+        let accessory: discord.APISectionAccessoryComponent|undefined = undefined
+        if (this.data.accessory){
+            const accessoryRes = await this.data.accessory.build()
+            if (accessoryRes) accessory = accessoryRes.toJSON()
+        }
+        
+        return new discord.SectionBuilder({components,accessory})
     }
 
     /**Set the accessory component shown on the right side of the section. */
@@ -730,19 +737,20 @@ export type ODValidLabelComponents = ODShortInputComponent|ODParagraphInputCompo
 export class ODLabelComponent extends ODParentComponent<ODLabelComponentData,ODValidLabelComponents,discord.LabelBuilder> {
     constructor(id:ODValidId,data:Partial<ODLabelComponentData>){
         const initData: ODLabelComponentData = {title:"<empty>",...data}
-        super(id,initData,async () => {
+        super(id,initData)
+    }
+    
+    async build(){
+        let component: discord.APIComponentInLabel|undefined = undefined
+        if (this.child){
+            const accessoryRes = await this.child.build()
+            if (accessoryRes) component = accessoryRes.toJSON()
+        }
 
-            let component: discord.APIComponentInLabel|undefined = undefined
-            if (this.child){
-                const accessoryRes = await this.child.build()
-                if (accessoryRes) component = accessoryRes.toJSON()
-            }
-
-            return new discord.LabelBuilder({
-                label:this.data.title,
-                description:this.data.description,
-                component
-            })
+        return new discord.LabelBuilder({
+            label:this.data.title,
+            description:this.data.description,
+            component
         })
     }
 
@@ -773,11 +781,13 @@ export interface ODSeparatorComponentData {
 export class ODSeparatorComponent extends ODComponent<ODSeparatorComponentData,discord.SeparatorBuilder> {
     constructor(id:ODValidId,data:Partial<ODSeparatorComponentData>){
         const initData: ODSeparatorComponentData = {divider:true,spacing:"small",...data}
-        super(id,initData,() => {
-            return new discord.SeparatorBuilder({
-                divider:this.data.divider,
-                spacing:(this.data.spacing == "small") ? discord.SeparatorSpacingSize.Small : discord.SeparatorSpacingSize.Large
-            })
+        super(id,initData)
+    }
+    
+    async build(){
+        return new discord.SeparatorBuilder({
+            divider:this.data.divider,
+            spacing:(this.data.spacing == "small") ? discord.SeparatorSpacingSize.Small : discord.SeparatorSpacingSize.Large
         })
     }
 
@@ -809,11 +819,13 @@ export interface ODTextComponentData {
 export class ODTextComponent extends ODComponent<ODTextComponentData,discord.TextDisplayBuilder> {
     constructor(id:ODValidId,data:Partial<ODTextComponentData>){
         const initData: ODTextComponentData = {content:"",...data}
-        super(id,initData,() => {
-            if (this.data.content.length < 1) throw new ODSystemError("ODTextComponent:build('"+this.id.value+"') => Unable to display text component without contents.")
-            return new discord.TextDisplayBuilder({
-                content:this.data.content
-            })
+        super(id,initData)
+    }
+    
+    async build(){
+        if (this.data.content.length < 1) throw new ODSystemError("ODTextComponent:build('"+this.id.value+"') => Unable to display text component without contents.")
+        return new discord.TextDisplayBuilder({
+            content:this.data.content
         })
     }
 
@@ -845,24 +857,26 @@ export interface ODFileComponentData {
 export class ODFileComponent extends ODComponent<ODFileComponentData,{file:discord.FileBuilder,attachment:discord.AttachmentBuilder|null}> {
     constructor(id:ODValidId,data:Partial<ODFileComponentData>){
         const initData: ODFileComponentData = {name:"file.txt",...data}
-        super(id,initData,() => {
-            if (!this.data.content && !this.data.externalUrl) throw new ODSystemError("ODFileComponent:build('"+this.id.value+"') => Unable to display file component without binary or url.")
+        super(id,initData)
+    }
+    
+    async build(){
+        if (!this.data.content && !this.data.externalUrl) throw new ODSystemError("ODFileComponent:build('"+this.id.value+"') => Unable to display file component without binary or url.")
 
-            const attachment = (this.data.content) ? new discord.AttachmentBuilder(this.data.content,{
-                name:this.data.name,
-                description:this.data.description
-            }) : null
+        const attachment = (this.data.content) ? new discord.AttachmentBuilder(this.data.content,{
+            name:this.data.name,
+            description:this.data.description
+        }) : null
 
-            return {
-                attachment,
-                file:new discord.FileBuilder({
-                    file:{
-                        url:(this.data.externalUrl ?? "attachment://"+this.data.name)
-                    },
-                    spoiler:this.data.spoiler
-                })
-            }
-        })
+        return {
+            attachment,
+            file:new discord.FileBuilder({
+                file:{
+                    url:(this.data.externalUrl ?? "attachment://"+this.data.name)
+                },
+                spoiler:this.data.spoiler
+            })
+        }
     }
 
     /**Set the filename + extension. */
@@ -901,29 +915,31 @@ export interface ODGalleryComponentData {
 export class ODGalleryComponent extends ODGroupComponent<ODGalleryComponentData,ODFileComponent,{gallery:discord.MediaGalleryBuilder,attachments:discord.AttachmentBuilder[]}> {
     constructor(id:ODValidId,data?:Partial<ODGalleryComponentData>){
         const initData: ODGalleryComponentData = {...data}
-        super(id,initData,() => {
-            if (this.children.length < 1) throw new ODSystemError("ODGalleryComponent:build('"+this.id.value+"') => Requires at least one child component.")
+        super(id,initData)
+    }
+    
+    async build(){
+        if (this.children.length < 1) throw new ODSystemError("ODGalleryComponent:build('"+this.id.value+"') => Requires at least one child component.")
 
-            const gallery = new discord.MediaGalleryBuilder()
-            const attachments: discord.AttachmentBuilder[] = []
-            
-            for (const file of this.children){
-                if (!file.data.content && !file.data.externalUrl) continue
-                if (file.data.content) attachments.push(new discord.AttachmentBuilder(file.data.content,{
-                    name:file.data.name,
-                    description:file.data.description
-                }))
-                gallery.addItems(new discord.MediaGalleryItemBuilder({
-                    description:file.data.description,
-                    spoiler:file.data.spoiler,
-                    media:{
-                        url:(file.data.externalUrl ?? "attachment://"+file.data.name)
-                    }
-                }))
-            }
-            
-            return {gallery,attachments}
-        })
+        const gallery = new discord.MediaGalleryBuilder()
+        const attachments: discord.AttachmentBuilder[] = []
+        
+        for (const file of this.children){
+            if (!file.data.content && !file.data.externalUrl) continue
+            if (file.data.content) attachments.push(new discord.AttachmentBuilder(file.data.content,{
+                name:file.data.name,
+                description:file.data.description
+            }))
+            gallery.addItems(new discord.MediaGalleryItemBuilder({
+                description:file.data.description,
+                spoiler:file.data.spoiler,
+                media:{
+                    url:(file.data.externalUrl ?? "attachment://"+file.data.name)
+                }
+            }))
+        }
+        
+        return {gallery,attachments}
     }
 }
 
@@ -946,14 +962,16 @@ export interface ODThumbnailComponentData {
 export class ODThumbnailComponent extends ODComponent<ODThumbnailComponentData,discord.ThumbnailBuilder> {
     constructor(id:ODValidId,data:Partial<ODThumbnailComponentData>){
         const initData: ODThumbnailComponentData = {url:"",...data}
-        super(id,initData,() => {
-            if (this.data.url.length < 1) throw new ODSystemError("ODThumbnailComponent:build('"+this.id.value+"') => Thumbnail component requires an image URL.")
+        super(id,initData)
+    }
+    
+    async build(){
+        if (this.data.url.length < 1) throw new ODSystemError("ODThumbnailComponent:build('"+this.id.value+"') => Thumbnail component requires an image URL.")
 
-            return new discord.ThumbnailBuilder({
-                media:{ url:this.data.url },
-                description:this.data.description,
-                spoiler:this.data.spoiler
-            })
+        return new discord.ThumbnailBuilder({
+            media:{ url:this.data.url },
+            description:this.data.description,
+            spoiler:this.data.spoiler
         })
     }
 
@@ -985,12 +1003,14 @@ export interface ODContentComponentData {
 export class ODContentComponent extends ODComponent<ODContentComponentData,{content:string}> {
     constructor(id:ODValidId,data:Partial<ODContentComponentData>){
         const initData: ODContentComponentData = {content:"",...data}
-        super(id,initData,() => {
-            if (this.data.content.length < 1) throw new ODSystemError("ODContentComponent:build('"+this.id.value+"') => Unable to display content component without contents.")
-            return {
-                content:this.data.content
-            }
-        })
+        super(id,initData)
+    }
+    
+    async build(){
+        if (this.data.content.length < 1) throw new ODSystemError("ODContentComponent:build('"+this.id.value+"') => Unable to display content component without contents.")
+        return {
+            content:this.data.content
+        }
     }
 
     /**Set the text to display. */
@@ -1038,36 +1058,38 @@ export interface ODEmbedComponentData {
 export class ODEmbedComponent extends ODComponent<ODEmbedComponentData,discord.EmbedBuilder> {
     constructor(id:ODValidId,data:Partial<ODEmbedComponentData>){
         const initData: ODEmbedComponentData = {...data}
-        super(id,initData,() => {
-            if (this.data.title && this.data.title.length > 256) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => An embed title can't exceed 256 characters.")
-            if (this.data.description && this.data.description.length > 4096) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => An embed description can't exceed 4096 characters.")
-            if (this.data.fields && this.data.fields.length > 25) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => An embed can't contain more than 25 fields.")
-            if (this.data.footerText && this.data.footerText.length > 2048) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => An embed footer can't exceed 2048 characters.")
-            if (this.data.authorText && this.data.authorText.length > 256) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => An embed author can't exceed 256 characters.")
-            
-            return new discord.EmbedBuilder({
-                title:this.data.title,
-                color:(this.data.color) ? discord.resolveColor(this.data.color) : undefined,
-                url:this.data.url,
-                description:this.data.description,
-                author:(this.data.authorText) ? {
-                    name:this.data.authorText,
-                    icon_url:this.data.authorImage,
-                    url:this.data.authorUrl
-                } : undefined,
-                footer:(this.data.footerText) ? {
-                    text:this.data.footerText,
-                    icon_url:this.data.footerImage
-                } : undefined,
-                image:(this.data.image) ? {
-                    url:this.data.image
-                } : undefined,
-                thumbnail:(this.data.thumbnail) ? {
-                    url:this.data.thumbnail
-                } : undefined,
-                fields:this.data.fields,
-                timestamp:(this.data.timestamp) ? new Date(this.data.timestamp).toISOString() : undefined
-            })
+        super(id,initData)
+    }
+    
+    async build(){
+        if (this.data.title && this.data.title.length > 256) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => An embed title can't exceed 256 characters.")
+        if (this.data.description && this.data.description.length > 4096) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => An embed description can't exceed 4096 characters.")
+        if (this.data.fields && this.data.fields.length > 25) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => An embed can't contain more than 25 fields.")
+        if (this.data.footerText && this.data.footerText.length > 2048) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => An embed footer can't exceed 2048 characters.")
+        if (this.data.authorText && this.data.authorText.length > 256) throw new ODSystemError("ODEmbedComponent:build('"+this.id.value+"') => An embed author can't exceed 256 characters.")
+        
+        return new discord.EmbedBuilder({
+            title:this.data.title,
+            color:(this.data.color) ? discord.resolveColor(this.data.color) : undefined,
+            url:this.data.url,
+            description:this.data.description,
+            author:(this.data.authorText) ? {
+                name:this.data.authorText,
+                icon_url:this.data.authorImage,
+                url:this.data.authorUrl
+            } : undefined,
+            footer:(this.data.footerText) ? {
+                text:this.data.footerText,
+                icon_url:this.data.footerImage
+            } : undefined,
+            image:(this.data.image) ? {
+                url:this.data.image
+            } : undefined,
+            thumbnail:(this.data.thumbnail) ? {
+                url:this.data.thumbnail
+            } : undefined,
+            fields:this.data.fields,
+            timestamp:(this.data.timestamp) ? new Date(this.data.timestamp).toISOString() : undefined
         })
     }
 
@@ -1169,17 +1191,19 @@ export interface ODPollComponentData {
 export class ODPollComponent extends ODComponent<ODPollComponentData,discord.PollData> {
     constructor(id:ODValidId,data:Partial<ODPollComponentData>){
         const initData: ODPollComponentData = {question:"<empty>",durationHours:1,allowMultiSelect:false,answers:[],...data}
-        super(id,initData,() => {
-            if (this.data.question.length < 1) throw new ODSystemError("ODPollComponent:build('"+this.id.value+"') => Please provide a valid poll question.")
-            if (this.data.answers.length < 1) throw new ODSystemError("ODPollComponent:build('"+this.id.value+"') => Please provide at least one answer to the poll.")
-            return {
-                layoutType:discord.PollLayoutType.Default,
-                allowMultiselect:this.data.allowMultiSelect,
-                duration:this.data.durationHours,
-                question:{text:this.data.question},
-                answers:this.data.answers
-            }
-        })
+        super(id,initData)
+    }
+    
+    async build(){
+        if (this.data.question.length < 1) throw new ODSystemError("ODPollComponent:build('"+this.id.value+"') => Please provide a valid poll question.")
+        if (this.data.answers.length < 1) throw new ODSystemError("ODPollComponent:build('"+this.id.value+"') => Please provide at least one answer to the poll.")
+        return {
+            layoutType:discord.PollLayoutType.Default,
+            allowMultiselect:this.data.allowMultiSelect,
+            duration:this.data.durationHours,
+            question:{text:this.data.question},
+            answers:this.data.answers
+        }
     }
 
     /**Set the poll question. */
@@ -1234,18 +1258,20 @@ export interface ODButtonComponentData {
 export class ODButtonComponent extends ODComponent<ODButtonComponentData,discord.ButtonBuilder> {
     constructor(id:ODValidId,data:Partial<ODButtonComponentData>){
         const initData: ODButtonComponentData = {color:"gray",disabled:false,...data}
-        super(id,initData,() => {
-            if (!this.data.emoji && !this.data.label) throw new ODSystemError("ODButtonComponent:build('"+this.id.value+"') => A button must include at least one label or emoji.")
-            if (this.data.customId && this.data.customId.length > 100) throw new ODSystemError("ODButtonComponent:build('"+this.id.value+"') => A custom ID '"+this.data.customId+"' must be shorter than 100 characters.")
+        super(id,initData)
+    }
+    
+    async build(){
+        if (!this.data.emoji && !this.data.label) throw new ODSystemError("ODButtonComponent:build('"+this.id.value+"') => A button must include at least one label or emoji.")
+        if (this.data.customId && this.data.customId.length > 100) throw new ODSystemError("ODButtonComponent:build('"+this.id.value+"') => A custom ID '"+this.data.customId+"' must be shorter than 100 characters.")
 
-            return new discord.ButtonBuilder({
-                customId:(!this.data.url) ? this.data.customId : undefined,
-                label:this.data.label,
-                emoji:this.data.emoji ? discord.resolvePartialEmoji(this.data.emoji) : undefined,
-                disabled:this.data.disabled,
-                url:(this.data.url) ? this.data.url : undefined,
-                style:this.getButtonStyle(),
-            })
+        return new discord.ButtonBuilder({
+            customId:(!this.data.url) ? this.data.customId : undefined,
+            label:this.data.label,
+            emoji:this.data.emoji ? discord.resolvePartialEmoji(this.data.emoji) : undefined,
+            disabled:this.data.disabled,
+            url:(this.data.url) ? this.data.url : undefined,
+            style:this.getButtonStyle(),
         })
     }
 
@@ -1316,17 +1342,18 @@ export interface ODShortInputComponentData {
 export class ODShortInputComponent extends ODComponent<ODShortInputComponentData,discord.TextInputBuilder> {
     constructor(id:ODValidId,data:Partial<ODShortInputComponentData>){
         const initData: ODShortInputComponentData = {required:false,...data}
-        super(id,initData,() => {
-            
-            return new discord.TextInputBuilder({
-                style:discord.TextInputStyle.Short,
-                customId:this.data.customId,
-                minLength:this.data.minLength,
-                maxLength:this.data.maxLength,
-                required:this.data.required,
-                placeholder:this.data.placeholder,
-                value:this.data.initialValue
-            })
+        super(id,initData)
+    }
+    
+    async build(){
+        return new discord.TextInputBuilder({
+            style:discord.TextInputStyle.Short,
+            customId:this.data.customId,
+            minLength:this.data.minLength,
+            maxLength:this.data.maxLength,
+            required:this.data.required,
+            placeholder:this.data.placeholder,
+            value:this.data.initialValue
         })
     }
 
@@ -1387,17 +1414,18 @@ export interface ODParagraphInputComponentData {
 export class ODParagraphInputComponent extends ODComponent<ODParagraphInputComponentData,discord.TextInputBuilder> {
     constructor(id:ODValidId,data:Partial<ODParagraphInputComponentData>){
         const initData: ODParagraphInputComponentData = {required:false,...data}
-        super(id,initData,() => {
-            
-            return new discord.TextInputBuilder({
-                style:discord.TextInputStyle.Paragraph,
-                customId:this.data.customId,
-                minLength:this.data.minLength,
-                maxLength:this.data.maxLength,
-                required:this.data.required,
-                placeholder:this.data.placeholder,
-                value:this.data.initialValue
-            })
+        super(id,initData)
+    }
+    
+    async build(){
+        return new discord.TextInputBuilder({
+            style:discord.TextInputStyle.Paragraph,
+            customId:this.data.customId,
+            minLength:this.data.minLength,
+            maxLength:this.data.maxLength,
+            required:this.data.required,
+            placeholder:this.data.placeholder,
+            value:this.data.initialValue
         })
     }
 
@@ -1472,49 +1500,50 @@ export interface ODDropdownComponentData {
 export class ODDropdownComponent extends ODComponent<ODDropdownComponentData,discord.BaseSelectMenuBuilder<discord.APISelectMenuComponent>> {
     constructor(id:ODValidId,data:Partial<ODDropdownComponentData>){
         const initData: ODDropdownComponentData = {type:"string",...data}
-        super(id,initData,() => {
+        super(id,initData)
+    }
+    
+    async build(){
+        const genericOpts = {
+            customId:this.data.customId,
+            disabled:this.data.disabled,
+            placeholder:this.data.placeholder,
+            minValues:this.data.minValues,
+            maxValues:this.data.maxValues,
+        }
 
-            const genericOpts = {
-                customId:this.data.customId,
-                disabled:this.data.disabled,
-                placeholder:this.data.placeholder,
-                minValues:this.data.minValues,
-                maxValues:this.data.maxValues,
-            }
-
-            if (this.data.type == "string"){
-                if (!this.data.options || this.data.options.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one string option using setOptions().")
-                return new discord.StringSelectMenuBuilder({
-                    ...genericOpts,
-                    options:this.data.options
-                })
-            }else if (this.data.type == "user"){
-                if (!this.data.users || this.data.users.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one user option using setUsers().")
-                return new discord.UserSelectMenuBuilder({
-                    ...genericOpts,
-                    defaultValues:this.data.users.map((u) => ({id:u.id,type:discord.SelectMenuDefaultValueType.User}))
-                })
-            }else if (this.data.type == "role"){
-                if (!this.data.roles || this.data.roles.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one role option using setRoles().")
-                return new discord.RoleSelectMenuBuilder({
-                    ...genericOpts,
-                    defaultValues:this.data.roles.map((r) => ({id:r.id,type:discord.SelectMenuDefaultValueType.Role}))
-                })
-            }else if (this.data.type == "channel"){
-                if (!this.data.channels || this.data.channels.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one channel option using setChannels().")
-                return new discord.ChannelSelectMenuBuilder({
-                    ...genericOpts,
-                    channelTypes:this.data.channelTypes,
-                    defaultValues:this.data.channels.map((c) => ({id:c.id,type:discord.SelectMenuDefaultValueType.Channel}))
-                })
-            }else if (this.data.type == "mentionable"){
-                if (!this.data.mentionables || this.data.mentionables.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one role/user option using setMentionables().")
-                return new discord.MentionableSelectMenuBuilder({
-                    ...genericOpts,
-                    defaultValues:this.data.mentionables.map((m) => (m instanceof discord.User ? {id:m.id,type:discord.SelectMenuDefaultValueType.User} : {id:m.id,type:discord.SelectMenuDefaultValueType.Role}))
-                })
-            }else throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please set the dropdown type to one of the following: string, user, role, channel, mentionable.") 
-        })
+        if (this.data.type == "string"){
+            if (!this.data.options || this.data.options.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one string option using setOptions().")
+            return new discord.StringSelectMenuBuilder({
+                ...genericOpts,
+                options:this.data.options
+            })
+        }else if (this.data.type == "user"){
+            if (!this.data.users || this.data.users.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one user option using setUsers().")
+            return new discord.UserSelectMenuBuilder({
+                ...genericOpts,
+                defaultValues:this.data.users.map((u) => ({id:u.id,type:discord.SelectMenuDefaultValueType.User}))
+            })
+        }else if (this.data.type == "role"){
+            if (!this.data.roles || this.data.roles.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one role option using setRoles().")
+            return new discord.RoleSelectMenuBuilder({
+                ...genericOpts,
+                defaultValues:this.data.roles.map((r) => ({id:r.id,type:discord.SelectMenuDefaultValueType.Role}))
+            })
+        }else if (this.data.type == "channel"){
+            if (!this.data.channels || this.data.channels.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one channel option using setChannels().")
+            return new discord.ChannelSelectMenuBuilder({
+                ...genericOpts,
+                channelTypes:this.data.channelTypes,
+                defaultValues:this.data.channels.map((c) => ({id:c.id,type:discord.SelectMenuDefaultValueType.Channel}))
+            })
+        }else if (this.data.type == "mentionable"){
+            if (!this.data.mentionables || this.data.mentionables.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one role/user option using setMentionables().")
+            return new discord.MentionableSelectMenuBuilder({
+                ...genericOpts,
+                defaultValues:this.data.mentionables.map((m) => (m instanceof discord.User ? {id:m.id,type:discord.SelectMenuDefaultValueType.User} : {id:m.id,type:discord.SelectMenuDefaultValueType.Role}))
+            })
+        }else throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please set the dropdown type to one of the following: string, user, role, channel, mentionable.") 
     }
 
     /**Set the custom id of this dropdown. */
@@ -1598,14 +1627,16 @@ export interface ODRadioGroupComponentData {
 export class ODRadioGroupComponent extends ODComponent<ODRadioGroupComponentData,discord.RadioGroupBuilder> {
     constructor(id:ODValidId,data:Partial<ODRadioGroupComponentData>){
         const initData: ODRadioGroupComponentData = {required:false,options:[],...data}
-        super(id,initData,() => {
-            if (!this.data.options || this.data.options.length < 2) throw new ODSystemError("ODRadioGroupComponent:build('"+this.id.value+"') => Please provide at least 2 radio options using setOptions().")
-            
-            return new discord.RadioGroupBuilder({
-                custom_id:this.data.customId,
-                required:this.data.required,
-                options:this.data.options
-            })
+        super(id,initData)
+    }
+    
+    async build(){
+        if (!this.data.options || this.data.options.length < 2) throw new ODSystemError("ODRadioGroupComponent:build('"+this.id.value+"') => Please provide at least 2 radio options using setOptions().")
+        
+        return new discord.RadioGroupBuilder({
+            custom_id:this.data.customId,
+            required:this.data.required,
+            options:this.data.options
         })
     }
 
@@ -1649,16 +1680,18 @@ export interface ODCheckboxGroupComponentData {
 export class ODCheckboxGroupComponent extends ODComponent<ODCheckboxGroupComponentData,discord.CheckboxGroupBuilder> {
     constructor(id:ODValidId,data:Partial<ODCheckboxGroupComponentData>){
         const initData: ODCheckboxGroupComponentData = {required:false,options:[],...data}
-        super(id,initData,() => {
-            if (!this.data.options || this.data.options.length < 2) throw new ODSystemError("ODCheckboxGroupComponent:build('"+this.id.value+"') => Please provide at least 2 radio options using setOptions().")
-            
-            return new discord.CheckboxGroupBuilder({
-                custom_id:this.data.customId,
-                required:this.data.required,
-                options:this.data.options,
-                min_values:this.data.minValues,
-                max_values:this.data.maxValues
-            })
+        super(id,initData)
+    }
+    
+    async build(){
+        if (!this.data.options || this.data.options.length < 2) throw new ODSystemError("ODCheckboxGroupComponent:build('"+this.id.value+"') => Please provide at least 2 radio options using setOptions().")
+        
+        return new discord.CheckboxGroupBuilder({
+            custom_id:this.data.customId,
+            required:this.data.required,
+            options:this.data.options,
+            min_values:this.data.minValues,
+            max_values:this.data.maxValues
         })
     }
 
@@ -1707,12 +1740,13 @@ export interface ODCheckboxComponentData {
 export class ODCheckboxComponent extends ODComponent<ODCheckboxComponentData,discord.CheckboxBuilder> {
     constructor(id:ODValidId,data:Partial<ODCheckboxComponentData>){
         const initData: ODCheckboxComponentData = {default:false,...data}
-        super(id,initData,() => {
-            
-            return new discord.CheckboxBuilder({
-                custom_id:this.data.customId,
-                default:this.data.default
-            })
+        super(id,initData)
+    }
+    
+    async build(){
+        return new discord.CheckboxBuilder({
+            custom_id:this.data.customId,
+            default:this.data.default
         })
     }
 
@@ -1750,16 +1784,18 @@ export interface ODFileUploadComponentData {
 export class ODFileUploadComponent extends ODComponent<ODFileUploadComponentData,discord.FileUploadBuilder> {
     constructor(id:ODValidId,data:Partial<ODFileUploadComponentData>){
         const initData: ODFileUploadComponentData = {required:false,...data}
-        super(id,initData,() => {
-            if (typeof this.data.minAmount == "number" && !(this.data.minAmount >= 0 && this.data.minAmount <= 10)) throw new ODSystemError("ODFileUploadComponent:build('"+this.id.value+"') => Minimum upload amount must be a value from 0 to 10.")
-            if (typeof this.data.maxAmount == "number" && !(this.data.maxAmount >= 1 && this.data.maxAmount <= 10)) throw new ODSystemError("ODFileUploadComponent:build('"+this.id.value+"') => Maximum upload amount must be a value from 1 to 10.")
+        super(id,initData)
+    }
+    
+    async build(){
+        if (typeof this.data.minAmount == "number" && !(this.data.minAmount >= 0 && this.data.minAmount <= 10)) throw new ODSystemError("ODFileUploadComponent:build('"+this.id.value+"') => Minimum upload amount must be a value from 0 to 10.")
+        if (typeof this.data.maxAmount == "number" && !(this.data.maxAmount >= 1 && this.data.maxAmount <= 10)) throw new ODSystemError("ODFileUploadComponent:build('"+this.id.value+"') => Maximum upload amount must be a value from 1 to 10.")
 
-            return new discord.FileUploadBuilder({
-                custom_id:this.data.customId,
-                required:this.data.required,
-                min_values:this.data.minAmount,
-                max_values:this.data.maxAmount
-            })
+        return new discord.FileUploadBuilder({
+            custom_id:this.data.customId,
+            required:this.data.required,
+            min_values:this.data.minAmount,
+            max_values:this.data.maxAmount
         })
     }
 

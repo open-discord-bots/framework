@@ -90,20 +90,22 @@ export class ODStartScreenManager<IdList extends ODStartScreenManagerIdConstrain
  * 
  * It's recommended to use pre-built components except if you really need a custom one.
  */
-export class ODStartScreenComponent extends ODManagerData {
+export abstract class ODStartScreenComponent extends ODManagerData {
     /**The priority of this component. */
     priority: number
     /**An optional render function which will be inserted before the default renderer. */
-    renderBefore: ODStartScreenComponentRenderCallback|null = null
+    renderBefore: ODStartScreenComponentRenderCallback|null
     /**The render function which will render the contents of this component. */
     render: ODStartScreenComponentRenderCallback
     /**An optional render function which will be inserted behind the default renderer. */
-    renderAfter: ODStartScreenComponentRenderCallback|null = null
+    renderAfter: ODStartScreenComponentRenderCallback|null
 
-    constructor(id:ODValidId, priority:number, render:ODStartScreenComponentRenderCallback){
+    constructor(id:ODValidId, priority:number, render:ODStartScreenComponentRenderCallback,renderBefore?:ODStartScreenComponentRenderCallback,renderAfter?:ODStartScreenComponentRenderCallback){
         super(id)
         this.priority = priority
         this.render = render
+        this.renderBefore = renderBefore ?? null
+        this.renderAfter = renderAfter ?? null
     }
 
     /**Render this component and combine it with the `renderBefore` & `renderAfter` contents. */
