@@ -2,7 +2,7 @@
 //CONFIG CHECKER MODULE
 ///////////////////////////////////////
 import { ODDiscordIdType, ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId, ODValidJsonType } from "./base.js"
-import { ODConfig } from "./config.js"
+import { ODConfig, ODMemoryConfig } from "./config.js"
 import { ODLanguageManager } from "./language.js"
 import { ODDebugger } from "./console.js"
 import ansis from "ansis"
@@ -96,7 +96,7 @@ export class ODCheckerManager<
     }
     /**Create temporary and unlisted `ODConfig`, `ODChecker` & `ODCheckerStorage` classes. This will help you use a `ODCheckerStructure` validator without officially registering it in `opendiscord.checkers`. */
     createTemporaryCheckerEnvironment(){
-        return new ODChecker("opendiscord:temporary-environment",new ODCheckerStorage(),0,new ODConfig("opendiscord:temporary-environment",{}),new ODCheckerStructure("opendiscord:temporary-environment",{}))
+        return new ODChecker("opendiscord:temporary-environment",new ODCheckerStorage(),0,new ODMemoryConfig("opendiscord:temporary-environment",{}),new ODCheckerStructure("opendiscord:temporary-environment",{}))
     }
 
     get<CheckerId extends keyof ODNoGeneric<IdList>>(id:CheckerId): IdList[CheckerId]

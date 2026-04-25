@@ -248,3 +248,15 @@ export class ODJsonCommentsConfig<Data extends any> extends ODConfig<Data> {
         }
     }
 }
+
+/**## ODMemoryConfig `class`
+ * An Open Discord memory config.  
+ * This config lives in-memory and does not have any connection to the filesystem.
+ * 
+ * It is perfect for temporary configs or using the `ODChecker` without a real config file.
+ */
+export class ODMemoryConfig<Data extends any> extends ODConfig<Data> {
+    constructor(id:ODValidId,data:Data){
+        super(id,data)
+    }
+}
