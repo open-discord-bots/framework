@@ -6,6 +6,7 @@ import nodepath from "path"
 import { ODDebugger } from "./console.js"
 import fs from "fs"
 import * as fjs from "formatted-json-stringify"
+import { jsonc } from "jsonc"
 
 /**## ODConfigManagerIdConstraint `type`
  * The constraint/layout for id mappings/interfaces of the `ODConfigManager` class.
@@ -180,6 +181,70 @@ export class ODJsonConfig<Data extends any> extends ODConfig<Data> {
         }catch(err){
             process.emit("uncaughtException",err)
             throw new ODSystemError("Unable to save config \""+nodepath.join("./",this.path)+"\"!")
+        }
+    }
+}
+
+/**## ODJsonCommentsConfig `class`
+ * An Open Discord JSONC (`.jsonc`) config.  
+ * Use this class to get & edit variables from the config files or to create your own JSON config!
+ * @example
+ * //create a config from: ./config/test.jsonc with the id "some-config"
+ * const config = new api.ODJsonCommentsConfig("some-config","test.jsonc")
+ * 
+ * //create a config with custom dir: ./plugins/testplugin/test.jsonc
+ * const config = new api.ODJsonCommentsConfig("plugin-config","test.jsonc","./plugins/testplugin/")
+ */
+export class ODJsonCommentsConfig<Data extends any> extends ODConfig<Data> {
+    formatter: fjs.custom.BaseFormatter
+
+    constructor(id:ODValidId, file:string, customPath?:string, formatter?:fjs.custom.BaseFormatter){
+        super(id,{})
+        this.file = (file.endsWith(".jsonc")) ? file : file+".jsonc"
+        this.path = customPath ? nodepath.join("./",customPath,this.file) : nodepath.join("./config/",this.file)
+        this.formatter = formatter ?? new fjs.DefaultFormatter(null,true,"    ")
+    }
+
+    /**Init the config. */
+    init(): ODPromiseVoid {
+        if (!fs.existsSync(this.path)) throw new ODSystemError("Unable to parse JSONC config \""+nodepath.join("./",this.path)+"\", the file doesn't exist!")
+        try{
+            this.data = jsonc.parse(fs.readFileSync(this.path).toString())
+            super.init()
+        }catch(err){
+            process.emit("uncaughtException",err)
+            throw new ODSystemError("Unable to parse JSONC config \""+nodepath.join("./",this.path)+"\"!")
+        }
+    }
+    /**Reload the config. Be aware that this doesn't update the config data everywhere in the bot! */
+    reload(){
+        if (!this.initiated) throw new ODSystemError("Unable to reload JSONC config \""+nodepath.join("./",this.path)+"\", the file hasn't been initiated yet!")
+        if (!fs.existsSync(this.path)) throw new ODSystemError("Unable to JSONC reload config \""+nodepath.join("./",this.path)+"\", the file doesn't exist!")
+        try{
+            this.data = jsonc.parse(fs.readFileSync(this.path).toString())
+            super.reload()
+            this.reloadListeners.forEach((cb) => {
+                try{
+                    cb()
+                }catch(err){
+                    process.emit("uncaughtException",err)
+                }
+            })
+        }catch(err){
+            process.emit("uncaughtException",err)
+            throw new ODSystemError("Unable to reload JSONC config \""+nodepath.join("./",this.path)+"\"!")
+        }
+    }
+    /**Save the edited config to the filesystem. This is used by the Interactive Setup CLI. It's not recommended to use this while the bot is running. */
+    save(): ODPromiseVoid {
+        if (!this.initiated) throw new ODSystemError("Unable to save JSONC config \""+nodepath.join("./",this.path)+"\", the file hasn't been initiated yet!")
+        try{
+            const contents = this.formatter.stringify(this.data as ODValidJsonType)
+            fs.writeFileSync(this.path,contents)
+            super.save()
+        }catch(err){
+            process.emit("uncaughtException",err)
+            throw new ODSystemError("Unable to save JSONC config \""+nodepath.join("./",this.path)+"\"!")
         }
     }
 }
