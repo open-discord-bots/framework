@@ -35,16 +35,21 @@ export abstract class ODResponderImplementation<Instance,Origin extends string,P
 /**## ODResponderTimeoutErrorCallback `type`
  * This is the callback for the responder timeout function. It will be executed when something went wrong or the action takes too much time.
  */
-export type ODResponderTimeoutErrorCallback<Instance, Origin extends "slash"|"text"|"button"|"dropdown"|"modal"|"other"|"context-menu"|"autocomplete"> = (instance:Instance, origin:Origin) => void|Promise<void>
+export type ODResponderTimeoutErrorCallback<Instance, Origin extends "slash"|"text"|"button"|"dropdown"|"modal"|"other"|"context-menu"|"autocomplete"> = (instance:Instance, origin:Origin) => ODResponderSendResult<boolean>|Promise<ODResponderSendResult<boolean>>
 
-/**## ODResponderSendResult `interface`
+/**## ODResponderSendResult `type`
  * The result from a sent message using responders. Can be used to edit, view & save the message that got created.
  */
-export interface ODResponderSendResult<InGuild extends boolean> {
+export type ODResponderSendResult<InGuild extends boolean> = {
+    /**Did the message get sent successfully? */
+    success:true,
+    /**The message that got sent. */
+    message:discord.Message<InGuild>
+} | {
     /**Did the message get sent successfully? */
     success:boolean,
     /**The message that got sent. */
-    message:discord.Message<InGuild>|null
+    message:null
 }
 
 /**## ODResponderManager `class`
@@ -444,11 +449,16 @@ export class ODCommandResponderInstance extends ODBaseResponderInstance {
             if (!this.didReply){
                 try {
                     if (!errorCallback){
-                        this.reply({id:new ODId("looks-like-we-got-an-error-here"), ephemeral:true, message:{
+                        this.reply({id:new ODId("opendiscord:unknown-error"), ephemeral:true, message:{
                             content:":x: **Something went wrong while replying to this command!**"
                         }})
                     }else{
-                        await errorCallback(this,(this.type == "interaction") ? "slash" : "text")
+                        const errorResponse = await errorCallback(this,(this.type == "interaction") ? "slash" : "text")
+                        
+                        //auto-delete timeout error message after 5sec when text-based
+                        if (errorResponse.success && this.type == "message") setTimeout(() => {
+                            if (errorResponse.message?.deletable) errorResponse.message?.delete()
+                        },5000)
                     }
                     
                 }catch(err){
@@ -634,7 +644,7 @@ export class ODButtonResponderInstance extends ODBaseResponderInstance {
             if (!this.didReply){
                 try {
                     if (!errorCallback){
-                        this.reply({id:new ODId("looks-like-we-got-an-error-here"), ephemeral:true, message:{
+                        this.reply({id:new ODId("opendiscord:unknown-error"), ephemeral:true, message:{
                             content:":x: **Something went wrong while replying to this button!**"
                         }})
                     }else{
@@ -950,7 +960,7 @@ export class ODDropdownResponderInstance extends ODBaseResponderInstance {
             if (!this.didReply){
                 try {
                     if (!errorCallback){
-                        this.reply({id:new ODId("looks-like-we-got-an-error-here"), ephemeral:true, message:{
+                        this.reply({id:new ODId("opendiscord:unknown-error"), ephemeral:true, message:{
                             content:":x: **Something went wrong while replying to this dropdown!**"
                         }})
                     }else{
@@ -1201,7 +1211,7 @@ export class ODModalResponderInstance extends ODBaseResponderInstance {
             if (!this.didReply){
                 try {
                     if (!errorCallback){
-                        this.reply({id:new ODId("looks-like-we-got-an-error-here"), ephemeral:true, message:{
+                        this.reply({id:new ODId("opendiscord:unknown-error"), ephemeral:true, message:{
                             content:":x: **Something went wrong while replying to this modal!**"
                         }})
                     }else{
@@ -1381,7 +1391,7 @@ export class ODContextMenuResponderInstance extends ODBaseResponderInstance {
             if (!this.didReply){
                 try {
                     if (!errorCallback){
-                        this.reply({id:new ODId("looks-like-we-got-an-error-here"), ephemeral:true, message:{
+                        this.reply({id:new ODId("opendiscord:unknown-error"), ephemeral:true, message:{
                             content:":x: **Something went wrong while replying to this context menu!**"
                         }})
                     }else{
@@ -1561,7 +1571,7 @@ export class ODAutocompleteResponderInstance extends ODBaseResponderInstance {
         
         setTimeout(async () => {
             if (!this.didRespond){
-                process.emit("uncaughtException",new ODSystemError("Autocomplete responder instance failed to respond widthin 2.5sec!"))
+                process.emit("uncaughtException",new ODSystemError("Autocomplete responder instance failed to respond within 2.5sec!"))
             }
         },timeoutMs ?? 2500)
     }
