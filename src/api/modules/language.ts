@@ -40,15 +40,12 @@ export class ODLanguageManager<IdList extends ODLanguageManagerIdConstraint = OD
     current: ODLanguage|null = null
     /**The currently selected backup language. (used when translation missing in current language) */
     backup: ODLanguage|null = null
-    /**An alias to Open Discord debugger. */
-    #debug: ODDebugger
     
     constructor(debug:ODDebugger, presets:boolean){
         super(debug,"language")
         if (presets) this.add(new ODJsonLanguage("english","english.json"))
         this.current = presets ? new ODJsonLanguage("english","english.json") : null
         this.backup = presets ? new ODJsonLanguage("english","english.json") : null
-        this.#debug = debug
     }
 
     /**Set the current language by providing the ID of a language which is registered in this manager. */
@@ -58,7 +55,7 @@ export class ODLanguageManager<IdList extends ODLanguageManagerIdConstraint = OD
         this.current = this.get(id)
         const languageId = this.current?.id.value ?? "<unknown-id>"
         const languageAutomated = this.current?.metadata?.automated.toString() ?? "<unknown-metadata>"
-        this.#debug.debug("Selected current language",[
+        this.debug?.debug("Selected current language",[
             {key:"id",value:languageId},
             {key:"automated",value:languageAutomated},
         ])
@@ -74,7 +71,7 @@ export class ODLanguageManager<IdList extends ODLanguageManagerIdConstraint = OD
         this.backup = this.get(id)
         const languageId = this.backup?.id.value ?? "<unknown-id>"
         const languageAutomated = this.backup?.metadata?.automated.toString() ?? "<unknown-metadata>"
-        this.#debug.debug("Selected backup language",[
+        this.debug?.debug("Selected backup language",[
             {key:"id",value:languageId},
             {key:"automated",value:languageAutomated},
         ])
@@ -96,7 +93,7 @@ export class ODLanguageManager<IdList extends ODLanguageManagerIdConstraint = OD
     getTranslation(id:TranslationIds): string
     getTranslation(id:string): string|null
     getTranslation(id:string): string|null {
-        if (!this.current) return this.#getBackupTranslation(id)
+        if (!this.current) return this.getBackupTranslation(id)
         
         const splitted = id.split(".")
         let currentObject = this.current.data
@@ -110,10 +107,10 @@ export class ODLanguageManager<IdList extends ODLanguageManagerIdConstraint = OD
         })
 
         if (typeof result == "string") return result
-        else return this.#getBackupTranslation(id)
+        else return this.getBackupTranslation(id)
     }
-    /**Get a backup  translation string by JSON location. (system only) */
-    #getBackupTranslation(id:string): string|null {
+    /**Get a backup translation string by JSON location. (system only) */
+    protected getBackupTranslation(id:string): string|null {
         if (!this.backup) return null
 
         const splitted = id.split(".")

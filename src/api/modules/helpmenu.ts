@@ -85,16 +85,16 @@ export class ODHelpMenuCommandComponent extends ODHelpMenuComponent {
 
     render(page:number,category:number,location:number,mode:"slash"|"text"){
         if (mode == "slash" && this.settings.slashName){
-            return `\`${this.settings.slashName}${(this.settings.slashOptions) ? this.#renderOptions(this.settings.slashOptions) : ""}\` ➜ ${this.settings.slashDescription ?? ""}`
+            return `\`${this.settings.slashName}${(this.settings.slashOptions) ? this.renderOptions(this.settings.slashOptions) : ""}\` ➜ ${this.settings.slashDescription ?? ""}`
         
         }else if (mode == "text" && this.settings.textName){
-            return `\`${this.settings.textName}${(this.settings.textOptions) ? this.#renderOptions(this.settings.textOptions) : ""}\` ➜ ${this.settings.textDescription ?? ""}`
+            return `\`${this.settings.textName}${(this.settings.textOptions) ? this.renderOptions(this.settings.textOptions) : ""}\` ➜ ${this.settings.textDescription ?? ""}`
         
         }else return ""
     }
     
     /**Utility function to render all command options. */
-    #renderOptions(options:ODHelpMenuCommandComponentOption[]){
+    protected renderOptions(options:ODHelpMenuCommandComponentOption[]){
         return " "+options.map((opt) => (opt.optional) ? `[${opt.name}]` : `<${opt.name}>`).join(" ")
     }
 }
@@ -195,18 +195,15 @@ export type ODHelpMenuManagerIdConstraint = Record<string,ODHelpMenuCategory>
  * Fewer Categories == More Clean Menu
  */
 export class ODHelpMenuManager<IdList extends ODHelpMenuManagerIdConstraint = ODHelpMenuManagerIdConstraint> extends ODManager<ODHelpMenuCategory> {
-    /**Alias to Open Discord debugger. */
-    #debug: ODDebugger
     /**The amount of categories per-page. */
     categoriesPerPage: number = 3
     
     constructor(debug:ODDebugger){
         super(debug,"help menu category")
-        this.#debug = debug
     }
 
     add(data:ODHelpMenuCategory, overwrite?:boolean): boolean {
-        data.useDebug(this.#debug,"help menu component")
+        data.useDebug(this.debug,"help menu component")
         return super.add(data,overwrite)
     }
 

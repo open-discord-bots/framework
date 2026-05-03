@@ -278,10 +278,10 @@ export class ODConsoleManager {
             if (this.debugfile) this.debugfile.writeConsoleMessage(newMessage)
             this.history.push(newMessage)
         }
-        this.#purgeHistory()
+        this.purgeHistory()
     }
     /**Shorten the history when it exceeds the max history length! */
-    #purgeHistory(){
+    protected purgeHistory(){
         if (this.history.length > this.historylength) this.history.shift()
     }
 }
@@ -310,16 +310,16 @@ export class ODDebugFileManager {
         this.version = version
         this.maxlines = maxlines
 
-        this.#writeStartupStats()
+        this.writeStartupStats()
     }
 
     /**Check if the debug file exists */
-    #existsDebugFile(){
+    protected existsDebugFile(){
         return fs.existsSync(this.path)
     }
     /**Read from the debug file */
-    #readDebugFile(){
-        if (this.#existsDebugFile()){
+    protected readDebugFile(){
+        if (this.existsDebugFile()){
             try {
                 return fs.readFileSync(this.path).toString()
             }catch{
@@ -330,8 +330,8 @@ export class ODDebugFileManager {
         }
     }
     /**Write to the debug file and shorten it when needed. */
-    #writeDebugFile(text:string){
-        const currenttext = this.#readDebugFile()
+    protected writeDebugFile(text:string){
+        const currenttext = this.readDebugFile()
         if (currenttext){
             const splitted = currenttext.split("\n")
             
@@ -343,12 +343,12 @@ export class ODDebugFileManager {
             fs.writeFileSync(this.path,splitted.join("\n"))
         }else{
             //write new file:
-            const newtext = this.#createStatsText()+text
+            const newtext = this.createStatsText()+text
             fs.writeFileSync(this.path,newtext)
         }
     }
     /**Generate the statistics/header of the debug file (containing the version) */
-    #createStatsText(){
+    protected createStatsText(){
         const date = new Date()
         const dstring = `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
         return [
@@ -360,8 +360,8 @@ export class ODDebugFileManager {
         ].join("\n")
     }
     /**Write the statistics/header to the debug file on startup */
-    #writeStartupStats(){
-        const currenttext = this.#readDebugFile()
+    protected writeStartupStats(){
+        const currenttext = this.readDebugFile()
         if (currenttext){
             //edit previous file:
             const splitted = currenttext.split("\n")
@@ -371,31 +371,31 @@ export class ODDebugFileManager {
                 splitted.splice(0,((splitted.length+11) - this.maxlines))
             }
 
-            splitted.unshift(this.#createStatsText())
+            splitted.unshift(this.createStatsText())
             splitted.push("\n---------------------------------------------------------------------\n---------------------------------------------------------------------\n")
             
             fs.writeFileSync(this.path,splitted.join("\n"))
         }else{
             //write new file:
-            const newtext = this.#createStatsText()
+            const newtext = this.createStatsText()
             fs.writeFileSync(this.path,newtext)
         }
     }
     /**Write an `ODConsoleMessage` to the debug file */
     writeConsoleMessage(message:ODConsoleMessage){
-        this.#writeDebugFile(message.toDebugString())
+        this.writeDebugFile(message.toDebugString())
     }
     /**Write an `ODError` to the debug file */
     writeErrorMessage(error:ODError){
-        this.#writeDebugFile(error.toDebugString())
+        this.writeDebugFile(error.toDebugString())
     }
     /**Write custom text to the debug file */
     writeText(text:string){
-        this.#writeDebugFile(text)
+        this.writeDebugFile(text)
     }
     /**Write a custom note to the debug file (starting with `[NOTE]:`) */
     writeNote(text:string){
-        this.#writeDebugFile("[NOTE]: "+text)
+        this.writeDebugFile("[NOTE]: "+text)
     }
 }
 
@@ -597,7 +597,7 @@ export class ODLiveStatusManager<IdList extends ODLiveStatusManagerIdConstraint 
     /**The class responsible for rendering the livestatus messages. */
     renderer: ODLiveStatusRenderer
     /**A reference to the ODMain or "opendiscord" global variable */
-    #main: ODMain|null = null
+    protected main: ODMain|null = null
 
     constructor(debug:ODDebugger,console:ODConsoleManager){
         super(debug,"livestatus source")
@@ -606,18 +606,18 @@ export class ODLiveStatusManager<IdList extends ODLiveStatusManagerIdConstraint 
 
     /**Get the messages from all sources combined! */
     async getAllMessages(): Promise<ODLiveStatusSourceData[]> {
-        if (!this.#main) throw new ODSystemError("ODLiveStatusManager:getAllMessages() --> Unable to get messages, 'opendiscord/ODMain' has not been connected!")
+        if (!this.main) throw new ODSystemError("ODLiveStatusManager:getAllMessages() --> Unable to get messages, 'opendiscord/ODMain' has not been connected!")
         const messages: ODLiveStatusSourceData[] = []
         for (const source of this.getAll()){
             try {
-                messages.push(...(await source.getMessages(this.#main)))
+                messages.push(...(await source.getMessages(this.main)))
             }catch{}
         }
         return messages
     }
     /**Set the opendiscord `ODMain` class to use for fetching message filters. */
     useMain(main:ODMain){
-        this.#main = main
+        this.main = main
     }
 
     get<LiveStatusId extends keyof ODNoGeneric<IdList>>(id:LiveStatusId): IdList[LiveStatusId]
@@ -649,10 +649,10 @@ export class ODLiveStatusManager<IdList extends ODLiveStatusManagerIdConstraint 
  */
 export class ODLiveStatusRenderer {
     /**A reference to the ODConsoleManager or "opendiscord.console" global variable */
-    #console: ODConsoleManager
+    protected console: ODConsoleManager
 
     constructor(console:ODConsoleManager){
-        this.#console = console
+        this.console = console
     }
 
     /**Render all messages */
@@ -688,7 +688,7 @@ export class ODLiveStatusRenderer {
             //return all messages
             return final.join("\n")
         }catch{
-            this.#console.log("Failed to render LiveStatus messages!","error")
+            this.console.log("Failed to render LiveStatus messages!","error")
             return ""
         }
     }

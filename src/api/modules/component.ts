@@ -14,15 +14,15 @@ import { ODDebugger } from "./console.js"
  */
 export class ODComponentFactoryInstance<Component extends ODComponent<object,any>> {
     /**The root component of this factory. */
-    #rootComponent: Component|null = null
+    private rootComponent: Component|null = null
     
     /**The root component of this factory. */
     getComponent(){
-        return this.#rootComponent
+        return this.rootComponent
     }
     /**Set the root component of this factory. */
     setComponent(c:Component|null){
-        this.#rootComponent = c
+        this.rootComponent = c
     }
 }
 
@@ -272,15 +272,15 @@ export abstract class ODGroupComponent<Data extends object,ChildComponent extend
  */
 export abstract class ODParentComponent<Data extends object,ChildComponent extends ODComponent<object,any>,BuildResult> extends ODComponent<Data,BuildResult> {
     /**The child component of this parent. */
-    #child: ChildComponent|null = null
+    private rawChild: ChildComponent|null = null
     
     /**The child component of this parent. */
     get child(){
-        return this.#child
+        return this.rawChild
     }
     /**Set the child component of this parent. */
     setComponent(c:ChildComponent|null){
-        this.#child = c
+        this.rawChild = c
     }
 }
 

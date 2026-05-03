@@ -17,7 +17,7 @@ export type ODEventCallback = (...args:any) => ODPromiseVoid
  */
 export class ODEvent<Callback extends ODEventCallback = ODEventCallback> extends ODManagerData {
     /**Alias to Open Discord debugger. */
-    #debug?: ODDebugger
+    protected debug?: ODDebugger
     /**The list of permanent listeners. */
     listeners: Function[] = []
     /**The list of one-time listeners. List is cleared every time the event is emitted. */
@@ -27,10 +27,10 @@ export class ODEvent<Callback extends ODEventCallback = ODEventCallback> extends
 
     /**Use the Open Discord debugger in this manager for logs*/
     useDebug(debug:ODDebugger|null){
-        this.#debug = debug ?? undefined
+        this.debug = debug ?? undefined
     }
     /**Get a collection of listeners combined from both types. Also clears the one-time listeners array! */
-    #getCurrentListeners(){
+    protected getCurrentListeners(){
         const final: Function[] = []
         this.oncelisteners.forEach((l) => final.push(l))
         this.listeners.forEach((l) => final.push(l))
@@ -47,7 +47,7 @@ export class ODEvent<Callback extends ODEventCallback = ODEventCallback> extends
         this.listeners.push(callback)
 
         if (this.listeners.length > this.listenerLimit){
-            if (this.#debug) this.#debug.console.log(new ODWarningConsoleMessage("Possible event memory leak detected!",[
+            if (this.debug) this.debug.console.log(new ODWarningConsoleMessage("Possible event memory leak detected!",[
                 {key:"event",value:this.id.value},
                 {key:"listeners",value:this.listeners.length.toString()}
             ]))
@@ -65,7 +65,7 @@ export class ODEvent<Callback extends ODEventCallback = ODEventCallback> extends
     }
     /**Emit this event to all listeners. You are required to provide all parameters of the event! */
     async emit(params:Parameters<Callback>): Promise<void> {
-        for (const listener of this.#getCurrentListeners()){
+        for (const listener of this.getCurrentListeners()){
             try{
                 await listener(...params)
             }catch(err:any){
@@ -89,16 +89,12 @@ export type ODEventManagerIdConstraint = Record<string,ODEvent>
  * All events are available in the `opendiscord.events` global!
  */
 export class ODEventManager<IdList extends ODEventManagerIdConstraint = ODEventManagerIdConstraint> extends ODManager<ODEvent> {
-    /**Reference to the Open Discord debugger */
-    #debug: ODDebugger
-
     constructor(debug:ODDebugger){
         super(debug,"event")
-        this.#debug = debug
     }
 
     add(data:ODEvent, overwrite?:boolean): boolean {
-        data.useDebug(this.#debug)
+        if (this.debug) data.useDebug(this.debug)
         return super.add(data,overwrite)
     }
 

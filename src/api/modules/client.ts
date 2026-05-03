@@ -36,7 +36,7 @@ export type ODClientPermissions = ("CreateInstantInvite"|"KickMembers"|"BanMembe
  */
 export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstraint = ODSlashCommandManagerIdConstraint,TextIdList extends ODTextCommandManagerIdConstraint = ODTextCommandManagerIdConstraint,ContextMenuIdList extends ODContextMenuManagerIdConstraint = ODContextMenuManagerIdConstraint> {
     /**Alias to Open Discord debugger. */
-    #debug: ODDebugger
+    protected debug: ODDebugger
 
     /**List of required bot intents. Add intents to this list using the `onClientLoad` event. */
     intents: ODClientIntents[] = []
@@ -48,14 +48,14 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
     permissions: ODClientPermissions[] = []
     /**The discord bot token, empty by default. */
     set token(value:string){
-        this.#token = value
+        this.rawBotToken = value
         this.rest.setToken(value)
     }
     get token(){
-        return this.#token
+        return this.rawBotToken
     }
     /**The discord  bot token. **DON'T USE THIS!!!** (use `ODClientManager.token` instead) */
-    #token: string = ""
+    private rawBotToken: string = ""
     
     /**The discord.js `discord.Client`. Only use it when initiated! */
     client: discord.Client<true> = new discord.Client({intents:[]}) //temporary client
@@ -84,12 +84,12 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
     autocompletes: ODAutocompleteManager
 
     constructor(debug:ODDebugger){
-        this.#debug = debug
-        this.activity = new ODClientActivityManager(this.#debug,this)
-        this.slashCommands = new ODSlashCommandManager(this.#debug,this)
-        this.textCommands = new ODTextCommandManager(this.#debug,this)
-        this.contextMenus = new ODContextMenuManager(this.#debug,this)
-        this.autocompletes = new ODAutocompleteManager(this.#debug,this)
+        this.debug = debug
+        this.activity = new ODClientActivityManager(this.debug,this)
+        this.slashCommands = new ODSlashCommandManager(this.debug,this)
+        this.textCommands = new ODTextCommandManager(this.debug,this)
+        this.contextMenus = new ODContextMenuManager(this.debug,this)
+        this.autocompletes = new ODAutocompleteManager(this.debug,this)
     }
 
     /**Initiate the `client` variable & add the intents & partials to the bot. */
@@ -116,10 +116,10 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
 
         this.initiated = true
 
-        this.#debug.debug("Created client with intents: "+this.intents.join(", "))
-        this.#debug.debug("Created client with privileged intents: "+this.privileges.join(", "))
-        this.#debug.debug("Created client with partials: "+this.partials.join(", "))
-        this.#debug.debug("Created client with permissions: "+this.permissions.join(", "))
+        this.debug.debug("Created client with intents: "+this.intents.join(", "))
+        this.debug.debug("Created client with privileged intents: "+this.privileges.join(", "))
+        this.debug.debug("Created client with partials: "+this.partials.join(", "))
+        this.debug.debug("Created client with permissions: "+this.permissions.join(", "))
     }
     /**Get all servers the bot is part of. */
     async getGuilds(): Promise<discord.Guild[]> {
@@ -163,9 +163,9 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
                     resolve(true)
                 })
 
-                this.#debug.debug("Actual discord.js client.login()")
+                this.debug.debug("Actual discord.js client.login()")
                 await this.client.login(this.token)
-                this.#debug.debug("Finished discord.js client.login()")
+                this.debug.debug("Finished discord.js client.login()")
                 this.loggedIn = true
             }catch(err:any){
                 if (softErrors) return resolve(false)
@@ -339,7 +339,7 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
             }
         }catch{
             try{
-                this.#debug.console.log("Failed to send DM to user! ","warning",[
+                this.debug.console.log("Failed to send DM to user! ","warning",[
                     {key:"id",value:(user instanceof discord.User ? user.id : user)},
                     {key:"message-build",value:build.id.value}
                 ])
@@ -368,10 +368,10 @@ export type ODClientActivityMode = ("online"|"invisible"|"idle"|"dnd")
  */
 export class ODClientActivityManager {
     /**Alias to Open Discord debugger. */
-    #debug: ODDebugger
+    protected debug: ODDebugger
 
     /**Copy of discord.js client */
-    #manager: ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>
+    protected client: ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>
     /**The current status type */
     type: ODClientActivityType = false
     /**The current status text */
@@ -388,9 +388,9 @@ export class ODClientActivityManager {
     /**Is the status already initiated? */
     initiated: boolean = false
 
-    constructor(debug:ODDebugger, manager:ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>){
-        this.#debug = debug
-        this.#manager = manager
+    constructor(debug:ODDebugger, client:ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>){
+        this.debug = debug
+        this.client = client
     }
 
     /**Update the status. When already initiated, it can take up to 10min to see the updated status in discord. */
@@ -399,32 +399,32 @@ export class ODClientActivityManager {
         this.text = text
         this.mode = mode
         this.state = state
-        if (forceUpdate) this.#updateClientActivity(this.type,this.text)
+        if (forceUpdate) this.updateClientActivity(this.type,this.text)
     }
 
     /**When initiating the status, the bot starts updating the status using `discord.js`. Returns `true` when successfull. */
     initStatus(): boolean {
-        if (this.initiated || !this.#manager.ready) return false
-        this.#updateClientActivity(this.type,this.text)
+        if (this.initiated || !this.client.ready) return false
+        this.updateClientActivity(this.type,this.text)
         this.interval = setInterval(() => {
-            this.#updateClientActivity(this.type,this.text)
-            this.#debug.debug("Client status update cycle")
+            this.updateClientActivity(this.type,this.text)
+            this.debug.debug("Client status update cycle")
         },this.refreshInterval*1000)
         this.initiated = true
-        this.#debug.debug("Client status initiated")
+        this.debug.debug("Client status initiated")
         return true
     }
 
     /**Update the client status */
-    #updateClientActivity(type:ODClientActivityType,text:string){
-        if (!this.#manager.client.user) throw new ODSystemError("Couldn't set client status: client.user == undefined")
+    private updateClientActivity(type:ODClientActivityType,text:string){
+        if (!this.client.client.user) throw new ODSystemError("Couldn't set client status: client.user == undefined")
         if (type == false){
-            this.#manager.client.user.setActivity()
+            this.client.client.user.setActivity()
             return
         }
-        this.#manager.client.user.setPresence({
+        this.client.client.user.setPresence({
             activities:[{
-                type:this.#getStatusTypeEnum(type),
+                type:this.getStatusTypeEnum(type),
                 state:this.state ? this.state : undefined,
                 name:text,
             }],
@@ -432,7 +432,7 @@ export class ODClientActivityManager {
         })
     }
     /**Get the enum that links to the correct type */
-    #getStatusTypeEnum(type:Exclude<ODClientActivityType,false>){
+    private getStatusTypeEnum(type:Exclude<ODClientActivityType,false>){
         if (type == "playing") return discord.ActivityType.Playing
         else if (type == "listening") return discord.ActivityType.Listening
         else if (type == "watching") return discord.ActivityType.Watching
@@ -556,7 +556,7 @@ export interface ODSlashCommandBuilder extends discord.ChatInputApplicationComma
  */
 export class ODSlashCommandComparator {
     /**Convert a `discord.ApplicationCommandOptionChoiceData<string>` to a universal Open Discord slash command option choice object for comparison. */
-    #convertOptionChoice(choice:discord.ApplicationCommandOptionChoiceData<string>): ODSlashCommandUniversalOptionChoice {
+    protected convertOptionChoice(choice:discord.ApplicationCommandOptionChoiceData<string>): ODSlashCommandUniversalOptionChoice {
         const nameLoc = choice.nameLocalizations ?? {}
         return {
             name:choice.name,
@@ -565,7 +565,7 @@ export class ODSlashCommandComparator {
         }
     }
     /**Convert a `discord.ApplicationCommandOptionData` to a universal Open Discord slash command option object for comparison. */
-    #convertBuilderOption(option:discord.ApplicationCommandOptionData): ODSlashCommandUniversalOption {
+    protected convertBuilderOption(option:discord.ApplicationCommandOptionData): ODSlashCommandUniversalOption {
         const nameLoc = option.nameLocalizations ?? {}
         const descLoc = option.descriptionLocalizations ?? {}
         return {
@@ -577,8 +577,8 @@ export class ODSlashCommandComparator {
             required:(option.type != discord.ApplicationCommandOptionType.SubcommandGroup && option.type != discord.ApplicationCommandOptionType.Subcommand && option.required) ? true : false,
 
             autocomplete:option.autocomplete ?? false,
-            choices:(option.type == discord.ApplicationCommandOptionType.String && !option.autocomplete && option.choices) ? option.choices.map((choice) => this.#convertOptionChoice(choice)) : [],
-            options:((option.type == discord.ApplicationCommandOptionType.SubcommandGroup || option.type == discord.ApplicationCommandOptionType.Subcommand) && option.options) ? option.options.map((opt) => this.#convertBuilderOption(opt)) : [],
+            choices:(option.type == discord.ApplicationCommandOptionType.String && !option.autocomplete && option.choices) ? option.choices.map((choice) => this.convertOptionChoice(choice)) : [],
+            options:((option.type == discord.ApplicationCommandOptionType.SubcommandGroup || option.type == discord.ApplicationCommandOptionType.Subcommand) && option.options) ? option.options.map((opt) => this.convertBuilderOption(opt)) : [],
             channelTypes:(option.type == discord.ApplicationCommandOptionType.Channel && option.channelTypes) ? option.channelTypes : [],
             minValue:(option.type == discord.ApplicationCommandOptionType.Number && option.minValue) ? option.minValue : null,
             maxValue:(option.type == discord.ApplicationCommandOptionType.Number && option.maxValue) ? option.maxValue : null,
@@ -587,7 +587,7 @@ export class ODSlashCommandComparator {
         }
     }
     /**Convert a `discord.ApplicationCommandOption` to a universal Open Discord slash command option object for comparison. */
-    #convertCommandOption(option:discord.ApplicationCommandOption): ODSlashCommandUniversalOption {
+    protected convertCommandOption(option:discord.ApplicationCommandOption): ODSlashCommandUniversalOption {
         const nameLoc = option.nameLocalizations ?? {}
         const descLoc = option.descriptionLocalizations ?? {}
 
@@ -600,8 +600,8 @@ export class ODSlashCommandComparator {
             required:(option.type != discord.ApplicationCommandOptionType.SubcommandGroup && option.type != discord.ApplicationCommandOptionType.Subcommand && option.required) ? true : false,
 
             autocomplete:option.autocomplete ?? false,
-            choices:(option.type == discord.ApplicationCommandOptionType.String && !option.autocomplete && option.choices) ? option.choices.map((choice) => this.#convertOptionChoice(choice)) : [],
-            options:((option.type == discord.ApplicationCommandOptionType.SubcommandGroup || option.type == discord.ApplicationCommandOptionType.Subcommand) && option.options) ? option.options.map((opt) => this.#convertBuilderOption(opt)) : [],
+            choices:(option.type == discord.ApplicationCommandOptionType.String && !option.autocomplete && option.choices) ? option.choices.map((choice) => this.convertOptionChoice(choice)) : [],
+            options:((option.type == discord.ApplicationCommandOptionType.SubcommandGroup || option.type == discord.ApplicationCommandOptionType.Subcommand) && option.options) ? option.options.map((opt) => this.convertBuilderOption(opt)) : [],
             channelTypes:(option.type == discord.ApplicationCommandOptionType.Channel && option.channelTypes) ? option.channelTypes : [],
             minValue:(option.type == discord.ApplicationCommandOptionType.Number && option.minValue) ? option.minValue : null,
             maxValue:(option.type == discord.ApplicationCommandOptionType.Number && option.maxValue) ? option.maxValue : null,
@@ -622,7 +622,7 @@ export class ODSlashCommandComparator {
             descriptionLocalizations:(Object.keys(descLoc) as discord.Locale[]).map((key) => {return {language:key as `${discord.Locale}`,value:descLoc[key] as string}}),
             guildId:guildId,
             nsfw:builder.nsfw ?? false,
-            options:builder.options ? builder.options.map((opt) => this.#convertBuilderOption(opt)) : [],
+            options:builder.options ? builder.options.map((opt) => this.convertBuilderOption(opt)) : [],
             defaultMemberPermissions:discord.PermissionsBitField.resolve(builder.defaultMemberPermissions ?? ["ViewChannel"]),
             dmPermission:(builder.contexts && builder.contexts.includes(discord.InteractionContextType.BotDM)) ?? false,
             integrationTypes:builder.integrationTypes ?? [discord.ApplicationIntegrationType.GuildInstall],
@@ -642,7 +642,7 @@ export class ODSlashCommandComparator {
             descriptionLocalizations:(Object.keys(descLoc) as discord.Locale[]).map((key) => {return {language:key as `${discord.Locale}`,value:descLoc[key] as string}}),
             guildId:cmd.guildId,
             nsfw:cmd.nsfw,
-            options:cmd.options ? cmd.options.map((opt) => this.#convertCommandOption(opt)) : [],
+            options:cmd.options ? cmd.options.map((opt) => this.convertCommandOption(opt)) : [],
             defaultMemberPermissions:discord.PermissionsBitField.resolve(cmd.defaultMemberPermissions ?? ["ViewChannel"]),
             dmPermission:(cmd.contexts && cmd.contexts.includes(discord.InteractionContextType.BotDM)) ? true : false,
             integrationTypes:cmd.integrationTypes ?? [discord.ApplicationIntegrationType.GuildInstall],
@@ -808,25 +808,21 @@ export type ODSlashCommandManagerIdConstraint = Record<string,ODSlashCommand>
  * Here, you can add & remove slash commands & the bot will do the (de)registering.
  */
 export class ODSlashCommandManager<IdList extends ODSlashCommandManagerIdConstraint = ODSlashCommandManagerIdConstraint> extends ODManager<ODSlashCommand> {
-    /**Alias to Open Discord debugger. */
-    #debug: ODDebugger
-    
     /**Refrerence to discord.js client. */
-    #manager: ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>
+    protected client: ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>
     /**Discord.js application commands manager. */
     commandManager: discord.ApplicationCommandManager|null
     /**Collection of all interaction listeners. */
-    #interactionListeners: {name:string|RegExp, callback:ODSlashCommandInteractionCallback}[] = []
+    protected interactionListeners: {name:string|RegExp, callback:ODSlashCommandInteractionCallback}[] = []
     /**Set the soft limit for maximum amount of listeners. A warning will be shown when there are more listeners than this limit. */
     listenerLimit: number = 100
     /**A utility class used to compare 2 slash commands with each other. */
     comparator: ODSlashCommandComparator = new ODSlashCommandComparator()
 
-    constructor(debug:ODDebugger, manager:ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>){
+    constructor(debug:ODDebugger, client:ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>){
         super(debug,"slash command")
-        this.#debug = debug
-        this.#manager = manager
-        this.commandManager = (manager.client.application) ? manager.client.application.commands : null
+        this.client = client
+        this.commandManager = (client.client.application) ? client.client.application.commands : null
     }
 
     /**Get all registered & unregistered slash commands. */
@@ -871,7 +867,7 @@ export class ODSlashCommandManager<IdList extends ODSlashCommandManagerIdConstra
     }
     /**Create all commands that are not registered yet.*/
     async createNewCommands(instances:ODSlashCommand[],progress?:ODManualProgressBar){
-        if (!this.#manager.ready) throw new ODSystemError("Client isn't ready yet! Unable to register slash commands!")
+        if (!this.client.ready) throw new ODSystemError("Client isn't ready yet! Unable to register slash commands!")
         if (instances.length > 0 && progress){
             progress.max = instances.length
             progress.start()
@@ -879,7 +875,7 @@ export class ODSlashCommandManager<IdList extends ODSlashCommandManagerIdConstra
 
         for (const instance of instances){
             await this.createCmd(instance)
-            this.#debug.debug("Created new slash command",[
+            this.debug?.debug("Created new slash command",[
                 {key:"id",value:instance.id.value},
                 {key:"name",value:instance.name}
             ])
@@ -888,7 +884,7 @@ export class ODSlashCommandManager<IdList extends ODSlashCommandManagerIdConstra
     }
     /**Update all commands that are already registered. */
     async updateExistingCommands(instances:ODSlashCommand[],progress?:ODManualProgressBar){
-        if (!this.#manager.ready) throw new ODSystemError("Client isn't ready yet! Unable to register slash commands!")
+        if (!this.client.ready) throw new ODSystemError("Client isn't ready yet! Unable to register slash commands!")
         if (instances.length > 0 && progress){
             progress.max = instances.length
             progress.start()
@@ -896,13 +892,13 @@ export class ODSlashCommandManager<IdList extends ODSlashCommandManagerIdConstra
 
         for (const instance of instances){
             await this.createCmd(instance)
-            this.#debug.debug("Updated existing slash command",[{key:"id",value:instance.id.value},{key:"name",value:instance.name}])
+            this.debug?.debug("Updated existing slash command",[{key:"id",value:instance.id.value},{key:"name",value:instance.name}])
             if (progress) progress.increase(1)
         }
     }
     /**Remove all commands that are registered but unused by Open Discord. */
     async removeUnusedCommands(instances:ODSlashCommandUniversalCommand[],guildId?:string,progress?:ODManualProgressBar){
-        if (!this.#manager.ready) throw new ODSystemError("Client isn't ready yet! Unable to register slash commands!")
+        if (!this.client.ready) throw new ODSystemError("Client isn't ready yet! Unable to register slash commands!")
         if (!this.commandManager) throw new ODSystemError("Couldn't get client application to register slash commands!")
         if (instances.length > 0 && progress){
             progress.max = instances.length
@@ -916,7 +912,7 @@ export class ODSlashCommandManager<IdList extends ODSlashCommandManagerIdConstra
             if (cmd){
                 try {
                     await cmd.delete()
-                    this.#debug.debug("Removed existing slash command",[{key:"name",value:cmd.name},{key:"guildId",value:guildId ?? "/"}])
+                    this.debug?.debug("Removed existing slash command",[{key:"name",value:cmd.name},{key:"guildId",value:guildId ?? "/"}])
                 }catch(err){
                     process.emit("uncaughtException",err)
                     throw new ODSystemError("Failed to delete slash command '/"+cmd.name+"'!")
@@ -937,15 +933,15 @@ export class ODSlashCommandManager<IdList extends ODSlashCommandManagerIdConstra
     }
     /**Start listening to the discord.js client `interactionCreate` event. */
     startListeningToInteractions(){
-        this.#manager.client.on("interactionCreate",(interaction) => {
+        this.client.client.on("interactionCreate",(interaction) => {
             //return when not in main server or DM
-            if (!this.#manager.mainServer || (interaction.guild && interaction.guild.id != this.#manager.mainServer.id)) return
+            if (!this.client.mainServer || (interaction.guild && interaction.guild.id != this.client.mainServer.id)) return
 
             if (!interaction.isChatInputCommand()) return
             const cmd = this.getFiltered((cmd) => cmd.name == interaction.commandName)[0]
             if (!cmd) return
 
-            this.#interactionListeners.forEach((listener) => {
+            this.interactionListeners.forEach((listener) => {
                 if (typeof listener.name == "string" && (interaction.commandName != listener.name)) return
                 else if (listener.name instanceof RegExp && !listener.name.test(interaction.commandName)) return
 
@@ -958,14 +954,14 @@ export class ODSlashCommandManager<IdList extends ODSlashCommandManagerIdConstra
     onInteraction(commandName:keyof ODNoGeneric<IdList>, callback:ODSlashCommandInteractionCallback): void
     onInteraction(commandName:string|RegExp, callback:ODSlashCommandInteractionCallback): void
     onInteraction(commandName:string|RegExp, callback:ODSlashCommandInteractionCallback){
-        this.#interactionListeners.push({
+        this.interactionListeners.push({
             name:commandName,
             callback
         })
 
-        if (this.#interactionListeners.length > this.listenerLimit){
-            this.#debug.console.log(new ODWarningConsoleMessage("Possible slash command interaction memory leak detected!",[
-                {key:"listeners",value:this.#interactionListeners.length.toString()}
+        if (this.interactionListeners.length > this.listenerLimit){
+            this.debug?.console.log(new ODWarningConsoleMessage("Possible slash command interaction memory leak detected!",[
+                {key:"listeners",value:this.interactionListeners.length.toString()}
             ]))
         }
     }
@@ -1340,26 +1336,24 @@ export type ODTextCommandManagerIdConstraint = Record<string,ODTextCommand>
  * Here, you can add & remove text commands & the bot will do the (de)registering.
  */
 export class ODTextCommandManager<IdList extends ODTextCommandManagerIdConstraint = ODTextCommandManagerIdConstraint> extends ODManager<ODTextCommand> {
-    /**Alias to Open Discord debugger. */
-    #debug: ODDebugger
     /**Copy of discord.js client. */
-    #manager: ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>
+    protected client: ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>
     /**Collection of all interaction listeners. */
-    #interactionListeners: {prefix:string, name:string|RegExp, callback:ODTextCommandInteractionCallback}[] = []
+    protected interactionListeners: {prefix:string, name:string|RegExp, callback:ODTextCommandInteractionCallback}[] = []
     /**Collection of all error listeners. */
-    #errorListeners: ODTextCommandErrorCallback[] = []
+    protected errorListeners: ODTextCommandErrorCallback[] = []
     /**Set the soft limit for maximum amount of listeners. A warning will be shown when there are more listeners than this limit. */
     listenerLimit: number = 100
 
-    constructor(debug:ODDebugger, manager:ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>){
+    constructor(debug:ODDebugger, client:ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>){
         super(debug,"text command")
-        this.#debug = debug
-        this.#manager = manager
+        this.debug = debug
+        this.client = client
     }
     
     /*Check if a message is a registered command. */
-    async #checkMessage(msg:discord.Message){
-        if (this.#manager.client.user && msg.author.id == this.#manager.client.user.id) return false
+    private async checkMessage(msg:discord.Message){
+        if (this.client.client.user && msg.author.id == this.client.client.user.id) return false
 
         //filter commands for correct prefix
         const validPrefixCommands: {cmd:ODTextCommand,newContent:string}[] = []
@@ -1372,7 +1366,7 @@ export class ODTextCommandManager<IdList extends ODTextCommandManagerIdConstrain
 
         //return when no command with prefix
         if (validPrefixCommands.length == 0){
-                this.#errorListeners.forEach((cb) => cb({
+                this.errorListeners.forEach((cb) => cb({
                 type:"unknown_prefix",
                 msg:msg
             }))
@@ -1390,7 +1384,7 @@ export class ODTextCommandManager<IdList extends ODTextCommandManagerIdConstrain
 
         //return when no command with name
         if (validNameCommands.length == 0){
-            this.#errorListeners.forEach((cb) => cb({
+            this.errorListeners.forEach((cb) => cb({
                 type:"unknown_command",
                 msg:msg
             }))
@@ -1408,11 +1402,11 @@ export class ODTextCommandManager<IdList extends ODTextCommandManagerIdConstrain
         else if (typeof builder.allowedGuildIds != "undefined" && msg.guild && !builder.allowedGuildIds.includes(msg.guild.id)) return false
         
         //check all command options & return when incorrect
-        const options = await this.#checkOptions(command.cmd,command.newContent,msg)
+        const options = await this.checkOptions(command.cmd,command.newContent,msg)
         if (!options.valid) return false
 
         //a command matched this message => emit event
-        this.#interactionListeners.forEach((listener) => {
+        this.interactionListeners.forEach((listener) => {
             if (typeof listener.prefix == "string" && (command.cmd.builder.prefix != listener.prefix)) return
             if (typeof listener.name == "string" && (command.cmd.name.split(" ")[0] != listener.name)) return
             else if (listener.name instanceof RegExp && !listener.name.test(command.cmd.name.split(" ")[0])) return
@@ -1423,7 +1417,7 @@ export class ODTextCommandManager<IdList extends ODTextCommandManagerIdConstrain
         return true
     }
     /**Check if all options of a command are correct. */
-    async #checkOptions(cmd:ODTextCommand, newContent:string, msg:discord.Message){
+    private async checkOptions(cmd:ODTextCommand, newContent:string, msg:discord.Message){
         const options = cmd.builder.options
         if (!options) return {valid:true,data:[]}
         
@@ -1434,7 +1428,7 @@ export class ODTextCommandManager<IdList extends ODTextCommandManagerIdConstrain
         const optionError = (type:"invalid_option"|"missing_option", option:ODTextCommandBuilderOption, location:number, value?:string, reason?:ODTextCommandErrorInvalidOptionReason) => {
             //ERROR INVALID
             if (type == "invalid_option" && value && reason){
-                this.#errorListeners.forEach((cb) => cb({
+                this.errorListeners.forEach((cb) => cb({
                     type:"invalid_option",
                     msg:msg,
                     prefix:cmd.builder.prefix,
@@ -1446,7 +1440,7 @@ export class ODTextCommandManager<IdList extends ODTextCommandManagerIdConstrain
                     reason
                 }))
             }else if (type == "missing_option"){
-                this.#errorListeners.forEach((cb) => cb({
+                this.errorListeners.forEach((cb) => cb({
                     type:"missing_option",
                     msg:msg,
                     prefix:cmd.builder.prefix,
@@ -1722,7 +1716,7 @@ export class ODTextCommandManager<IdList extends ODTextCommandManagerIdConstrain
                     const userId = res[1]
 
                     try{
-                        const user = await this.#manager.client.users.fetch(userId)
+                        const user = await this.client.client.users.fetch(userId)
                         if (!user){
                             optionError("invalid_option",option,location,value,"user_not_found")
                         }else{
@@ -1773,7 +1767,7 @@ export class ODTextCommandManager<IdList extends ODTextCommandManagerIdConstrain
                         }
                     }else if (type == "user"){
                         try{
-                            const user = await this.#manager.client.users.fetch(mentionableId)
+                            const user = await this.client.client.users.fetch(mentionableId)
                             if (!user){
                                 optionError("invalid_option",option,location,value,"mentionable_not_found")
                             }else{
@@ -1801,14 +1795,14 @@ export class ODTextCommandManager<IdList extends ODTextCommandManagerIdConstrain
     }
     /**Start listening to the discord.js client `messageCreate` event. */
     startListeningToInteractions(){
-        this.#manager.client.on("messageCreate",(msg) => {
+        this.client.client.on("messageCreate",(msg) => {
             //return when not in main server or DM
-            if (!this.#manager.mainServer || (msg.guild && msg.guild.id != this.#manager.mainServer.id)) return
-            this.#checkMessage(msg)
+            if (!this.client.mainServer || (msg.guild && msg.guild.id != this.client.mainServer.id)) return
+            this.checkMessage(msg)
         })
     }
     /**Check if optional values are only present at the end of the command. */
-    #checkBuilderOptions(builder:ODTextCommandBuilder): {valid:boolean,reason:"required_after_optional"|"allowspaces_not_last"|null} {
+    private checkBuilderOptions(builder:ODTextCommandBuilder): {valid:boolean,reason:"required_after_optional"|"allowspaces_not_last"|null} {
         let optionalVisited = false
         let valid = true
         let reason: "required_after_optional"|"allowspaces_not_last"|null = null
@@ -1832,21 +1826,21 @@ export class ODTextCommandManager<IdList extends ODTextCommandManagerIdConstrain
     onInteraction(commandPrefix:string,commandName:keyof ODNoGeneric<IdList>, callback:ODTextCommandInteractionCallback): void
     onInteraction(commandPrefix:string,commandName:string|RegExp, callback:ODTextCommandInteractionCallback): void
     onInteraction(commandPrefix:string,commandName:string|RegExp, callback:ODTextCommandInteractionCallback){
-        this.#interactionListeners.push({
+        this.interactionListeners.push({
             prefix:commandPrefix,
             name:commandName,
             callback
         })
 
-        if (this.#interactionListeners.length > this.listenerLimit){
-            this.#debug.console.log(new ODWarningConsoleMessage("Possible text command interaction memory leak detected!",[
-                {key:"listeners",value:this.#interactionListeners.length.toString()}
+        if (this.interactionListeners.length > this.listenerLimit){
+            this.debug?.console.log(new ODWarningConsoleMessage("Possible text command interaction memory leak detected!",[
+                {key:"listeners",value:this.interactionListeners.length.toString()}
             ]))
         }
     }
     /**Callback on error from all the registered text commands */
     onError(callback:ODTextCommandErrorCallback){
-        this.#errorListeners.push(callback)
+        this.errorListeners.push(callback)
     }
 
     get<TextCommandId extends keyof ODNoGeneric<IdList>>(id:TextCommandId): IdList[TextCommandId]
@@ -1871,7 +1865,7 @@ export class ODTextCommandManager<IdList extends ODTextCommandManagerIdConstrain
     }
 
     add(data:ODTextCommand, overwrite?:boolean): boolean {
-        const checkResult = this.#checkBuilderOptions(data.builder)
+        const checkResult = this.checkBuilderOptions(data.builder)
         if (!checkResult.valid && checkResult.reason == "required_after_optional") throw new ODSystemError("Invalid text command '"+data.id.value+"' => optional options are only allowed at the end of a command!")
         else if (!checkResult.valid && checkResult.reason == "allowspaces_not_last") throw new ODSystemError("Invalid text command '"+data.id.value+"' => string option with 'allowSpaces' is only allowed at the end of a command!")
         else return super.add(data,overwrite)
@@ -2052,25 +2046,22 @@ export type ODContextMenuManagerIdConstraint = Record<string,ODContextMenu>
  * Here, you can add & remove context interactions & the bot will do the (de)registering.
  */
 export class ODContextMenuManager<IdList extends ODContextMenuManagerIdConstraint = ODContextMenuManagerIdConstraint> extends ODManager<ODContextMenu> {
-    /**Alias to Open Discord debugger. */
-    #debug: ODDebugger
-    
     /**Refrerence to discord.js client. */
-    #manager: ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>
+    protected client: ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>
     /**Discord.js application commands manager. */
     commandManager: discord.ApplicationCommandManager|null
     /**Collection of all interaction listeners. */
-    #interactionListeners: {name:string|RegExp, callback:ODContextMenuInteractionCallback}[] = []
+    protected interactionListeners: {name:string|RegExp, callback:ODContextMenuInteractionCallback}[] = []
     /**Set the soft limit for maximum amount of listeners. A warning will be shown when there are more listeners than this limit. */
     listenerLimit: number = 100
     /**A utility class used to compare 2 context menus with each other. */
     comparator: ODContextMenuComparator = new ODContextMenuComparator()
     
-    constructor(debug:ODDebugger, manager:ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>){
+    constructor(debug:ODDebugger, client:ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>){
         super(debug,"context menu")
-        this.#debug = debug
-        this.#manager = manager
-        this.commandManager = (manager.client.application) ? manager.client.application.commands : null
+        this.debug = debug
+        this.client = client
+        this.commandManager = (client.client.application) ? client.client.application.commands : null
     }
 
     /**Get all registered & unregistered message context menu commands. */
@@ -2115,7 +2106,7 @@ export class ODContextMenuManager<IdList extends ODContextMenuManagerIdConstrain
     }
     /**Create all context menus that are not registered yet.*/
     async createNewMenus(instances:ODContextMenu[],progress?:ODManualProgressBar){
-        if (!this.#manager.ready) throw new ODSystemError("Client isn't ready yet! Unable to register context menus!")
+        if (!this.client.ready) throw new ODSystemError("Client isn't ready yet! Unable to register context menus!")
         if (instances.length > 0 && progress){
             progress.max = instances.length
             progress.start()
@@ -2123,7 +2114,7 @@ export class ODContextMenuManager<IdList extends ODContextMenuManagerIdConstrain
 
         for (const instance of instances){
             await this.createMenu(instance)
-            this.#debug.debug("Created new context menu",[
+            this.debug?.debug("Created new context menu",[
                 {key:"id",value:instance.id.value},
                 {key:"name",value:instance.name},
                 {key:"type",value:(instance.builder.type == discord.ApplicationCommandType.Message) ? "message-context" : "user-context"}
@@ -2133,7 +2124,7 @@ export class ODContextMenuManager<IdList extends ODContextMenuManagerIdConstrain
     }
     /**Update all context menus that are already registered. */
     async updateExistingMenus(instances:ODContextMenu[],progress?:ODManualProgressBar){
-        if (!this.#manager.ready) throw new ODSystemError("Client isn't ready yet! Unable to register context menus!")
+        if (!this.client.ready) throw new ODSystemError("Client isn't ready yet! Unable to register context menus!")
         if (instances.length > 0 && progress){
             progress.max = instances.length
             progress.start()
@@ -2141,7 +2132,7 @@ export class ODContextMenuManager<IdList extends ODContextMenuManagerIdConstrain
 
         for (const instance of instances){
             await this.createMenu(instance)
-            this.#debug.debug("Updated existing context menu",[
+            this.debug?.debug("Updated existing context menu",[
                 {key:"id",value:instance.id.value},
                 {key:"name",value:instance.name},
                 {key:"type",value:(instance.builder.type == discord.ApplicationCommandType.Message) ? "message-context" : "user-context"}
@@ -2151,7 +2142,7 @@ export class ODContextMenuManager<IdList extends ODContextMenuManagerIdConstrain
     }
     /**Remove all context menus that are registered but unused by Open Discord. */
     async removeUnusedMenus(instances:ODContextMenuUniversalMenu[],guildId?:string,progress?:ODManualProgressBar){
-        if (!this.#manager.ready) throw new ODSystemError("Client isn't ready yet! Unable to register context menus!")
+        if (!this.client.ready) throw new ODSystemError("Client isn't ready yet! Unable to register context menus!")
         if (!this.commandManager) throw new ODSystemError("Couldn't get client application to register context menus!")
         if (instances.length > 0 && progress){
             progress.max = instances.length
@@ -2165,7 +2156,7 @@ export class ODContextMenuManager<IdList extends ODContextMenuManagerIdConstrain
             if (menu){
                 try {
                     await menu.delete()
-                    this.#debug.debug("Removed existing context menu",[
+                    this.debug?.debug("Removed existing context menu",[
                         {key:"name",value:menu.name},
                         {key:"guildId",value:guildId ?? "/"},
                         {key:"type",value:(instance.type == discord.ApplicationCommandType.Message) ? "message-context" : "user-context"}
@@ -2190,15 +2181,15 @@ export class ODContextMenuManager<IdList extends ODContextMenuManagerIdConstrain
     }
     /**Start listening to the discord.js client `interactionCreate` event. */
     startListeningToInteractions(){
-        this.#manager.client.on("interactionCreate",(interaction) => {
+        this.client.client.on("interactionCreate",(interaction) => {
             //return when not in main server or DM
-            if (!this.#manager.mainServer || (interaction.guild && interaction.guild.id != this.#manager.mainServer.id)) return
+            if (!this.client.mainServer || (interaction.guild && interaction.guild.id != this.client.mainServer.id)) return
 
             if (!interaction.isContextMenuCommand()) return
             const menu = this.getFiltered((menu) => menu.name == interaction.commandName)[0]
             if (!menu) return
 
-            this.#interactionListeners.forEach((listener) => {
+            this.interactionListeners.forEach((listener) => {
                 if (typeof listener.name == "string" && (interaction.commandName != listener.name)) return
                 else if (listener.name instanceof RegExp && !listener.name.test(interaction.commandName)) return
 
@@ -2212,14 +2203,14 @@ export class ODContextMenuManager<IdList extends ODContextMenuManagerIdConstrain
     onInteraction(menuName:string|RegExp, callback:ODContextMenuInteractionCallback): void
 
     onInteraction(menuName:string|RegExp, callback:ODContextMenuInteractionCallback){
-        this.#interactionListeners.push({
+        this.interactionListeners.push({
             name:menuName,
             callback
         })
 
-        if (this.#interactionListeners.length > this.listenerLimit){
-            this.#debug.console.log("Possible context menu interaction memory leak detected!","warning",[
-                {key:"listeners",value:this.#interactionListeners.length.toString()}
+        if (this.interactionListeners.length > this.listenerLimit){
+            this.debug?.console.log("Possible context menu interaction memory leak detected!","warning",[
+                {key:"listeners",value:this.interactionListeners.length.toString()}
             ])
         }
     }
@@ -2300,31 +2291,30 @@ export type ODAutocompleteInteractionCallback = (interaction:discord.Autocomplet
  */
 export class ODAutocompleteManager {
     /**Alias to Open Discord debugger. */
-    #debug: ODDebugger
-    
+    protected debug: ODDebugger
     /**Refrerence to discord.js client. */
-    #manager: ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>
+    protected client: ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>
     /**Discord.js application commands manager. */
     commandManager: discord.ApplicationCommandManager|null
     /**Collection of all interaction listeners. */
-    #interactionListeners: {cmdName:string|RegExp, optName:string|RegExp, callback:ODAutocompleteInteractionCallback}[] = []
+    protected interactionListeners: {cmdName:string|RegExp, optName:string|RegExp, callback:ODAutocompleteInteractionCallback}[] = []
     /**Set the soft limit for maximum amount of listeners. A warning will be shown when there are more listeners than this limit. */
     listenerLimit: number = 100
     
-    constructor(debug:ODDebugger, manager:ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>){
-        this.#debug = debug
-        this.#manager = manager
-        this.commandManager = (manager.client.application) ? manager.client.application.commands : null
+    constructor(debug:ODDebugger, client:ODClientManager<ODSlashCommandManagerIdConstraint,ODTextCommandManagerIdConstraint,ODContextMenuManagerIdConstraint>){
+        this.debug = debug
+        this.client = client
+        this.commandManager = (client.client.application) ? client.client.application.commands : null
     }
 
     /**Start listening to the discord.js client `interactionCreate` event. */
     startListeningToInteractions(){
-        this.#manager.client.on("interactionCreate",(interaction) => {
+        this.client.client.on("interactionCreate",(interaction) => {
             //return when not in main server or DM
-            if (!this.#manager.mainServer || (interaction.guild && interaction.guild.id != this.#manager.mainServer.id)) return
+            if (!this.client.mainServer || (interaction.guild && interaction.guild.id != this.client.mainServer.id)) return
 
             if (!interaction.isAutocomplete()) return
-            this.#interactionListeners.forEach((listener) => {
+            this.interactionListeners.forEach((listener) => {
                 
                 if (typeof listener.cmdName == "string" && (interaction.commandName != listener.cmdName)) return
                 else if (listener.cmdName instanceof RegExp && !listener.cmdName.test(interaction.commandName)) return
@@ -2338,13 +2328,13 @@ export class ODAutocompleteManager {
     }
     /**Callback on interaction from one or multiple autocompletes. */
     onInteraction(cmdName:string|RegExp,optName:string|RegExp,callback:ODAutocompleteInteractionCallback){
-        this.#interactionListeners.push({
+        this.interactionListeners.push({
             cmdName,optName,callback
         })
 
-        if (this.#interactionListeners.length > this.listenerLimit){
-            this.#debug.console.log("Possible autocomplete interaction memory leak detected!","warning",[
-                {key:"listeners",value:this.#interactionListeners.length.toString()}
+        if (this.interactionListeners.length > this.listenerLimit){
+            this.debug.console.log("Possible autocomplete interaction memory leak detected!","warning",[
+                {key:"listeners",value:this.interactionListeners.length.toString()}
             ])
         }
     }

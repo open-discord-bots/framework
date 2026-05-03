@@ -102,18 +102,18 @@ export type ODProgressBarRenderFunc<Settings extends {}> = (settings:Settings,mi
  */
 export class ODProgressBarRenderer<Settings extends {}> extends ODManagerData {
     settings: Settings
-    #render: ODProgressBarRenderFunc<Settings>
+    private renderFunction: ODProgressBarRenderFunc<Settings>
 
-    constructor(id:ODValidId,render:ODProgressBarRenderFunc<Settings>,settings:Settings){
+    constructor(id:ODValidId,renderFunction:ODProgressBarRenderFunc<Settings>,settings:Settings){
         super(id)
-        this.#render = render
+        this.renderFunction = renderFunction
         this.settings = settings
     }
 
     /**Render a progress bar using this renderer. */
     render(min:number,max:number,value:number,prefix:string|null,suffix:string|null){
         try {
-            return this.#render(this.settings,min,max,value,prefix,suffix)
+            return this.renderFunction(this.settings,min,max,value,prefix,suffix)
         }catch(err){
             process.emit("uncaughtException",err)
             return "<PROGRESS-BAR-ERROR>"
@@ -126,7 +126,7 @@ export class ODProgressBarRenderer<Settings extends {}> extends ODManagerData {
             if (typeof settings[key] != "undefined") newSettings[key] = settings[key]
         }
 
-        return new ODProgressBarRenderer(this.id,this.#render,newSettings)
+        return new ODProgressBarRenderer(this.id,this.renderFunction,newSettings)
     }
 }
 
@@ -142,9 +142,9 @@ export abstract class ODProgressBar extends ODManagerData {
     /**The renderer of this progress bar. */
     renderer: ODProgressBarRenderer<{}>
     /**Is this progress bar currently active? */
-    #active: boolean = false
+    protected active: boolean = false
     /**A list of listeners when the progress bar stops. */
-    #stopListeners: Function[] = []
+    protected stopListeners: Function[] = []
     /**The current value of the progress bar. */
     protected value: number
     /**The minimum value of the progress bar. */
@@ -166,50 +166,50 @@ export abstract class ODProgressBar extends ODManagerData {
         this.renderer = renderer
         this.min = min
         this.max = max
-        this.initialValue = this.#parseValue(value)
-        this.value = this.#parseValue(value)
+        this.initialValue = this.parseValue(value)
+        this.value = this.parseValue(value)
         this.autoStop = autoStop
         this.prefix = prefix
         this.suffix = suffix
     }
     /**Parse a value in such a way that it doesn't go below/above the min/max limits. */
-    #parseValue(value:number){
+    private parseValue(value:number){
         if (value > this.max) return this.max
         else if (value < this.min) return this.min
         else return value
     }
     /**Render progress bar to the console. */
-    #renderStdout(){
-        if (!this.#active) return
+    private renderStdout(){
+        if (!this.active) return
         readline.clearLine(process.stdout,0)
         readline.cursorTo(process.stdout,0)
         process.stdout.write(this.renderer.render(this.min,this.max,this.value,this.prefix,this.suffix))
     }
     /**Start showing this progress bar in the console. */
     start(): boolean {
-        if (this.#active) return false
-        this.value = this.#parseValue(this.initialValue)
-        this.#active = true
-        this.#renderStdout() 
+        if (this.active) return false
+        this.value = this.parseValue(this.initialValue)
+        this.active = true
+        this.renderStdout() 
         return true
     }
     /**Update this progress bar while active. (will automatically update the progress bar in the console) */
     protected update(value:number,stop?:boolean): boolean {
-        if (!this.#active) return false
-        this.value = this.#parseValue(value)
-        this.#renderStdout()
+        if (!this.active) return false
+        this.value = this.parseValue(value)
+        this.renderStdout()
         if (stop || (this.autoStop == "max" && this.value  == this.max) || (this.autoStop == "min" && this.value  == this.min)){
             process.stdout.write("\n")
-            this.#active = false
-            this.#stopListeners.forEach((cb) => cb())
-            this.#stopListeners = []
+            this.active = false
+            this.stopListeners.forEach((cb) => cb())
+            this.stopListeners = []
         }
         return true
     }
     /**Wait for the progress bar to finish. */
     finished(): Promise<void> {
         return new Promise((resolve) => {
-            this.#stopListeners.push(resolve)
+            this.stopListeners.push(resolve)
         })
     }
 }
@@ -233,7 +233,7 @@ export class ODTimedProgressBar extends ODProgressBar {
     }
 
     /**The timer which is used. */
-    async #timer(ms:number): Promise<void> {
+    private async timer(ms:number): Promise<void> {
         return new Promise((resolve) => {
             setTimeout(() => {
                 resolve()
@@ -241,11 +241,11 @@ export class ODTimedProgressBar extends ODProgressBar {
         })
     }
     /**Run the timed progress bar. */
-    async #execute(){
+    private async execute(){
         let i = 0
         const fragment = this.time/100
         while (i < 100){
-            await this.#timer(fragment)
+            await this.timer(fragment)
             i++
             super.update((this.mode == "increasing") ? (i*fragment) : this.time-(i*fragment))
         }
@@ -253,7 +253,7 @@ export class ODTimedProgressBar extends ODProgressBar {
     start(){
         const res = super.start()
         if (!res) return false
-        this.#execute()
+        this.execute()
         return true
     }
 }
@@ -337,12 +337,12 @@ export class ODDefaultProgressBarRenderer extends ODProgressBarRenderer<ODDefaul
             const percentage = (value-min)/(max-min)
             const barLevel = Math.round(percentage*settings.barWidth)
 
-            const borderAnsis = this.#switchColorAnsis(settings.borderColor)
-            const filledBarAnsis = this.#switchColorAnsis(settings.filledBarColor)
-            const emptyBarAnsis = this.#switchColorAnsis(settings.emptyBarColor)
-            const labelAnsis = this.#switchColorAnsis(settings.labelColor)
-            const prefixAnsis = this.#switchColorAnsis(settings.prefixColor)
-            const suffixAnsis = this.#switchColorAnsis(settings.suffixColor)
+            const borderAnsis = this.switchColorAnsis(settings.borderColor)
+            const filledBarAnsis = this.switchColorAnsis(settings.filledBarColor)
+            const emptyBarAnsis = this.switchColorAnsis(settings.emptyBarColor)
+            const labelAnsis = this.switchColorAnsis(settings.labelColor)
+            const prefixAnsis = this.switchColorAnsis(settings.prefixColor)
+            const suffixAnsis = this.switchColorAnsis(settings.suffixColor)
 
             const leftBorder = (settings.showBorder) ? borderAnsis(settings.leftBorderChar) : ""
             const rightBorder = (settings.showBorder) ? borderAnsis(settings.rightBorderChar) : ""
@@ -364,7 +364,7 @@ export class ODDefaultProgressBarRenderer extends ODProgressBarRenderer<ODDefaul
     }
 
     /**Switch between Ansis functions based on the specified color. */
-    #switchColorAnsis(c:ODValidConsoleColor|"openticket"|"openmoderation"){
+    private switchColorAnsis(c:ODValidConsoleColor|"openticket"|"openmoderation"){
         return (c === "openticket") ? ansis.hex("#f8ba00") : (c === "openmoderation") ? ansis.hex("#1690ff") : ansis[c]
     }
 }

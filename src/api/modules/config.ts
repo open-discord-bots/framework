@@ -21,16 +21,18 @@ export type ODConfigManagerIdConstraint = Record<string,ODConfig<any>>
  * You can use this class to get/change/add a config file (`ODConfig`) in your plugin!
  */
 export class ODConfigManager<IdList extends ODConfigManagerIdConstraint = ODConfigManagerIdConstraint> extends ODManager<ODConfig<any>> {
-    /**Alias to Open Discord debugger. */
-    #debug: ODDebugger
-    
     constructor(debug:ODDebugger){
         super(debug,"config")
-        this.#debug = debug
     }
+
     add(data:ODConfig<any>|ODConfig<any>[],overwrite?:boolean): boolean {
-        if (Array.isArray(data)) data.forEach((d) => d.useDebug(this.#debug))
-        else data.useDebug(this.#debug)
+        if (this.debug){
+            if (Array.isArray(data)){
+                for (const d of data){
+                    d.useDebug(this.debug)
+                }
+            }else data.useDebug(this.debug)
+        }
         return super.add(data,overwrite)
     }
     /**Init all config files. */

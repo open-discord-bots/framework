@@ -22,19 +22,19 @@ export type ODPostManagerIdConstraint = Record<string,ODPost<discord.GuildBasedC
  */
 export class ODPostManager<IdList extends ODPostManagerIdConstraint = ODPostManagerIdConstraint> extends ODManager<ODPost<discord.GuildBasedChannel>> {
     /**A reference to the main server of the bot */
-    #guild: discord.Guild|null = null
+    protected guild: discord.Guild|null = null
 
     constructor(debug:ODDebugger){
         super(debug,"post")
     }
 
     add(data:ODPost<discord.GuildBasedChannel>, overwrite?:boolean): boolean {
-        if (this.#guild) data.useGuild(this.#guild)
+        if (this.guild) data.useGuild(this.guild)
         return super.add(data,overwrite)
     }
     /**Initialize the post manager & all posts. */
     async init(guild:discord.Guild){
-        this.#guild = guild
+        this.guild = guild
         for (const post of this.getAll()){
             post.useGuild(guild)
             await post.init()
@@ -73,7 +73,7 @@ export class ODPostManager<IdList extends ODPostManagerIdConstraint = ODPostMana
  */
 export class ODPost<ChannelType extends discord.GuildBasedChannel> extends ODManagerData {
     /**A reference to the main server of the bot */
-    #guild: discord.Guild|null = null
+    protected guild: discord.Guild|null = null
     /**Is this post already initialized? */
     ready: boolean = false
     /**The discord.js channel */
@@ -88,7 +88,7 @@ export class ODPost<ChannelType extends discord.GuildBasedChannel> extends ODMan
 
     /**Use a specific guild in this class for fetching the channel*/
     useGuild(guild:discord.Guild|null){
-        this.#guild = guild
+        this.guild = guild
     }
     /**Change the channel id to another channel! */
     setChannelId(id:string){
@@ -97,9 +97,9 @@ export class ODPost<ChannelType extends discord.GuildBasedChannel> extends ODMan
     /**Initialize the discord.js channel of this post. */
     async init(){
         if (this.ready) return
-        if (!this.#guild) return this.channel = null
+        if (!this.guild) return this.channel = null
         try{
-            this.channel = await this.#guild.channels.fetch(this.channelId) as ChannelType
+            this.channel = await this.guild.channels.fetch(this.channelId) as ChannelType
         }catch{
             this.channel = null
         }

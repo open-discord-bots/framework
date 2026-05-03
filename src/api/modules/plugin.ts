@@ -201,7 +201,7 @@ export class ODPlugin extends ODManagerData {
     }
 
     /**Check if a npm dependency exists. */
-    #checkDependency(id:string){
+    checkDependency(id:string){
         try{
             import.meta.resolve(id)
             return true
@@ -214,7 +214,7 @@ export class ODPlugin extends ODManagerData {
     dependenciesInstalled(){
         const missing: string[] = []
         this.data.npmDependencies.forEach((d) => {
-            if (!this.#checkDependency(d)){
+            if (!this.checkDependency(d)){
                 missing.push(d)
             }
         })

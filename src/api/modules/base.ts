@@ -64,18 +64,10 @@ export type ODNoGeneric<T extends Record<string|number|symbol,any>> = {
  * You can use this class to assign a unique id when creating configs, databases, languages & more!
  */
 export class ODId {
-    /**The full value of this `ODId` as a `string`. */
-    #value: string
-    /**The full value of this `ODId` as a `string`. */
-    set value(id:string){
-        this._change(this.#value,id)
-        this.#value = id
-    }
-    get value(){
-        return this.#value
-    }
+    /**The raw value of this `ODId` as a `string`. */
+    private rawValue: string
     /**The change listener for the parent `ODManager` of this `ODId`. */
-    #change: ((oldId:string,newId:string) => void)|null = null
+    private changeListener: ((oldId:string,newId:string) => void)|null = null
 
     constructor(id:ODValidId){
         if (typeof id != "string" && !(id instanceof ODId)) throw new ODSystemError("Invalid constructor parameter => id:ODValidId")
@@ -91,37 +83,45 @@ export class ODId {
                 }
             })
 
-            if (result.length > 0) this.#value = result.join("")
+            if (result.length > 0) this.rawValue = result.join("")
             else throw new ODSystemError("invalid ID at 'new ODID(id: "+id+")'")
         }else{
             //id is ODId
-            this.#value = id.#value
+            this.rawValue = id.rawValue
         }
     }
 
+    /**The full value of this `ODId` as a `string`. */
+    set value(id:string){
+        this._change(this.rawValue,id)
+        this.rawValue = id
+    }
+    get value(){
+        return this.rawValue
+    }
     /**Returns a string representation of this id. (same as `this.value`) */
     toString(){
-        return this.#value
+        return this.rawValue
     }
     /**The namespace of the id before `:`. (e.g. `opendiscord` for `opendiscord:autoclose-enabled`) */
     getNamespace(){
-        const splitted = this.#value.split(":")
+        const splitted = this.rawValue.split(":")
         if (splitted.length > 1) return splitted[0]
         else return ""
     }
     /**The identifier of the id after `:`. (e.g. `autoclose-enabled` for `opendiscord:autoclose-enabled`) */
     getIdentifier(){
-        const splitted = this.#value.split(":")
+        const splitted = this.rawValue.split(":")
         if (splitted.length > 1){
             splitted.shift()
             return splitted.join(":")
-        }else return this.#value
+        }else return this.rawValue
     }
     /**Trigger an `onChange()` event in the parent `ODManager` of this class. */
     protected _change(oldId:string,newId:string){
-        if (this.#change){
+        if (this.changeListener){
             try{
-                this.#change(oldId,newId)
+                this.changeListener(oldId,newId)
             }catch(err){
                 process.emit("uncaughtException",err)
                 throw new ODSystemError("Failed to execute _change() callback!")
@@ -130,7 +130,7 @@ export class ODId {
     }
     /****(❌ SYSTEM ONLY!!)** Set the callback executed when a value inside this class changes. */
     changed(callback:((oldId:string,newId:string) => void)|null){
-        this.#change = callback
+        this.changeListener = callback
     }
 }
 
@@ -141,13 +141,13 @@ export class ODId {
  * You can use this class when extending your own `ODManager`
  */
 export abstract class ODManagerChangeHelper {
-    #change: (() => void)|null = null
+    private changeListener: (() => void)|null = null
 
     /**Trigger an `onChange()` event in the parent `ODManager` of this class. */
     protected _change(){
-        if (this.#change){
+        if (this.changeListener){
             try{
-                this.#change()
+                this.changeListener()
             }catch(err){
                 process.emit("uncaughtException",err)
                 throw new ODSystemError("Failed to execute _change() callback!")
@@ -156,7 +156,7 @@ export abstract class ODManagerChangeHelper {
     }
     /****(❌ SYSTEM ONLY!!)** Set the callback executed when a value inside this class changes. */
     changed(callback:(() => void)|null){
-        this.#change = callback
+        this.changeListener = callback
     }
 }
 
@@ -198,22 +198,22 @@ export type ODManagerAddCallback<DataType extends ODManagerData> = (data:DataTyp
  */
 export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHelper {
     /**Alias to Open Discord debugger. */
-    #debug?: ODDebugger
+    protected debug?: ODDebugger
     /**The message to send when debugging this manager. */
-    #debugname?: string
+    protected debugname?: string
     /**The map storing all data classes in this manager. */
-    #data: Map<string,DataType> = new Map()
+    private data: Map<string,DataType> = new Map()
     /**An array storing all listeners when data is added. */
-    #addListeners: ODManagerAddCallback<DataType>[] = []
+    private addListeners: ODManagerAddCallback<DataType>[] = []
     /**An array storing all listeners when data has changed. */
-    #changeListeners: ODManagerCallback<DataType>[] = []
+    private changeListeners: ODManagerCallback<DataType>[] = []
     /**An array storing all listeners when data is removed. */
-    #removeListeners: ODManagerCallback<DataType>[] = []
+    private removeListeners: ODManagerCallback<DataType>[] = []
     
     constructor(debug?:ODDebugger, debugname?:string){
-         super()
-        this.#debug = debug
-        this.#debugname = debugname
+        super()
+        this.debug = debug
+        this.debugname = debugname
     }
 
     /**Add data to the manager. The `ODId` in the data class will be used as identifier! You can optionally select to overwrite existing data!*/
@@ -228,22 +228,22 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
 
         //add listener for data id change => transfer data within manager
         data.id.changed((oldId,newId) => {
-            this.#data.delete(oldId)
-            this.#data.set(newId,data)
+            this.data.delete(oldId)
+            this.data.set(newId,data)
         })
 
         //add data
         let didOverwrite: boolean
-        if (this.#data.has(data.id.value)){
-            if (!overwrite) throw new ODSystemError("Id '"+data.id.value+"' already exists in "+this.#debugname+" manager. Use 'overwrite:true' to allow overwriting!")
-            this.#data.set(data.id.value,data)
+        if (this.data.has(data.id.value)){
+            if (!overwrite) throw new ODSystemError("Id '"+data.id.value+"' already exists in "+this.debugname+" manager. Use 'overwrite:true' to allow overwriting!")
+            this.data.set(data.id.value,data)
             didOverwrite = true
-            if (this.#debug) this.#debug.debug("Added new "+this.#debugname+" to manager",[{key:"id",value:data.id.value},{key:"overwrite",value:"true"}])
+            if (this.debug) this.debug.debug("Added new "+this.debugname+" to manager",[{key:"id",value:data.id.value},{key:"overwrite",value:"true"}])
             
         }else{
-            this.#data.set(data.id.value,data)
+            this.data.set(data.id.value,data)
             didOverwrite = false
-            if (this.#debug) this.#debug.debug("Added new "+this.#debugname+" to manager",[{key:"id",value:data.id.value},{key:"overwrite",value:"false"}])
+            if (this.debug) this.debug.debug("Added new "+this.debugname+" to manager",[{key:"id",value:data.id.value},{key:"overwrite",value:"false"}])
             
         }
 
@@ -251,7 +251,7 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
         data.changed(() => {
             //notify change in upper-manager (because data in this manager changed)
             this._change()
-            this.#changeListeners.forEach((cb) => {
+            this.changeListeners.forEach((cb) => {
                 try{
                     cb(data)
                 }catch(err){
@@ -261,7 +261,7 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
         })
 
         //emit add listeners
-        this.#addListeners.forEach((cb) => {
+        this.addListeners.forEach((cb) => {
             try{
                 cb(data,didOverwrite)
             }catch(err){
@@ -277,21 +277,21 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
     /**Get data that matches the `ODId`. Returns the found data.*/
     get(id:ODValidId): DataType|null {
         const newId = new ODId(id)
-        const data = this.#data.get(newId.value)
+        const data = this.data.get(newId.value)
         if (data) return data
         else return null
     }
     /**Remove data that matches the `ODId`. Returns the removed data. */
     remove(id:ODValidId): DataType|null {
         const newId = new ODId(id)
-        const data = this.#data.get(newId.value)
+        const data = this.data.get(newId.value)
         
         if (!data){
-            if (this.#debug) this.#debug.debug("Removed "+this.#debugname+" from manager",[{key:"id",value:newId.value},{key:"found",value:"false"}])
+            if (this.debug) this.debug.debug("Removed "+this.debugname+" from manager",[{key:"id",value:newId.value},{key:"found",value:"false"}])
             return null
         }else{
-            this.#data.delete(newId.value)
-            if (this.#debug) this.#debug.debug("Removed "+this.#debugname+" from manager",[{key:"id",value:newId.value},{key:"found",value:"true"}])
+            this.data.delete(newId.value)
+            if (this.debug) this.debug.debug("Removed "+this.debugname+" from manager",[{key:"id",value:newId.value},{key:"found",value:"true"}])
         }
                 
         //remove all listeners
@@ -299,7 +299,7 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
         data.changed(null)
 
         //emit remove listeners
-        this.#removeListeners.forEach((cb) => {
+        this.removeListeners.forEach((cb) => {
             try{
                 cb(data)
             }catch(err){
@@ -315,28 +315,28 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
     /**Check if data that matches the `ODId` exists. Returns a boolean. */
     exists(id:ODValidId): boolean {
         const newId = new ODId(id)
-        if (this.#data.has(newId.value)) return true
+        if (this.data.has(newId.value)) return true
         else return false
     }
     /**Get all data inside this manager*/
     getAll(): DataType[] {
-        return Array.from(this.#data.values())
+        return Array.from(this.data.values())
     }
     /**Get all data that matches inside the filter function*/
     getFiltered(predicate:(value:DataType, index:number, array:DataType[]) => unknown): DataType[] {
-        return Array.from(this.#data.values()).filter(predicate)
+        return Array.from(this.data.values()).filter(predicate)
     }
     /**Get all data where the `ODId` matches the provided RegExp. */
     getRegex(regex:RegExp): DataType[] {
-        return Array.from(this.#data.values()).filter((data) => regex.test(data.id.value))
+        return Array.from(this.data.values()).filter((data) => regex.test(data.id.value))
     }
     /**Get the length/size/amount of the data inside this manager. */
     getLength(){
-        return this.#data.size
+        return this.data.size
     }
     /**Get a list of all the ids inside this manager*/
     getIds(): ODId[] {
-        const ids = Array.from(this.#data.keys())
+        const ids = Array.from(this.data.keys())
         return ids.map((id) => new ODId(id))
     }
     /**Run an iterator over all data in this manager. This method also supports async-await behaviour!*/
@@ -347,20 +347,20 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
     }
     /**Use the Open Discord debugger in this manager for logs*/
     useDebug(debug?:ODDebugger, debugname?:string){
-        this.#debug = debug
-        this.#debugname = debugname
+        this.debug = debug
+        this.debugname = debugname
     }
     /**Listen for when data is added to this manager. */
     onAdd(callback:ODManagerAddCallback<DataType>){
-        this.#addListeners.push(callback)
+        this.addListeners.push(callback)
     }
     /**Listen for when data is changed in this manager. */
     onChange(callback:ODManagerCallback<DataType>){
-        this.#changeListeners.push(callback)
+        this.changeListeners.push(callback)
     }
     /**Listen for when data is removed from this manager. */
     onRemove(callback:ODManagerCallback<DataType>){
-        this.#removeListeners.push(callback)
+        this.removeListeners.push(callback)
     }
 }
 
@@ -372,14 +372,11 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
  */
 export class ODManagerWithSafety<DataType extends ODManagerData> extends ODManager<DataType> {
     /**The function that creates backup data returned in `getSafe()` when an id is missing in this manager. */
-    #backupCreator: () => DataType
-    /** Temporary storage for manager debug name. */
-    #debugname: string
+    protected backupGenerator: () => DataType
 
-    constructor(backupCreator:() => DataType, debug?:ODDebugger, debugname?:string){
+    constructor(backupGenerator:() => DataType, debug?:ODDebugger, debugname?:string){
         super(debug,debugname)
-        this.#backupCreator = backupCreator
-        this.#debugname = debugname ?? "unknown"
+        this.backupGenerator = backupGenerator
     }
 
     /**Get data that matches the `ODId`. Returns the backup data when not found.
@@ -390,8 +387,8 @@ export class ODManagerWithSafety<DataType extends ODManagerData> extends ODManag
         const newId = new ODId(id)
         const data = super.get(id)
         if (!data){
-            process.emit("uncaughtException",new ODSystemError("ODManagerWithSafety:getSafe(\""+newId.value+"\") => Unknown Id => Used backup data ("+this.#debugname+" manager)"))
-            return this.#backupCreator()
+            process.emit("uncaughtException",new ODSystemError("ODManagerWithSafety:getSafe(\""+newId.value+"\") => Unknown Id => Used backup data ("+this.debugname+" manager)"))
+            return this.backupGenerator()
         }
         else return data
     }
@@ -578,19 +575,19 @@ export class ODVersionMigration {
     /**The version to migrate data to */
     version: ODVersion
     /**The migration function */
-    #func: () => void|Promise<void>
+    private migrateFunc: () => void|Promise<void>
     /**The migration function */
-    #afterInitFunc: () => void|Promise<void>
+    private migrateAfterInitFunc: () => void|Promise<void>
 
-    constructor(version:ODVersion,func:() => void|Promise<void>,afterInitFunc:() => void|Promise<void>){
+    constructor(version:ODVersion,migrateFunc:() => void|Promise<void>,migrateAfterInitFunc:() => void|Promise<void>){
         this.version = version
-        this.#func = func
-        this.#afterInitFunc = afterInitFunc
+        this.migrateFunc = migrateFunc
+        this.migrateAfterInitFunc = migrateAfterInitFunc
     }
     /**Run this version migration as a plugin. Returns `false` when something goes wrong. */
     async migrate(): Promise<boolean> {
         try{
-            await this.#func()
+            await this.migrateFunc()
             return true
         }catch(err){
             process.emit("uncaughtException",err)
@@ -600,7 +597,7 @@ export class ODVersionMigration {
     /**Run this version migration as a plugin (after other plugins have loaded). Returns `false` when something goes wrong. */
     async migrateAfterInit(): Promise<boolean> {
         try{
-            await this.#afterInitFunc()
+            await this.migrateAfterInitFunc()
             return true
         }catch(err){
             process.emit("uncaughtException",err)
@@ -742,7 +739,7 @@ export class ODEnvHelper {
         if (typeof customEnvPath != "undefined" && typeof customEnvPath != "string") throw new ODSystemError("Invalid constructor parameter => customEnvPath?:string")
     
         const path = customEnvPath ? customEnvPath : ".env"
-        this.dotenv = fs.existsSync(path) ? this.#readDotEnv(fs.readFileSync(path)) : {}
+        this.dotenv = fs.existsSync(path) ? this.readDotEnv(fs.readFileSync(path)) : {}
         this.env = process.env
     }
 
@@ -765,7 +762,8 @@ export class ODEnvHelper {
     //THIS CODE IS COPIED FROM THE DODENV-LIB
     //Repo: https://github.com/motdotla/dotenv
     //Source: https://github.com/motdotla/dotenv/blob/master/lib/main.js#L12
-    #readDotEnv(src:Buffer){
+    //All rights go to the original authors of the dotenv library. 
+    protected readDotEnv(src:Buffer){
         const LINE = /(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)/mg
         const obj: Record<string,any> = {}
         

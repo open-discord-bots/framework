@@ -44,7 +44,7 @@ export type ODFuseStringArray<FuseList extends object> = {
  */
 export class ODFuseManager<FuseList extends object> {
     /**A list of all the defaults */
-    private fuses: FuseList
+    protected fuses: FuseList
 
     constructor(fuses:FuseList){
         this.fuses = fuses

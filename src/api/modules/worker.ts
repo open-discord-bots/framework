@@ -40,13 +40,13 @@ export class ODWorker<Instance, Origin extends string, Params> extends ODManager
  */
 export class ODWorkerManager<Instance, Origin extends string, Params,WorkerIds extends string = string> extends ODManager<ODWorker<Instance,Origin,Params>> {
     /**The order of execution for workers inside this manager. */
-    #priorityOrder: "ascending"|"descending"
+    protected priorityOrder: "ascending"|"descending"
     /**The backup worker will be executed when one of the workers fails or cancels execution. */
     backupWorker: ODWorker<{reason:"error"|"cancel"},Origin,Params>|null = null
     
     constructor(priorityOrder:"ascending"|"descending"){
         super()
-        this.#priorityOrder = priorityOrder
+        this.priorityOrder = priorityOrder
     }
     
     /**Get all workers in sorted order. */
@@ -61,7 +61,7 @@ export class ODWorkerManager<Instance, Origin extends string, Params,WorkerIds e
     /**Execute all workers on an instance using the given origin & parameters. */
     async executeWorkers(instance:Instance, origin:Origin, params:Params){
         const derefParams = {...params}
-        const workers = this.getSortedWorkers(this.#priorityOrder)
+        const workers = this.getSortedWorkers(this.priorityOrder)
         let didCancel = false
         let didCrash = false
         

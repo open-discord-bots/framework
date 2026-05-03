@@ -137,38 +137,38 @@ export type ODCommandResponderManagerIdConstraint = Record<string,{origin:"slash
  */
 export class ODCommandResponderManager<IdList extends ODCommandResponderManagerIdConstraint = ODCommandResponderManagerIdConstraint> extends ODManager<ODCommandResponder<"slash"|"text",any>> {
     /**An alias to the Open Discord client manager. */
-    #client: ODClientManager
+    private client: ODClientManager
     /**The callback executed when the default workers take too much time to reply. */
-    #timeoutErrorCallback: ODResponderTimeoutErrorCallback<ODCommandResponderInstance,"slash"|"text">|null = null
+    private timeoutErrorCallback: ODResponderTimeoutErrorCallback<ODCommandResponderInstance,"slash"|"text">|null = null
     /**The amount of milliseconds before the timeout error callback is executed. */
-    #timeoutMs: number|null = null
+    private timeoutMs: number|null = null
     
     constructor(debug:ODDebugger, debugname:string, client:ODClientManager){
         super(debug,debugname)
-        this.#client = client
+        this.client = client
     }
 
     /**Set the message to send when the response times out! */
     setTimeoutErrorCallback(callback:ODResponderTimeoutErrorCallback<ODCommandResponderInstance,"slash"|"text">|null, ms:number|null){
-        this.#timeoutErrorCallback = callback
-        this.#timeoutMs = ms
+        this.timeoutErrorCallback = callback
+        this.timeoutMs = ms
     }
 
     add(data:ODCommandResponder<"slash"|"text",any>, overwrite?:boolean){
         const res = super.add(data,overwrite)
         
         //add the callback to the slash command manager
-        this.#client.slashCommands.onInteraction(data.match,(interaction,cmd) => {
+        this.client.slashCommands.onInteraction(data.match,(interaction,cmd) => {
             const newData = this.get(data.id)
             if (!newData) return
-            newData.respond(new ODCommandResponderInstance(interaction,cmd,this.#timeoutErrorCallback,this.#timeoutMs),"slash",{})
+            newData.respond(new ODCommandResponderInstance(interaction,cmd,this.timeoutErrorCallback,this.timeoutMs),"slash",{})
         })
 
         //add the callback to the text command manager
-        this.#client.textCommands.onInteraction(data.prefix,data.match,(interaction,cmd,options) => {
+        this.client.textCommands.onInteraction(data.prefix,data.match,(interaction,cmd,options) => {
             const newData = this.get(data.id)
             if (!newData) return
-            newData.respond(new ODCommandResponderInstance(interaction,cmd,this.#timeoutErrorCallback,this.#timeoutMs,options),"text",{})
+            newData.respond(new ODCommandResponderInstance(interaction,cmd,this.timeoutErrorCallback,this.timeoutMs,options),"text",{})
         })
 
         return res
@@ -203,31 +203,31 @@ export class ODCommandResponderManager<IdList extends ODCommandResponderManagerI
  */
 export class ODCommandResponderInstanceOptions {
     /**The interaction to get data from. */
-    #interaction: discord.ChatInputCommandInteraction|discord.Message
+    private interaction: discord.ChatInputCommandInteraction|discord.Message
     /**The command which is related to the interaction. */
-    #cmd:ODSlashCommand|ODTextCommand
+    private cmd:ODSlashCommand|ODTextCommand
     /**A list of options which have been parsed by the text command parser. */
-    #options: ODTextCommandInteractionOption[]
+    private options: ODTextCommandInteractionOption[]
 
     constructor(interaction:discord.ChatInputCommandInteraction|discord.Message, cmd:ODSlashCommand|ODTextCommand, options?:ODTextCommandInteractionOption[]){
-        this.#interaction = interaction
-        this.#cmd = cmd
-        this.#options = options ?? []
+        this.interaction = interaction
+        this.cmd = cmd
+        this.options = options ?? []
     }
 
     /**Get a string option. */
     getString(name:string,required:true): string
     getString(name:string,required:false): string|null
     getString(name:string,required:boolean){
-        if (this.#interaction instanceof discord.ChatInputCommandInteraction){
+        if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
-                return this.#interaction.options.getString(name,required)
+                return this.interaction.options.getString(name,required)
             }catch{
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getString() slash command option not found!")
             }
 
-        }else if (this.#interaction instanceof discord.Message){
-            const opt = this.#options.find((opt) => opt.type == "string" && opt.name == name)
+        }else if (this.interaction instanceof discord.Message){
+            const opt = this.options.find((opt) => opt.type == "string" && opt.name == name)
             if (opt && typeof opt.value == "string") return opt.value
             else return null
 
@@ -237,15 +237,15 @@ export class ODCommandResponderInstanceOptions {
     getBoolean(name:string,required:true): boolean
     getBoolean(name:string,required:false): boolean|null
     getBoolean(name:string,required:boolean){
-        if (this.#interaction instanceof discord.ChatInputCommandInteraction){
+        if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
-                return this.#interaction.options.getBoolean(name,required)
+                return this.interaction.options.getBoolean(name,required)
             }catch{
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getBoolean() slash command option not found!")
             }
 
-        }else if (this.#interaction instanceof discord.Message){
-            const opt = this.#options.find((opt) => opt.type == "boolean" && opt.name == name)
+        }else if (this.interaction instanceof discord.Message){
+            const opt = this.options.find((opt) => opt.type == "boolean" && opt.name == name)
             if (opt && typeof opt.value == "boolean") return opt.value
             else return null
 
@@ -255,15 +255,15 @@ export class ODCommandResponderInstanceOptions {
     getNumber(name:string,required:true): number
     getNumber(name:string,required:false): number|null
     getNumber(name:string,required:boolean){
-        if (this.#interaction instanceof discord.ChatInputCommandInteraction){
+        if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
-                return this.#interaction.options.getNumber(name,required)
+                return this.interaction.options.getNumber(name,required)
             }catch{
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getNumber() slash command option not found!")
             }
 
-        }else if (this.#interaction instanceof discord.Message){
-            const opt = this.#options.find((opt) => opt.type == "number" && opt.name == name)
+        }else if (this.interaction instanceof discord.Message){
+            const opt = this.options.find((opt) => opt.type == "number" && opt.name == name)
             if (opt && typeof opt.value == "number") return opt.value
             else return null
 
@@ -273,15 +273,15 @@ export class ODCommandResponderInstanceOptions {
     getChannel(name:string,required:true): discord.TextChannel|discord.VoiceChannel|discord.StageChannel|discord.NewsChannel|discord.MediaChannel|discord.ForumChannel|discord.CategoryChannel
     getChannel(name:string,required:false): discord.TextChannel|discord.VoiceChannel|discord.StageChannel|discord.NewsChannel|discord.MediaChannel|discord.ForumChannel|discord.CategoryChannel|null
     getChannel(name:string,required:boolean){
-        if (this.#interaction instanceof discord.ChatInputCommandInteraction){
+        if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
-                return this.#interaction.options.getChannel(name,required)
+                return this.interaction.options.getChannel(name,required)
             }catch{
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getChannel() slash command option not found!")
             }
 
-        }else if (this.#interaction instanceof discord.Message){
-            const opt = this.#options.find((opt) => opt.type == "channel" && opt.name == name)
+        }else if (this.interaction instanceof discord.Message){
+            const opt = this.options.find((opt) => opt.type == "channel" && opt.name == name)
             if (opt && (opt.value instanceof discord.TextChannel || opt.value instanceof discord.VoiceChannel || opt.value instanceof discord.StageChannel || opt.value instanceof discord.NewsChannel || opt.value instanceof discord.MediaChannel || opt.value instanceof discord.ForumChannel || opt.value instanceof discord.CategoryChannel)) return opt.value
             else return null
 
@@ -291,15 +291,15 @@ export class ODCommandResponderInstanceOptions {
     getRole(name:string,required:true): discord.Role
     getRole(name:string,required:false): discord.Role|null
     getRole(name:string,required:boolean){
-        if (this.#interaction instanceof discord.ChatInputCommandInteraction){
+        if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
-                return this.#interaction.options.getRole(name,required)
+                return this.interaction.options.getRole(name,required)
             }catch{
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getRole() slash command option not found!")
             }
 
-        }else if (this.#interaction instanceof discord.Message){
-            const opt = this.#options.find((opt) => opt.type == "role" && opt.name == name)
+        }else if (this.interaction instanceof discord.Message){
+            const opt = this.options.find((opt) => opt.type == "role" && opt.name == name)
             if (opt && opt.value instanceof discord.Role) return opt.value
             else return null
 
@@ -309,15 +309,15 @@ export class ODCommandResponderInstanceOptions {
     getUser(name:string,required:true): discord.User
     getUser(name:string,required:false): discord.User|null
     getUser(name:string,required:boolean){
-        if (this.#interaction instanceof discord.ChatInputCommandInteraction){
+        if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
-                return this.#interaction.options.getUser(name,required)
+                return this.interaction.options.getUser(name,required)
             }catch{
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getUser() slash command option not found!")
             }
 
-        }else if (this.#interaction instanceof discord.Message){
-            const opt = this.#options.find((opt) => opt.type == "user" && opt.name == name)
+        }else if (this.interaction instanceof discord.Message){
+            const opt = this.options.find((opt) => opt.type == "user" && opt.name == name)
             if (opt && opt.value instanceof discord.User) return opt.value
             else return null
 
@@ -327,17 +327,17 @@ export class ODCommandResponderInstanceOptions {
     getGuildMember(name:string,required:true): discord.GuildMember
     getGuildMember(name:string,required:false): discord.GuildMember|null
     getGuildMember(name:string,required:boolean){
-        if (this.#interaction instanceof discord.ChatInputCommandInteraction){
+        if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
-                const member = this.#interaction.options.getMember(name)
+                const member = this.interaction.options.getMember(name)
                 if (!member && required) throw new ODSystemError("ODCommandResponderInstanceOptions:getGuildMember() slash command option not found!")
                 return member
             }catch{
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getGuildMember() slash command option not found!")
             }
 
-        }else if (this.#interaction instanceof discord.Message){
-            const opt = this.#options.find((opt) => opt.type == "guildmember" && opt.name == name)
+        }else if (this.interaction instanceof discord.Message){
+            const opt = this.options.find((opt) => opt.type == "guildmember" && opt.name == name)
             if (opt && opt.value instanceof discord.GuildMember) return opt.value
             else return null
 
@@ -347,15 +347,15 @@ export class ODCommandResponderInstanceOptions {
     getMentionable(name:string,required:true): discord.User|discord.GuildMember|discord.Role
     getMentionable(name:string,required:false): discord.User|discord.GuildMember|discord.Role|null
     getMentionable(name:string,required:boolean){
-        if (this.#interaction instanceof discord.ChatInputCommandInteraction){
+        if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
-                return this.#interaction.options.getMentionable(name,required)
+                return this.interaction.options.getMentionable(name,required)
             }catch{
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getGuildMember() slash command option not found!")
             }
 
-        }else if (this.#interaction instanceof discord.Message){
-            const opt = this.#options.find((opt) => opt.type == "mentionable" && opt.name == name)
+        }else if (this.interaction instanceof discord.Message){
+            const opt = this.options.find((opt) => opt.type == "mentionable" && opt.name == name)
             if (opt && (opt.value instanceof discord.User || opt.value instanceof discord.GuildMember || opt.value instanceof discord.Role)) return opt.value
             else return null
 
@@ -364,16 +364,16 @@ export class ODCommandResponderInstanceOptions {
     /**Get a subgroup. */
     getSubGroup(): string|null
     getSubGroup(){
-        if (this.#interaction instanceof discord.ChatInputCommandInteraction){
+        if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
-                return this.#interaction.options.getSubcommandGroup(true)
+                return this.interaction.options.getSubcommandGroup(true)
             }catch{
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getSubGroup() slash command option not found!")
             }
 
-        }else if (this.#interaction instanceof discord.Message && this.#cmd instanceof ODTextCommand){
+        }else if (this.interaction instanceof discord.Message && this.cmd instanceof ODTextCommand){
             //0: name, 1:sub/group, 2:sub
-            const splittedName: string[] = this.#cmd.builder.name.split(" ")
+            const splittedName: string[] = this.cmd.builder.name.split(" ")
             return splittedName[1] ?? null
 
         }else return null
@@ -381,16 +381,16 @@ export class ODCommandResponderInstanceOptions {
     /**Get a subcommand. */
     getSubCommand(): string|null
     getSubCommand(){
-        if (this.#interaction instanceof discord.ChatInputCommandInteraction){
+        if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
-                return this.#interaction.options.getSubcommand(true)
+                return this.interaction.options.getSubcommand(true)
             }catch{
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getSubCommand() slash command option not found!")
             }
 
-        }else if (this.#interaction instanceof discord.Message && this.#cmd instanceof ODTextCommand){
+        }else if (this.interaction instanceof discord.Message && this.cmd instanceof ODTextCommand){
             //0: name, 1:sub/group, 2:sub
-            const splittedName: string[] = this.#cmd.builder.name.split(" ")
+            const splittedName: string[] = this.cmd.builder.name.split(" ")
             
             //return the second subcommand when there is a subgroup
             if (splittedName.length > 2){
@@ -541,37 +541,37 @@ export type ODButtonResponderManagerIdConstraint = Record<string,{origin:"button
  */
 export class ODButtonResponderManager<IdList extends ODButtonResponderManagerIdConstraint = ODButtonResponderManagerIdConstraint> extends ODManager<ODButtonResponder<"button",any>> {
     /**An alias to the Open Discord client manager. */
-    #client: ODClientManager
+    private client: ODClientManager
     /**The callback executed when the default workers take too much time to reply. */
-    #timeoutErrorCallback: ODResponderTimeoutErrorCallback<ODButtonResponderInstance,"button">|null = null
+    private timeoutErrorCallback: ODResponderTimeoutErrorCallback<ODButtonResponderInstance,"button">|null = null
     /**The amount of milliseconds before the timeout error callback is executed. */
-    #timeoutMs: number|null = null
+    private timeoutMs: number|null = null
     /**A list of listeners which will listen to the raw interactionCreate event from discord.js */
-    #listeners: ((interaction:discord.ButtonInteraction) => void)[] = []
+    private listeners: ((interaction:discord.ButtonInteraction) => void)[] = []
 
     constructor(debug:ODDebugger, debugname:string, client:ODClientManager){
         super(debug,debugname)
-        this.#client = client
+        this.client = client
 
-        this.#client.client.on("interactionCreate",(interaction) => {
+        this.client.client.on("interactionCreate",(interaction) => {
             if (!interaction.isButton()) return
-            this.#listeners.forEach((cb) => cb(interaction))
+            this.listeners.forEach((cb) => cb(interaction))
         })
     }
 
     /**Set the message to send when the response times out! */
     setTimeoutErrorCallback(callback:ODResponderTimeoutErrorCallback<ODButtonResponderInstance,"button">|null, ms:number|null){
-        this.#timeoutErrorCallback = callback
-        this.#timeoutMs = ms
+        this.timeoutErrorCallback = callback
+        this.timeoutMs = ms
     }
 
     add(data:ODButtonResponder<"button",any>, overwrite?:boolean){
         const res = super.add(data,overwrite)
         
-        this.#listeners.push((interaction) => {
+        this.listeners.push((interaction) => {
             const newData = this.get(data.id)
             if (!newData) return
-            if ((typeof newData.match == "string") ? interaction.customId == newData.match : newData.match.test(interaction.customId)) newData.respond(new ODButtonResponderInstance(interaction,this.#timeoutErrorCallback,this.#timeoutMs),"button",{})
+            if ((typeof newData.match == "string") ? interaction.customId == newData.match : newData.match.test(interaction.customId)) newData.respond(new ODButtonResponderInstance(interaction,this.timeoutErrorCallback,this.timeoutMs),"button",{})
         })
 
         return res
@@ -766,37 +766,37 @@ export type ODDropdownResponderManagerIdConstraint = Record<string,{origin:"drop
  */
 export class ODDropdownResponderManager<IdList extends ODDropdownResponderManagerIdConstraint = ODDropdownResponderManagerIdConstraint> extends ODManager<ODDropdownResponder<"dropdown",any>> {
     /**An alias to the Open Discord client manager. */
-    #client: ODClientManager
+    private client: ODClientManager
     /**The callback executed when the default workers take too much time to reply. */
-    #timeoutErrorCallback: ODResponderTimeoutErrorCallback<ODDropdownResponderInstance,"dropdown">|null = null
+    private timeoutErrorCallback: ODResponderTimeoutErrorCallback<ODDropdownResponderInstance,"dropdown">|null = null
     /**The amount of milliseconds before the timeout error callback is executed. */
-    #timeoutMs: number|null = null
+    private timeoutMs: number|null = null
     /**A list of listeners which will listen to the raw interactionCreate event from discord.js */
-    #listeners: ((interaction:discord.AnySelectMenuInteraction) => void)[] = []
+    private listeners: ((interaction:discord.AnySelectMenuInteraction) => void)[] = []
 
     constructor(debug:ODDebugger, debugname:string, client:ODClientManager){
         super(debug,debugname)
-        this.#client = client
+        this.client = client
 
-        this.#client.client.on("interactionCreate",(interaction) => {
+        this.client.client.on("interactionCreate",(interaction) => {
             if (!interaction.isAnySelectMenu()) return
-            this.#listeners.forEach((cb) => cb(interaction))
+            this.listeners.forEach((cb) => cb(interaction))
         })
     }
 
     /**Set the message to send when the response times out! */
     setTimeoutErrorCallback(callback:ODResponderTimeoutErrorCallback<ODDropdownResponderInstance,"dropdown">|null, ms:number|null){
-        this.#timeoutErrorCallback = callback
-        this.#timeoutMs = ms
+        this.timeoutErrorCallback = callback
+        this.timeoutMs = ms
     }
 
     add(data:ODDropdownResponder<"dropdown",any>, overwrite?:boolean){
         const res = super.add(data,overwrite)
         
-        this.#listeners.push((interaction) => {
+        this.listeners.push((interaction) => {
             const newData = this.get(data.id)
             if (!newData) return
-            if ((typeof newData.match == "string") ? interaction.customId == newData.match : newData.match.test(interaction.customId)) newData.respond(new ODDropdownResponderInstance(interaction,this.#timeoutErrorCallback,this.#timeoutMs),"dropdown",{})
+            if ((typeof newData.match == "string") ? interaction.customId == newData.match : newData.match.test(interaction.customId)) newData.respond(new ODDropdownResponderInstance(interaction,this.timeoutErrorCallback,this.timeoutMs),"dropdown",{})
         })
 
         return res
@@ -831,13 +831,13 @@ export class ODDropdownResponderManager<IdList extends ODDropdownResponderManage
  */
 export class ODDropdownResponderInstanceValues {
     /**The interaction to get data from. */
-    #interaction: discord.AnySelectMenuInteraction
+    private interaction: discord.AnySelectMenuInteraction
     /**The type of this dropdown. */
-    #type: ODDropdownData["type"]
+    private type: ODDropdownData["type"]
 
     constructor(interaction:discord.AnySelectMenuInteraction, type:ODDropdownData["type"]){
-        this.#interaction = interaction
-        this.#type = type
+        this.interaction = interaction
+        this.type = type
 
         if (interaction.isChannelSelectMenu()){
             interaction.values
@@ -847,19 +847,19 @@ export class ODDropdownResponderInstanceValues {
     /**Get the selected values. */
     getStringValues(): string[] {
         try {
-            return this.#interaction.values
+            return this.interaction.values
         }catch{
             throw new ODSystemError("ODDropdownResponderInstanceValues:getStringValues() invalid values!")
         }
     }
     /**Get the selected roles. */
     async getRoleValues(): Promise<discord.Role[]> {
-        if (this.#type != "role") throw new ODSystemError("ODDropdownResponderInstanceValues:getRoleValues() dropdown type isn't role!")
+        if (this.type != "role") throw new ODSystemError("ODDropdownResponderInstanceValues:getRoleValues() dropdown type isn't role!")
         try {
             const result: discord.Role[] = []
-            for (const id of this.#interaction.values){
-                if (!this.#interaction.guild) break
-                const role = await this.#interaction.guild.roles.fetch(id)
+            for (const id of this.interaction.values){
+                if (!this.interaction.guild) break
+                const role = await this.interaction.guild.roles.fetch(id)
                 if (role) result.push(role)
             }
             return result
@@ -869,11 +869,11 @@ export class ODDropdownResponderInstanceValues {
     }
     /**Get the selected users. */
     async getUserValues(): Promise<discord.User[]> {
-        if (this.#type != "role") throw new ODSystemError("ODDropdownResponderInstanceValues:getUserValues() dropdown type isn't user!")
+        if (this.type != "role") throw new ODSystemError("ODDropdownResponderInstanceValues:getUserValues() dropdown type isn't user!")
         try {
             const result: discord.User[] = []
-            for (const id of this.#interaction.values){
-                const user = await this.#interaction.client.users.fetch(id)
+            for (const id of this.interaction.values){
+                const user = await this.interaction.client.users.fetch(id)
                 if (user) result.push(user)
             }
             return result
@@ -883,12 +883,12 @@ export class ODDropdownResponderInstanceValues {
     }
     /**Get the selected channels. */
     async getChannelValues(): Promise<discord.GuildBasedChannel[]> {
-        if (this.#type != "role") throw new ODSystemError("ODDropdownResponderInstanceValues:getChannelValues() dropdown type isn't channel!")
+        if (this.type != "role") throw new ODSystemError("ODDropdownResponderInstanceValues:getChannelValues() dropdown type isn't channel!")
         try {
             const result: discord.GuildBasedChannel[] = []
-            for (const id of this.#interaction.values){
-                if (!this.#interaction.guild) break
-                const guild = await this.#interaction.guild.channels.fetch(id)
+            for (const id of this.interaction.values){
+                if (!this.interaction.guild) break
+                const guild = await this.interaction.guild.channels.fetch(id)
                 if (guild) result.push(guild)
             }
             return result
@@ -1082,37 +1082,37 @@ export type ODModalResponderManagerIdConstraint = Record<string,{origin:"modal",
  */
 export class ODModalResponderManager<IdList extends ODModalResponderManagerIdConstraint = ODModalResponderManagerIdConstraint> extends ODManager<ODModalResponder<"modal",any>> {
     /**An alias to the Open Discord client manager. */
-    #client: ODClientManager
+    private client: ODClientManager
     /**The callback executed when the default workers take too much time to reply. */
-    #timeoutErrorCallback: ODResponderTimeoutErrorCallback<ODModalResponderInstance,"modal">|null = null
+    private timeoutErrorCallback: ODResponderTimeoutErrorCallback<ODModalResponderInstance,"modal">|null = null
     /**The amount of milliseconds before the timeout error callback is executed. */
-    #timeoutMs: number|null = null
+    private timeoutMs: number|null = null
     /**A list of listeners which will listen to the raw interactionCreate event from discord.js */
-    #listeners: ((interaction:discord.ModalSubmitInteraction) => void)[] = []
+    private listeners: ((interaction:discord.ModalSubmitInteraction) => void)[] = []
 
     constructor(debug:ODDebugger, debugname:string, client:ODClientManager){
         super(debug,debugname)
-        this.#client = client
+        this.client = client
 
-        this.#client.client.on("interactionCreate",(interaction) => {
+        this.client.client.on("interactionCreate",(interaction) => {
             if (!interaction.isModalSubmit()) return
-            this.#listeners.forEach((cb) => cb(interaction))
+            this.listeners.forEach((cb) => cb(interaction))
         })
     }
 
     /**Set the message to send when the response times out! */
     setTimeoutErrorCallback(callback:ODResponderTimeoutErrorCallback<ODModalResponderInstance,"modal">|null, ms:number|null){
-        this.#timeoutErrorCallback = callback
-        this.#timeoutMs = ms
+        this.timeoutErrorCallback = callback
+        this.timeoutMs = ms
     }
 
     add(data:ODModalResponder<"modal",any>, overwrite?:boolean){
         const res = super.add(data,overwrite)
         
-        this.#listeners.push((interaction) => {
+        this.listeners.push((interaction) => {
             const newData = this.get(data.id)
             if (!newData) return
-            if ((typeof newData.match == "string") ? interaction.customId == newData.match : newData.match.test(interaction.customId)) newData.respond(new ODModalResponderInstance(interaction,this.#timeoutErrorCallback,this.#timeoutMs),"modal",{})
+            if ((typeof newData.match == "string") ? interaction.customId == newData.match : newData.match.test(interaction.customId)) newData.respond(new ODModalResponderInstance(interaction,this.timeoutErrorCallback,this.timeoutMs),"modal",{})
         })
 
         return res
@@ -1147,10 +1147,10 @@ export class ODModalResponderManager<IdList extends ODModalResponderManagerIdCon
  */
 export class ODModalResponderInstanceValues {
     /**The interaction to get data from. */
-    #interaction: discord.ModalSubmitInteraction
+    private interaction: discord.ModalSubmitInteraction
 
     constructor(interaction:discord.ModalSubmitInteraction){
-        this.#interaction = interaction
+        this.interaction = interaction
     }
 
     /**Get the value of a text field. */
@@ -1158,7 +1158,7 @@ export class ODModalResponderInstanceValues {
     getTextField(name:string,required:false): string|null
     getTextField(name:string,required:boolean){
         try {
-            const data = this.#interaction.fields.getField(name,discord.ComponentType.TextInput)
+            const data = this.interaction.fields.getField(name,discord.ComponentType.TextInput)
             if (!data && required) throw new ODSystemError("ODModalResponderInstanceValues:getTextField() field not found!")
             return (data) ? data.value : null
         }catch{
@@ -1290,30 +1290,30 @@ export type ODContextMenuResponderManagerIdConstraint = Record<string,{origin:"c
  */
 export class ODContextMenuResponderManager<IdList extends ODContextMenuResponderManagerIdConstraint = ODContextMenuResponderManagerIdConstraint> extends ODManager<ODContextMenuResponder<"context-menu",any>> {
     /**An alias to the Open Discord client manager. */
-    #client: ODClientManager
+    private client: ODClientManager
     /**The callback executed when the default workers take too much time to reply. */
-    #timeoutErrorCallback: ODResponderTimeoutErrorCallback<ODContextMenuResponderInstance,"context-menu">|null = null
+    private timeoutErrorCallback: ODResponderTimeoutErrorCallback<ODContextMenuResponderInstance,"context-menu">|null = null
     /**The amount of milliseconds before the timeout error callback is executed. */
-    #timeoutMs: number|null = null
+    private timeoutMs: number|null = null
 
     constructor(debug:ODDebugger, debugname:string, client:ODClientManager){
         super(debug,debugname)
-        this.#client = client
+        this.client = client
     }
 
     /**Set the message to send when the response times out! */
     setTimeoutErrorCallback(callback:ODResponderTimeoutErrorCallback<ODContextMenuResponderInstance,"context-menu">|null, ms:number|null){
-        this.#timeoutErrorCallback = callback
-        this.#timeoutMs = ms
+        this.timeoutErrorCallback = callback
+        this.timeoutMs = ms
     }
 
     add(data:ODContextMenuResponder<"context-menu",any>, overwrite?:boolean){
         const res = super.add(data,overwrite)
         
-        this.#client.contextMenus.onInteraction(data.match,(interaction,cmd) => {
+        this.client.contextMenus.onInteraction(data.match,(interaction,cmd) => {
             const newData = this.get(data.id)
             if (!newData) return
-            newData.respond(new ODContextMenuResponderInstance(interaction,cmd,this.#timeoutErrorCallback,this.#timeoutMs),"context-menu",{})
+            newData.respond(new ODContextMenuResponderInstance(interaction,cmd,this.timeoutErrorCallback,this.timeoutMs),"context-menu",{})
         })
 
         return res
@@ -1477,30 +1477,30 @@ export type ODAutocompleteResponderManagerIdConstraint = Record<string,{origin:"
  */
 export class ODAutocompleteResponderManager<IdList extends ODAutocompleteResponderManagerIdConstraint = ODAutocompleteResponderManagerIdConstraint> extends ODManager<ODAutocompleteResponder<"autocomplete",any>> {
     /**An alias to the Open Discord client manager. */
-    #client: ODClientManager
+    private client: ODClientManager
     /**The callback executed when the default workers take too much time to reply. */
-    #timeoutErrorCallback: ODResponderTimeoutErrorCallback<ODAutocompleteResponderInstance,"autocomplete">|null = null
+    private timeoutErrorCallback: ODResponderTimeoutErrorCallback<ODAutocompleteResponderInstance,"autocomplete">|null = null
     /**The amount of milliseconds before the timeout error callback is executed. */
-    #timeoutMs: number|null = null
+    private timeoutMs: number|null = null
 
     constructor(debug:ODDebugger, debugname:string, client:ODClientManager){
         super(debug,debugname)
-        this.#client = client
+        this.client = client
     }
 
     /**Set the message to send when the response times out! */
     setTimeoutErrorCallback(callback:ODResponderTimeoutErrorCallback<ODAutocompleteResponderInstance,"autocomplete">|null, ms:number|null){
-        this.#timeoutErrorCallback = callback
-        this.#timeoutMs = ms
+        this.timeoutErrorCallback = callback
+        this.timeoutMs = ms
     }
 
     add(data:ODAutocompleteResponder<"autocomplete",any>, overwrite?:boolean){
         const res = super.add(data,overwrite)
         
-        this.#client.autocompletes.onInteraction(data.cmdMatch,data.match,(interaction) => {
+        this.client.autocompletes.onInteraction(data.cmdMatch,data.match,(interaction) => {
             const newData = this.get(data.id)
             if (!newData) return
-            newData.respond(new ODAutocompleteResponderInstance(interaction,this.#timeoutErrorCallback,this.#timeoutMs),"autocomplete",{})
+            newData.respond(new ODAutocompleteResponderInstance(interaction,this.timeoutErrorCallback,this.timeoutMs),"autocomplete",{})
         })
 
         return res

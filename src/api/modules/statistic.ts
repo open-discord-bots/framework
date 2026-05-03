@@ -37,16 +37,13 @@ export type ODStatisticManagerIdConstraint = Record<string,ODStatisticScope>
  * Statistic can be accessed in the individual scopes.
  */
 export class ODStatisticManager<IdList extends ODStatisticManagerIdConstraint = ODStatisticManagerIdConstraint> extends ODManager<ODStatisticScope> {
-    /**Alias to Open Discord debugger. */
-    #debug: ODDebugger
     /**Alias to Open Discord statistics database. */
     database: ODDatabase<ODDatabaseIdConstraint>|null = null
     /**All the listeners for the init event. */
-    #initListeners: ODStatisticManagerInitCallback[] = []
+    protected initListeners: ODStatisticManagerInitCallback[] = []
 
     constructor(debug:ODDebugger){
         super(debug,"statistic scope")
-        this.#debug = debug
     }
 
     /**Select the database to use to read/write all statistics from/to. */
@@ -54,7 +51,7 @@ export class ODStatisticManager<IdList extends ODStatisticManagerIdConstraint = 
         this.database = database
     }
     add(data:ODStatisticScope, overwrite?:boolean): boolean {
-        data.useDebug(this.#debug,"stat")
+        data.useDebug(this.debug,"stat")
         if (this.database) data.useDatabase(this.database)
         return super.add(data,overwrite)
     }
@@ -76,7 +73,7 @@ export class ODStatisticManager<IdList extends ODStatisticManagerIdConstraint = 
         })
 
         //do additional deletion
-        for (const cb of this.#initListeners){
+        for (const cb of this.initListeners){
             await cb(data,deletableStats)
         }
         
@@ -96,7 +93,7 @@ export class ODStatisticManager<IdList extends ODStatisticManagerIdConstraint = 
     }
     /**Run a function when the statistics are initialized. This can be used to clear statistics from users that left the server or tickets which don't exist anymore. */
     onInit(callback:ODStatisticManagerInitCallback){
-        this.#initListeners.push(callback)
+        this.initListeners.push(callback)
     }
 
     get<ScopeId extends keyof ODNoGeneric<IdList>>(id:ScopeId): IdList[ScopeId]

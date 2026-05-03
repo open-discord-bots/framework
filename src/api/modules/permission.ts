@@ -129,12 +129,10 @@ export type ODPermissionManagerIdConstraint = Record<string,ODPermission>
  * Add new permissions using the `ODPermission` class in your plugin!
  */
 export class ODPermissionManager<IdList extends ODPermissionManagerIdConstraint = ODPermissionManagerIdConstraint> extends ODManager<ODPermission> {
-    /**Alias for Open Discord debugger. */
-    #debug: ODDebugger
     /**The function for calculating permissions in this manager. */
-    #calculation: ODPermissionCalculationCallback|null
+    private calculation: ODPermissionCalculationCallback|null
     /**An alias to the Open Discord client manager. */
-    #client: ODClientManager
+    private client: ODClientManager
     /**The result which is returned when no other permissions match. (`member` by default) */
     defaultResult: ODPermissionResult = {
         level:ODPermissionLevel["member"],
@@ -145,14 +143,13 @@ export class ODPermissionManager<IdList extends ODPermissionManagerIdConstraint 
 
     constructor(debug:ODDebugger, client:ODClientManager, useDefaultCalculation?:boolean){
         super(debug,"permission")
-        this.#debug = debug
-        this.#calculation = useDefaultCalculation ? this.#defaultCalculation : null
-        this.#client = client
+        this.calculation = useDefaultCalculation ? this.defaultCalculation : null
+        this.client = client
     }
 
     /**Edit the permission calculation function in this manager. */
     setCalculation(calculation:ODPermissionCalculationCallback){
-        this.#calculation = calculation
+        this.calculation = calculation
     }
     /**Edit the result which is returned when no other permissions match. (`member` by default) */
     setDefaultResult(result:ODPermissionResult){
@@ -161,8 +158,8 @@ export class ODPermissionManager<IdList extends ODPermissionManagerIdConstraint 
     /**Get an `ODPermissionResult` based on a few context factors. Use `hasPermissions()` to simplify the result. */
     getPermissions(user:discord.User, channel?:discord.Channel|null, guild?:discord.Guild|null, settings?:ODPermissionSettings|null): Promise<ODPermissionResult> {
         try{
-            if (!this.#calculation) throw new ODSystemError("ODPermissionManager:getPermissions() => missing perms calculation")
-            return this.#calculation(user,channel,guild,settings)
+            if (!this.calculation) throw new ODSystemError("ODPermissionManager:getPermissions() => missing perms calculation")
+            return this.calculation(user,channel,guild,settings)
         }catch(err){
             process.emit("uncaughtException",err)
             throw new ODSystemError("ODPermissionManager:getPermissions() => failed perms calculation")
@@ -179,15 +176,15 @@ export class ODPermissionManager<IdList extends ODPermissionManagerIdConstraint 
         else throw new ODSystemError("Invalid minimum permission type at ODPermissionManager.hasPermissions()")
     }
     /**Check for permissions. (default calculation) */
-    async #defaultCalculation(user:discord.User,channel?:discord.Channel|null,guild?:discord.Guild|null, settings?:ODPermissionSettings|null): Promise<ODPermissionResult> {
-        const globalCalc = await this.#defaultGlobalCalculation(user,channel,guild,settings)
-        const channelCalc = await this.#defaultChannelCalculation(user,channel,guild,settings)
+    private async defaultCalculation(user:discord.User,channel?:discord.Channel|null,guild?:discord.Guild|null, settings?:ODPermissionSettings|null): Promise<ODPermissionResult> {
+        const globalCalc = await this.defaultGlobalCalculation(user,channel,guild,settings)
+        const channelCalc = await this.defaultChannelCalculation(user,channel,guild,settings)
 
         if (globalCalc.level > channelCalc.level) return globalCalc
         else return channelCalc
     }
     /**Check for global permissions. Result will be compared with the channel perms in `#defaultCalculation()`. */
-    async #defaultGlobalCalculation(user:discord.User,channel?:discord.Channel|null,guild?:discord.Guild|null, settings?:ODPermissionSettings|null): Promise<ODPermissionResult> {
+    private async defaultGlobalCalculation(user:discord.User,channel?:discord.Channel|null,guild?:discord.Guild|null, settings?:ODPermissionSettings|null): Promise<ODPermissionResult> {
         const idRegex = (settings && typeof settings.idRegex != "undefined") ? settings.idRegex : null
         const allowGlobalUserScope = (settings && typeof settings.allowGlobalUserScope != "undefined") ? settings.allowGlobalUserScope : true
         const allowGlobalRoleScope = (settings && typeof settings.allowGlobalRoleScope != "undefined") ? settings.allowGlobalRoleScope : true
@@ -219,7 +216,7 @@ export class ODPermissionManager<IdList extends ODPermissionManagerIdConstraint 
         //check for global role permissions
         if (allowGlobalRoleScope){
             if (guild){
-                const member = await this.#client.fetchGuildMember(guild,user.id)
+                const member = await this.client.fetchGuildMember(guild,user.id)
                 if (member){
                     const memberRoles = member.roles.cache.map((role) => role.id)
                     const roles = this.getFiltered((permission) => (!idRegex || (idRegex && idRegex.test(permission.id.value))) && permission.scope == "global-role" && (permission.value instanceof discord.Role) && memberRoles.includes(permission.value.id) && permission.value.guild.id == guild.id)
@@ -250,7 +247,7 @@ export class ODPermissionManager<IdList extends ODPermissionManagerIdConstraint 
         return {...this.defaultResult}
     }
     /**Check for channel permissions. Result will be compared with the global perms in `#defaultCalculation()`. */
-    async #defaultChannelCalculation(user:discord.User,channel?:discord.Channel|null,guild?:discord.Guild|null, settings?:ODPermissionSettings|null): Promise<ODPermissionResult> {
+    private async defaultChannelCalculation(user:discord.User,channel?:discord.Channel|null,guild?:discord.Guild|null, settings?:ODPermissionSettings|null): Promise<ODPermissionResult> {
         const idRegex = (settings && typeof settings.idRegex != "undefined") ? settings.idRegex : null
         const allowChannelUserScope = (settings && typeof settings.allowChannelUserScope != "undefined") ? settings.allowChannelUserScope : true
         const allowChannelRoleScope = (settings && typeof settings.allowChannelRoleScope != "undefined") ? settings.allowChannelRoleScope : true
@@ -282,7 +279,7 @@ export class ODPermissionManager<IdList extends ODPermissionManagerIdConstraint 
             
             //check for channel role permissions
             if (allowChannelRoleScope){
-                const member = await this.#client.fetchGuildMember(guild,user.id)
+                const member = await this.client.fetchGuildMember(guild,user.id)
                 if (member){
                     const memberRoles = member.roles.cache.map((role) => role.id)
                     const roles = this.getFiltered((permission) => (!idRegex || (idRegex && idRegex.test(permission.id.value))) && permission.scope == "channel-role" && permission.channel && (permission.channel.id == channel.id) && (permission.value instanceof discord.Role) && memberRoles.includes(permission.value.id) && permission.value.guild.id == guild.id)
@@ -328,12 +325,12 @@ export class ODPermissionManager<IdList extends ODPermissionManagerIdConstraint 
             else return {hasPerms:true,isAdmin}
         }else{
             if (!guild || !member){
-                this.#debug.debug("ODPermissionManager.checkCommandPerms(): Permission Error, Not in server! (#1)")
+                this.debug?.debug("ODPermissionManager.checkCommandPerms(): Permission Error, Not in server! (#1)")
                 return {hasPerms:false,reason:"not-in-server"}
             }
-            const role = await this.#client.fetchGuildRole(guild,permissionMode)
+            const role = await this.client.fetchGuildRole(guild,permissionMode)
             if (!role){
-                this.#debug.debug("ODPermissionManager.checkCommandPerms(): Permission Error, Not in server! (#2)")
+                this.debug?.debug("ODPermissionManager.checkCommandPerms(): Permission Error, Not in server! (#2)")
                 return {hasPerms:false,reason:"not-in-server"}
             }
             if (!role.members.has(member.id)) return {hasPerms:false,reason:"no-perms"}

@@ -24,14 +24,11 @@ export type ODStartScreenManagerIdConstraint = Record<string,ODStartScreenCompon
  * The startscreen is the part you see when the bot has started up successfully. (e.g. the Open Discord logo, logs, livestatus, flags, ...)
  */
 export class ODStartScreenManager<IdList extends ODStartScreenManagerIdConstraint = ODStartScreenManagerIdConstraint,LiveStatus extends ODLiveStatusManager = ODLiveStatusManager> extends ODManager<ODStartScreenComponent> {
-    /**Alias to the Open Discord debugger. */
-    #debug: ODDebugger
     /**Alias to the livestatus manager. */
     livestatus: LiveStatus
 
     constructor(debug:ODDebugger,livestatus:LiveStatus){
         super(debug,"startscreen component")
-        this.#debug = debug
         this.livestatus = livestatus
     }
 
@@ -51,10 +48,10 @@ export class ODStartScreenManager<IdList extends ODStartScreenManagerIdConstrain
             try {
                 const renderedText = await component.renderAll(location)
                 console.log(renderedText)
-                this.#debug.console.debugfile.writeText("[STARTSCREEN] Component: \""+component.id+"\"\n"+ansis.strip(renderedText))
+                this.debug?.console.debugfile.writeText("[STARTSCREEN] Component: \""+component.id+"\"\n"+ansis.strip(renderedText))
             }catch(e){
-                this.#debug.console.log("Unable to render \""+component.id+"\" startscreen component!","error")
-                this.#debug.console.debugfile.writeErrorMessage(new ODError(e,"uncaughtException"))
+                this.debug?.console.log("Unable to render \""+component.id+"\" startscreen component!","error")
+                this.debug?.console.debugfile.writeErrorMessage(new ODError(e,"uncaughtException"))
             }
             location++
         }
