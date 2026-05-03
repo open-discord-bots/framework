@@ -5,8 +5,10 @@ import { ODId, ODManager, ODManagerData, ODNoGeneric, ODSystemError, ODValidId }
 import * as discord from "discord.js"
 import {REST} from "@discordjs/rest"
 import { ODWarningConsoleMessage, ODDebugger } from "./console.js"
-import { ODMessageBuildResult, ODMessageBuildSentResult } from "./builder.js"
+import { ODMessageBuildResult } from "./builder.js"
 import { ODManualProgressBar } from "./progressbar.js"
+import { ODResponderSendResult } from "./responder.js"
+import { ODMessageComponentBuildResult } from "./component.js"
 
 /**## ODClientIntents `type`
  * A list of intents required when inviting the bot.
@@ -301,29 +303,45 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
         }
     }
     /**A simplified shortcut to send a DM to a user :) */
-    async sendUserDm(user:string|discord.User, message:ODMessageBuildResult): Promise<ODMessageBuildSentResult<false>> {
+    async sendUserDm(user:string|discord.User, build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<false>> {
         if (!this.initiated) throw new ODSystemError("Client isn't initiated yet!")
         if (!this.ready) throw new ODSystemError("Client isn't ready yet!")
 
         try{
+            const msgFlags: number[] = []
+            let msgData: discord.MessageCreateOptions
+            if ('message' in build){
+                //USING BUILDERS (deprecated)
+                msgData = build.message
+                if (build.ephemeral) msgFlags.push(discord.MessageFlags.Ephemeral)
+            }else{
+                //USING COMPONENTS
+                msgData = build.msg
+                if (build.ephemeral) msgFlags.push(discord.MessageFlags.Ephemeral)
+                if (build.componentsV2) msgFlags.push(discord.MessageFlags.IsComponentsV2)
+                if (build.supressEmbeds) msgFlags.push(discord.MessageFlags.SuppressEmbeds)
+                if (build.supressNotifications) msgFlags.push(discord.MessageFlags.SuppressNotifications)
+            }
+            const finalMessage = Object.assign(msgData,{flags:msgFlags})
+
             if (user instanceof discord.User){
                 if (user.bot) return {success:false,message:null}
                 const channel = await user.createDM()
-                const msg = await channel.send(message.message)
+                const msg = await channel.send(finalMessage)
                 return {success:true,message:msg}
             }else{
                 const newUser = await this.fetchUser(user)
                 if (!newUser) throw new Error()
                 if (newUser.bot) return {success:false,message:null}
                 const channel = await newUser.createDM()
-                const msg = await channel.send(message.message)
+                const msg = await channel.send(finalMessage)
                 return {success:true,message:msg}
             }
         }catch{
             try{
                 this.#debug.console.log("Failed to send DM to user! ","warning",[
                     {key:"id",value:(user instanceof discord.User ? user.id : user)},
-                    {key:"message",value:message.id.value}
+                    {key:"message-build",value:build.id.value}
                 ])
             }catch{}
             return {success:false,message:null}

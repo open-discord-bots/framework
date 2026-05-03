@@ -6,7 +6,8 @@ import * as discord from "discord.js"
 import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker.js"
 import { ODDebugger } from "./console.js"
 import { ODClientManager, ODContextMenu, ODSlashCommand, ODTextCommand, ODTextCommandInteractionOption } from "./client.js"
-import { ODDropdownData, ODMessageBuildResult, ODMessageBuildSentResult, ODModalBuildResult } from "./builder.js"
+import { ODDropdownData, ODMessageBuildResult, ODModalBuildResult } from "./builder.js"
+import { ODMessageComponentBuildResult } from "./component.js"
 
 /**## ODResponderImplementation `class`
  * This is an Open Discord responder implementation.
@@ -35,6 +36,16 @@ export abstract class ODResponderImplementation<Instance,Origin extends string,P
  * This is the callback for the responder timeout function. It will be executed when something went wrong or the action takes too much time.
  */
 export type ODResponderTimeoutErrorCallback<Instance, Origin extends "slash"|"text"|"button"|"dropdown"|"modal"|"other"|"context-menu"|"autocomplete"> = (instance:Instance, origin:Origin) => void|Promise<void>
+
+/**## ODResponderSendResult `interface`
+ * The result from a sent message using responders. Can be used to edit, view & save the message that got created.
+ */
+export interface ODResponderSendResult<InGuild extends boolean> {
+    /**Did the message get sent successfully? */
+    success:boolean,
+    /**The message that got sent. */
+    message:discord.Message<InGuild>|null
+}
 
 /**## ODResponderManager `class`
  * This is an Open Discord responder manager.
@@ -78,6 +89,30 @@ export class ODResponderManager<
         this.modals = new ODModalResponderManager(debug,"modal responder",client)
         this.contextMenus = new ODContextMenuResponderManager(debug,"context menu responder",client)
         this.autocomplete = new ODAutocompleteResponderManager(debug,"autocomplete responder",client)
+    }
+}
+
+/**## ODBaseResponderInstance `class`
+ * A base class for creating responder instances.
+ */
+export abstract class ODBaseResponderInstance {
+    /**Get the final `messageCreateOptions` from a returned build result from builders/components. */
+    protected getMessageFromBuildResult(build:ODMessageBuildResult|ODMessageComponentBuildResult,type:"interaction"|"message"){
+        const msgFlags: number[] = []
+        let msgData: discord.MessageCreateOptions
+        if ('message' in build){
+            //USING BUILDERS (deprecated)
+            msgData = build.message
+            if (build.ephemeral) msgFlags.push(discord.MessageFlags.Ephemeral)
+        }else{
+            //USING COMPONENTS
+            msgData = build.msg
+            if (type == "interaction" && build.ephemeral) msgFlags.push(discord.MessageFlags.Ephemeral) //disabled with regular messages
+            if (build.componentsV2) msgFlags.push(discord.MessageFlags.IsComponentsV2)
+            if (build.supressEmbeds) msgFlags.push(discord.MessageFlags.SuppressEmbeds)
+            if (build.supressNotifications) msgFlags.push(discord.MessageFlags.SuppressNotifications)
+        }
+        return Object.assign(msgData,{flags:msgFlags})
     }
 }
 
@@ -372,7 +407,7 @@ export class ODCommandResponderInstanceOptions {
  * 
  * An instance is an active slash interaction or used text command. You can reply to the command using `reply()` for both slash & text commands.
  */
-export class ODCommandResponderInstance {
+export class ODCommandResponderInstance extends ODBaseResponderInstance {
     /**The interaction which is the source of this instance. */
     interaction: discord.ChatInputCommandInteraction|discord.Message
     /**The command wich is the source of this instance. */
@@ -393,6 +428,7 @@ export class ODCommandResponderInstance {
     channel: discord.TextBasedChannel
 
     constructor(interaction:discord.ChatInputCommandInteraction|discord.Message, cmd:ODSlashCommand|ODTextCommand, errorCallback:ODResponderTimeoutErrorCallback<ODCommandResponderInstance,"slash"|"text">|null, timeoutMs:number|null, options?:ODTextCommandInteractionOption[]){
+        super()
         if (!interaction.channel) throw new ODSystemError("ODCommandResponderInstance: Unable to find interaction channel!")
         this.interaction = interaction
         this.cmd = cmd
@@ -423,21 +459,21 @@ export class ODCommandResponderInstance {
     }
 
     /**Reply to this command. */
-    async reply(msg:ODMessageBuildResult): Promise<ODMessageBuildSentResult<boolean>> {
+    async reply(build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<boolean>> {
         try {
-            const msgFlags: number[] = msg.ephemeral ? [discord.MessageFlags.Ephemeral] : []
+            const finalMessage = this.getMessageFromBuildResult(build,this.type)
             if (this.type == "interaction" && this.interaction instanceof discord.ChatInputCommandInteraction){
                 if (this.interaction.replied || this.interaction.deferred){
-                    const sent = await this.interaction.editReply(Object.assign(msg.message,{flags:msgFlags}))
+                    const sent = await this.interaction.editReply(finalMessage)
                     this.didReply = true
                     return {success:true,message:sent}
                 }else{
-                    const sent = await this.interaction.reply(Object.assign(msg.message,{flags:msgFlags}))
+                    const sent = await this.interaction.reply(finalMessage)
                     this.didReply = true
                     return {success:true,message:await sent.fetch()}
                 }
             }else if (this.type == "message" && this.interaction instanceof discord.Message && this.interaction.channel.type != discord.ChannelType.GroupDM){
-                const sent = await this.interaction.channel.send(msg.message)
+                const sent = await this.interaction.channel.send(finalMessage)
                 this.didReply = true
                 return {success:true,message:sent}
             }else return {success:false,message:null}
@@ -568,7 +604,7 @@ export class ODButtonResponderManager<IdList extends ODButtonResponderManagerIdC
  * 
  * An instance is an active button interaction. You can reply to the button using `reply()`.
  */
-export class ODButtonResponderInstance {
+export class ODButtonResponderInstance extends ODBaseResponderInstance {
     /**The interaction which is the source of this instance. */
     interaction: discord.ButtonInteraction
     /**Did a worker already reply to this instance/interaction? */
@@ -585,6 +621,7 @@ export class ODButtonResponderInstance {
     message: discord.Message
 
     constructor(interaction:discord.ButtonInteraction, errorCallback:ODResponderTimeoutErrorCallback<ODButtonResponderInstance,"button">|null, timeoutMs:number|null){
+        super()
         if (!interaction.channel) throw new ODSystemError("ODButtonResponderInstance: Unable to find interaction channel!")
         this.interaction = interaction
         this.user = interaction.user
@@ -612,15 +649,15 @@ export class ODButtonResponderInstance {
     }
 
     /**Reply to this button. */
-    async reply(msg:ODMessageBuildResult): Promise<ODMessageBuildSentResult<boolean>> {
-        try{
-            const msgFlags: number[] = msg.ephemeral ? [discord.MessageFlags.Ephemeral] : []
+    async reply(build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<boolean>> {
+        try {
+            const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             if (this.interaction.replied || this.interaction.deferred){
-                const sent = await this.interaction.editReply(Object.assign(msg.message,{flags:msgFlags}))
+                const sent = await this.interaction.editReply(finalMessage)
                 this.didReply = true
                 return {success:true,message:sent}
             }else{
-                const sent = await this.interaction.reply(Object.assign(msg.message,{flags:msgFlags}))
+                const sent = await this.interaction.reply(finalMessage)
                 this.didReply = true
                 return {success:true,message:await sent.fetch()}
             }
@@ -629,15 +666,15 @@ export class ODButtonResponderInstance {
         }
     }
     /**Update the message of this button. */
-    async update(msg:ODMessageBuildResult): Promise<ODMessageBuildSentResult<boolean>> {
-        try{
-            const msgFlags: number[] = msg.ephemeral ? [discord.MessageFlags.Ephemeral] : []
+    async update(build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<boolean>> {
+        try {
+            const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             if (this.interaction.replied || this.interaction.deferred){
-                const sent = await this.interaction.editReply(Object.assign(msg.message,{flags:msgFlags}))
+                const sent = await this.interaction.editReply(finalMessage)
                 this.didReply = true
                 return {success:true,message:await sent.fetch()}
             }else{
-                const sent = await this.interaction.update(Object.assign(msg.message,{flags:msgFlags}))
+                const sent = await this.interaction.update(finalMessage)
                 this.didReply = true
                 return {success:true,message:await sent.fetch()}
             }
@@ -866,7 +903,7 @@ export class ODDropdownResponderInstanceValues {
  * 
  * An instance is an active dropdown interaction. You can reply to the dropdown using `reply()`.
  */
-export class ODDropdownResponderInstance {
+export class ODDropdownResponderInstance extends ODBaseResponderInstance {
     /**The interaction which is the source of this instance. */
     interaction: discord.AnySelectMenuInteraction
     /**Did a worker already reply to this instance/interaction? */
@@ -887,6 +924,7 @@ export class ODDropdownResponderInstance {
     message: discord.Message
 
     constructor(interaction:discord.AnySelectMenuInteraction, errorCallback:ODResponderTimeoutErrorCallback<ODDropdownResponderInstance,"dropdown">|null, timeoutMs:number|null){
+        super()
         if (!interaction.channel) throw new ODSystemError("ODDropdownResponderInstance: Unable to find interaction channel!")
         this.interaction = interaction
         if (interaction.isStringSelectMenu()){
@@ -927,15 +965,15 @@ export class ODDropdownResponderInstance {
     }
 
     /**Reply to this dropdown. */
-    async reply(msg:ODMessageBuildResult): Promise<ODMessageBuildSentResult<boolean>> {
+    async reply(build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<boolean>> {
         try {
-            const msgFlags: number[] = msg.ephemeral ? [discord.MessageFlags.Ephemeral] : []
+            const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             if (this.interaction.replied || this.interaction.deferred){
-                const sent = await this.interaction.editReply(Object.assign(msg.message,{flags:msgFlags}))
+                const sent = await this.interaction.editReply(finalMessage)
                 this.didReply = true
                 return {success:true,message:sent}
             }else{
-                const sent = await this.interaction.reply(Object.assign(msg.message,{flags:msgFlags}))
+                const sent = await this.interaction.reply(finalMessage)
                 this.didReply = true
                 return {success:true,message:await sent.fetch()}
             }
@@ -944,15 +982,15 @@ export class ODDropdownResponderInstance {
         }
     }
     /**Update the message of this dropdown. */
-    async update(msg:ODMessageBuildResult): Promise<ODMessageBuildSentResult<boolean>> {
-        try{
-            const msgFlags: number[] = msg.ephemeral ? [discord.MessageFlags.Ephemeral] : []
+    async update(build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<boolean>> {
+        try {
+            const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             if (this.interaction.replied || this.interaction.deferred){
-                const sent = await this.interaction.editReply(Object.assign(msg.message,{flags:msgFlags}))
+                const sent = await this.interaction.editReply(finalMessage)
                 this.didReply = true
                 return {success:true,message:await sent.fetch()}
             }else{
-                const sent = await this.interaction.update(Object.assign(msg.message,{flags:msgFlags}))
+                const sent = await this.interaction.update(finalMessage)
                 this.didReply = true
                 return {success:true,message:await sent.fetch()}
             }
@@ -1134,7 +1172,7 @@ export class ODModalResponderInstanceValues {
  * 
  * An instance is an active modal interaction. You can reply to the modal using `reply()`.
  */
-export class ODModalResponderInstance {
+export class ODModalResponderInstance extends ODBaseResponderInstance {
     /**The interaction which is the source of this instance. */
     interaction: discord.ModalSubmitInteraction
     /**Did a worker already reply to this instance/interaction? */
@@ -1151,6 +1189,7 @@ export class ODModalResponderInstance {
     channel: discord.TextBasedChannel|null
 
     constructor(interaction:discord.ModalSubmitInteraction, errorCallback:ODResponderTimeoutErrorCallback<ODModalResponderInstance,"modal">|null, timeoutMs:number|null){
+        super()
         this.interaction = interaction
         this.values = new ODModalResponderInstanceValues(interaction)
         this.user = interaction.user
@@ -1177,10 +1216,10 @@ export class ODModalResponderInstance {
     }
 
     /**Reply to this modal. */
-    async reply(msg:ODMessageBuildResult): Promise<ODMessageBuildSentResult<boolean>> {
-        try{
-            const msgFlags: number[] = msg.ephemeral ? [discord.MessageFlags.Ephemeral] : []
-            const sent = await this.interaction.followUp(Object.assign(msg.message,{flags:msgFlags}))
+    async reply(build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<boolean>> {
+        try {
+            const finalMessage = this.getMessageFromBuildResult(build,"interaction")
+            const sent = await this.interaction.followUp(finalMessage)
             this.didReply = true
             return {success:true,message:sent}
         }catch{
@@ -1188,15 +1227,15 @@ export class ODModalResponderInstance {
         }
     }
     /**Update the message of this modal. */
-    async update(msg:ODMessageBuildResult): Promise<ODMessageBuildSentResult<boolean>> {
-        try{
-            const msgFlags: number[] = msg.ephemeral ? [discord.MessageFlags.Ephemeral] : []
+    async update(build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<boolean>> {
+        try {
+            const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             if (this.interaction.replied || this.interaction.deferred){
-                const sent = await this.interaction.editReply(Object.assign(msg.message,{flags:msgFlags}))
+                const sent = await this.interaction.editReply(finalMessage)
                 this.didReply = true
                 return {success:true,message:await sent.fetch()}
             }else{
-                const sent = await this.interaction.reply(Object.assign(msg.message,{flags:msgFlags}))
+                const sent = await this.interaction.reply(finalMessage)
                 this.didReply = true
                 return {success:true,message:await sent.fetch()}
             }
@@ -1307,7 +1346,7 @@ export class ODContextMenuResponderManager<IdList extends ODContextMenuResponder
  * 
  * An instance is an active context menu interaction. You can reply to the context menu using `reply()`.
  */
-export class ODContextMenuResponderInstance {
+export class ODContextMenuResponderInstance extends ODBaseResponderInstance {
     /**The interaction which is the source of this instance. */
     interaction: discord.ContextMenuCommandInteraction
     /**Did a worker already reply to this instance/interaction? */
@@ -1326,6 +1365,7 @@ export class ODContextMenuResponderInstance {
     target: discord.Message|discord.User
 
     constructor(interaction:discord.ContextMenuCommandInteraction, menu:ODContextMenu, errorCallback:ODResponderTimeoutErrorCallback<ODContextMenuResponderInstance,"context-menu">|null, timeoutMs:number|null){
+        super()
         if (!interaction.channel) throw new ODSystemError("ODContextMenuResponderInstance: Unable to find interaction channel!")
         this.interaction = interaction
         this.menu = menu
@@ -1356,15 +1396,15 @@ export class ODContextMenuResponderInstance {
     }
 
     /**Reply to this context menu. */
-    async reply(msg:ODMessageBuildResult): Promise<ODMessageBuildSentResult<boolean>> {
-        try{
-            const msgFlags: number[] = msg.ephemeral ? [discord.MessageFlags.Ephemeral] : []
+    async reply(build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<boolean>> {
+        try {
+            const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             if (this.interaction.replied || this.interaction.deferred){
-                const sent = await this.interaction.editReply(Object.assign(msg.message,{flags:msgFlags}))
+                const sent = await this.interaction.editReply(finalMessage)
                 this.didReply = true
                 return {success:true,message:sent}
             }else{
-                const sent = await this.interaction.reply(Object.assign(msg.message,{flags:msgFlags}))
+                const sent = await this.interaction.reply(finalMessage)
                 this.didReply = true
                 return {success:true,message:await sent.fetch()}
             }
@@ -1373,11 +1413,11 @@ export class ODContextMenuResponderInstance {
         }
     }
     /**Update the message of this context menu. */
-    async update(msg:ODMessageBuildResult): Promise<ODMessageBuildSentResult<boolean>> {
-        try{
-            const msgFlags: number[] = msg.ephemeral ? [discord.MessageFlags.Ephemeral] : []
+    async update(build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<boolean>> {
+        try {
+            const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             if (this.interaction.replied || this.interaction.deferred){
-                const sent = await this.interaction.editReply(Object.assign(msg.message,{flags:msgFlags}))
+                const sent = await this.interaction.editReply(finalMessage)
                 this.didReply = true
                 return {success:true,message:await sent.fetch()}
             }else throw new ODSystemError("Unable to update context menu interaction!")
@@ -1493,7 +1533,7 @@ export class ODAutocompleteResponderManager<IdList extends ODAutocompleteRespond
  * 
  * An instance is an active autocomplete interaction. You can reply to the autocomplete using `reply()`.
  */
-export class ODAutocompleteResponderInstance {
+export class ODAutocompleteResponderInstance extends ODBaseResponderInstance {
     /**The interaction which is the source of this instance. */
     interaction: discord.AutocompleteInteraction
     /**Did a worker already respond to this instance/interaction? */
@@ -1510,6 +1550,7 @@ export class ODAutocompleteResponderInstance {
     target: discord.AutocompleteFocusedOption
 
     constructor(interaction:discord.AutocompleteInteraction, errorCallback:ODResponderTimeoutErrorCallback<ODAutocompleteResponderInstance,"autocomplete">|null, timeoutMs:number|null){
+        super()
         if (!interaction.channel) throw new ODSystemError("ODAutocompleteResponderInstance: Unable to find interaction channel!")
         this.interaction = interaction
         this.user = interaction.user

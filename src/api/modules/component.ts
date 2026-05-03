@@ -322,7 +322,9 @@ export interface ODMessageComponentBuildResult {
     /**Suppress/hide embeds. */
     supressEmbeds:boolean,
     /**Do not send notifications to mentioned users or roles. */
-    supressNotifications:boolean
+    supressNotifications:boolean,
+    /**The id of the `ODMessageComponent` this message was built with. */
+    id:ODId
 }
 
 /**## ODMessageComponent `class`
@@ -363,6 +365,7 @@ export class ODMessageComponent extends ODGroupComponent<ODMessageComponentData,
         }
         
         return {
+            id:new ODId(this.id),
             msg:{
                 components,
                 files:attachments,
@@ -461,6 +464,7 @@ export class ODSimpleMessageComponent extends ODGroupComponent<ODSimpleMessageCo
         }
         
         return {
+            id:new ODId(this.id),
             msg:{
                 content,
                 embeds,

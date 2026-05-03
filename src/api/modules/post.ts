@@ -2,9 +2,11 @@
 //POST MODULE
 ///////////////////////////////////////
 import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base.js"
-import { ODMessageBuildResult, ODMessageBuildSentResult } from "./builder.js"
+import { ODMessageBuildResult } from "./builder.js"
 import { ODDebugger } from "./console.js"
 import * as discord from "discord.js"
+import { ODResponderSendResult } from "./responder.js"
+import { ODMessageComponentBuildResult } from "./component.js"
 
 /**## ODPostManagerIdConstraint `type`
  * The constraint/layout for id mappings/interfaces of the `ODPostManager` class.
@@ -104,13 +106,32 @@ export class ODPost<ChannelType extends discord.GuildBasedChannel> extends ODMan
         this.ready = true
     }
     /**Send a message to this channel using the Open Discord builder system */
-    async send(msg:ODMessageBuildResult): Promise<ODMessageBuildSentResult<true>> {
+    async send(build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<true>> {
         if (!this.channel || !this.channel.isTextBased()) return {success:false,message:null}
         try{
-            const sent = await this.channel.send(msg.message)
+            const finalMessage = this.getMessageFromBuildResult(build,"message")
+            const sent = await this.channel.send(finalMessage)
             return {success:true,message:sent}
         }catch{
             return {success:false,message:null}
         }
+    }
+    /**Get the final `messageCreateOptions` from a returned build result from builders/components. */
+    protected getMessageFromBuildResult(build:ODMessageBuildResult|ODMessageComponentBuildResult,type:"interaction"|"message"){
+        const msgFlags: number[] = []
+        let msgData: discord.MessageCreateOptions
+        if ('message' in build){
+            //USING BUILDERS (deprecated)
+            msgData = build.message
+            if (build.ephemeral) msgFlags.push(discord.MessageFlags.Ephemeral)
+        }else{
+            //USING COMPONENTS
+            msgData = build.msg
+            if (type == "interaction" && build.ephemeral) msgFlags.push(discord.MessageFlags.Ephemeral) //disabled with regular messages
+            if (build.componentsV2) msgFlags.push(discord.MessageFlags.IsComponentsV2)
+            if (build.supressEmbeds) msgFlags.push(discord.MessageFlags.SuppressEmbeds)
+            if (build.supressNotifications) msgFlags.push(discord.MessageFlags.SuppressNotifications)
+        }
+        return Object.assign(msgData,{flags:msgFlags})
     }
 }
