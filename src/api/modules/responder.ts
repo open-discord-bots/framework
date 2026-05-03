@@ -419,8 +419,8 @@ export class ODCommandResponderInstance extends ODBaseResponderInstance {
     cmd:ODSlashCommand|ODTextCommand
     /**The type/source of instance. (from text or slash command) */
     type: "message"|"interaction"
-    /**Did a worker already reply to this instance/interaction? */
-    didReply: boolean = false
+    /**Switches to `true` when a worker replies, edits or defers interaction. Will stop the timeout error from being shown. */
+    protected ignoreResponderTimeout: boolean = false
     /**The manager for all options of this command. */
     options: ODCommandResponderInstanceOptions
     /**The user who triggered this command. */
@@ -446,24 +446,23 @@ export class ODCommandResponderInstance extends ODBaseResponderInstance {
 
 
         setTimeout(async () => {
-            if (!this.didReply){
-                try {
-                    if (!errorCallback){
-                        this.reply({id:new ODId("opendiscord:unknown-error"), ephemeral:true, message:{
-                            content:":x: **Something went wrong while replying to this command!**"
-                        }})
-                    }else{
-                        const errorResponse = await errorCallback(this,(this.type == "interaction") ? "slash" : "text")
-                        
-                        //auto-delete timeout error message after 5sec when text-based
-                        if (errorResponse.success && this.type == "message") setTimeout(() => {
-                            if (errorResponse.message?.deletable) errorResponse.message?.delete()
-                        },5000)
-                    }
+            if (this.ignoreResponderTimeout) return
+            try {
+                if (!errorCallback){
+                    this.reply({id:new ODId("opendiscord:unknown-error"), ephemeral:true, message:{
+                        content:":x: **Something went wrong while replying to this command!**"
+                    }})
+                }else{
+                    const errorResponse = await errorCallback(this,(this.type == "interaction") ? "slash" : "text")
                     
-                }catch(err){
-                    process.emit("uncaughtException",err)
+                    //auto-delete timeout error message after 5sec when text-based
+                    if (errorResponse.success && this.type == "message") setTimeout(() => {
+                        if (errorResponse.message?.deletable) errorResponse.message?.delete()
+                    },5000)
                 }
+                
+            }catch(err){
+                process.emit("uncaughtException",err)
             }
         },timeoutMs ?? 2500)
     }
@@ -475,16 +474,16 @@ export class ODCommandResponderInstance extends ODBaseResponderInstance {
             if (this.type == "interaction" && this.interaction instanceof discord.ChatInputCommandInteraction){
                 if (this.interaction.replied || this.interaction.deferred){
                     const sent = await this.interaction.editReply(finalMessage)
-                    this.didReply = true
+                    this.ignoreResponderTimeout = true
                     return {success:true,message:sent}
                 }else{
                     const sent = await this.interaction.reply(finalMessage)
-                    this.didReply = true
+                    this.ignoreResponderTimeout = true
                     return {success:true,message:await sent.fetch()}
                 }
             }else if (this.type == "message" && this.interaction instanceof discord.Message && this.interaction.channel.type != discord.ChannelType.GroupDM){
                 const sent = await this.interaction.channel.send(finalMessage)
-                this.didReply = true
+                this.ignoreResponderTimeout = true
                 return {success:true,message:sent}
             }else return {success:false,message:null}
         }catch{
@@ -493,19 +492,19 @@ export class ODCommandResponderInstance extends ODBaseResponderInstance {
     }
     /**Defer this command. */
     async defer(ephemeral:boolean){
+        this.ignoreResponderTimeout = true
         if (this.type != "interaction" || !(this.interaction instanceof discord.ChatInputCommandInteraction)) return false
         if (this.interaction.deferred || this.interaction.replied) return false
         const msgFlags: number[] = ephemeral ? [discord.MessageFlags.Ephemeral] : []
         await this.interaction.deferReply({flags:msgFlags})
-        this.didReply = true
         return true
     }
     /**Show a modal as reply to this command. */
     async modal(modal:ODModalBuildResult){
+        this.ignoreResponderTimeout = true
         if (this.type != "interaction" || !(this.interaction instanceof discord.ChatInputCommandInteraction)) return false
         if (this.interaction.deferred || this.interaction.replied) return false
         await this.interaction.showModal(modal.modal)
-        this.didReply = true
         return true
     }
 }
@@ -617,8 +616,8 @@ export class ODButtonResponderManager<IdList extends ODButtonResponderManagerIdC
 export class ODButtonResponderInstance extends ODBaseResponderInstance {
     /**The interaction which is the source of this instance. */
     interaction: discord.ButtonInteraction
-    /**Did a worker already reply to this instance/interaction? */
-    didReply: boolean = false
+    /**Switches to `true` when a worker replies, edits or defers interaction. Will stop the timeout error from being shown. */
+    protected ignoreResponderTimeout: boolean = false
     /**The user who triggered this button. */
     user: discord.User
     /**The guild member who triggered this button. */
@@ -641,19 +640,18 @@ export class ODButtonResponderInstance extends ODBaseResponderInstance {
         this.message = interaction.message
         
         setTimeout(async () => {
-            if (!this.didReply){
-                try {
-                    if (!errorCallback){
-                        this.reply({id:new ODId("opendiscord:unknown-error"), ephemeral:true, message:{
-                            content:":x: **Something went wrong while replying to this button!**"
-                        }})
-                    }else{
-                        await errorCallback(this,"button")
-                    }
-                    
-                }catch(err){
-                    process.emit("uncaughtException",err)
+            if (this.ignoreResponderTimeout) return
+            try {
+                if (!errorCallback){
+                    this.reply({id:new ODId("opendiscord:unknown-error"), ephemeral:true, message:{
+                        content:":x: **Something went wrong while replying to this button!**"
+                    }})
+                }else{
+                    await errorCallback(this,"button")
                 }
+                
+            }catch(err){
+                process.emit("uncaughtException",err)
             }
         },timeoutMs ?? 2500)
     }
@@ -664,11 +662,11 @@ export class ODButtonResponderInstance extends ODBaseResponderInstance {
             const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             if (this.interaction.replied || this.interaction.deferred){
                 const sent = await this.interaction.editReply(finalMessage)
-                this.didReply = true
+                this.ignoreResponderTimeout = true
                 return {success:true,message:sent}
             }else{
                 const sent = await this.interaction.reply(finalMessage)
-                this.didReply = true
+                this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch()}
             }
         }catch{
@@ -681,11 +679,11 @@ export class ODButtonResponderInstance extends ODBaseResponderInstance {
             const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             if (this.interaction.replied || this.interaction.deferred){
                 const sent = await this.interaction.editReply(finalMessage)
-                this.didReply = true
+                this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch()}
             }else{
                 const sent = await this.interaction.update(finalMessage)
-                this.didReply = true
+                this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch()}
             }
         }catch{
@@ -694,6 +692,7 @@ export class ODButtonResponderInstance extends ODBaseResponderInstance {
     }
     /**Defer this button. */
     async defer(type:"reply"|"update", ephemeral:boolean){
+        this.ignoreResponderTimeout = true
         if (this.interaction.deferred || this.interaction.replied) return false
         if (type == "reply"){
             const msgFlags: number[] = ephemeral ? [discord.MessageFlags.Ephemeral] : []
@@ -701,14 +700,13 @@ export class ODButtonResponderInstance extends ODBaseResponderInstance {
         }else{
             await this.interaction.deferUpdate()
         }
-        this.didReply = true
         return true
     }
     /**Show a modal as reply to this button. */
     async modal(modal:ODModalBuildResult){
+        this.ignoreResponderTimeout = true
         if (this.interaction.deferred || this.interaction.replied) return false
         await this.interaction.showModal(modal.modal)
-        this.didReply = true
         return true
     }
 
@@ -916,8 +914,8 @@ export class ODDropdownResponderInstanceValues {
 export class ODDropdownResponderInstance extends ODBaseResponderInstance {
     /**The interaction which is the source of this instance. */
     interaction: discord.AnySelectMenuInteraction
-    /**Did a worker already reply to this instance/interaction? */
-    didReply: boolean = false
+    /**Switches to `true` when a worker replies, edits or defers interaction. Will stop the timeout error from being shown. */
+    protected ignoreResponderTimeout: boolean = false
     /**The dropdown type. */
     type: ODDropdownData["type"]
     /**The manager for all values of this dropdown. */
@@ -957,19 +955,18 @@ export class ODDropdownResponderInstance extends ODBaseResponderInstance {
         this.message = interaction.message
         
         setTimeout(async () => {
-            if (!this.didReply){
-                try {
-                    if (!errorCallback){
-                        this.reply({id:new ODId("opendiscord:unknown-error"), ephemeral:true, message:{
-                            content:":x: **Something went wrong while replying to this dropdown!**"
-                        }})
-                    }else{
-                        await errorCallback(this,"dropdown")
-                    }
-                    
-                }catch(err){
-                    process.emit("uncaughtException",err)
+            if (this.ignoreResponderTimeout) return
+            try {
+                if (!errorCallback){
+                    this.reply({id:new ODId("opendiscord:unknown-error"), ephemeral:true, message:{
+                        content:":x: **Something went wrong while replying to this dropdown!**"
+                    }})
+                }else{
+                    await errorCallback(this,"dropdown")
                 }
+                
+            }catch(err){
+                process.emit("uncaughtException",err)
             }
         },timeoutMs ?? 2500)
     }
@@ -980,11 +977,11 @@ export class ODDropdownResponderInstance extends ODBaseResponderInstance {
             const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             if (this.interaction.replied || this.interaction.deferred){
                 const sent = await this.interaction.editReply(finalMessage)
-                this.didReply = true
+                this.ignoreResponderTimeout = true
                 return {success:true,message:sent}
             }else{
                 const sent = await this.interaction.reply(finalMessage)
-                this.didReply = true
+                this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch()}
             }
         }catch{
@@ -997,11 +994,11 @@ export class ODDropdownResponderInstance extends ODBaseResponderInstance {
             const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             if (this.interaction.replied || this.interaction.deferred){
                 const sent = await this.interaction.editReply(finalMessage)
-                this.didReply = true
+                this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch()}
             }else{
                 const sent = await this.interaction.update(finalMessage)
-                this.didReply = true
+                this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch()}
             }
         }catch{
@@ -1010,6 +1007,7 @@ export class ODDropdownResponderInstance extends ODBaseResponderInstance {
     }
     /**Defer this dropdown. */
     async defer(type:"reply"|"update", ephemeral:boolean){
+        this.ignoreResponderTimeout = true
         if (this.interaction.deferred || this.interaction.replied) return false
         if (type == "reply"){
             const msgFlags: number[] = ephemeral ? [discord.MessageFlags.Ephemeral] : []
@@ -1017,14 +1015,13 @@ export class ODDropdownResponderInstance extends ODBaseResponderInstance {
         }else{
             await this.interaction.deferUpdate()
         }
-        this.didReply = true
         return true
     }
     /**Show a modal as reply to this dropdown. */
     async modal(modal:ODModalBuildResult){
+        this.ignoreResponderTimeout = true
         if (this.interaction.deferred || this.interaction.replied) return false
         await this.interaction.showModal(modal.modal)
-        this.didReply = true
         return true
     }
 
@@ -1185,8 +1182,8 @@ export class ODModalResponderInstanceValues {
 export class ODModalResponderInstance extends ODBaseResponderInstance {
     /**The interaction which is the source of this instance. */
     interaction: discord.ModalSubmitInteraction
-    /**Did a worker already reply to this instance/interaction? */
-    didReply: boolean = false
+    /**Switches to `true` when a worker replies, edits or defers interaction. Will stop the timeout error from being shown. */
+    protected ignoreResponderTimeout: boolean = false
     /**The manager for all fields of this modal. */
     values: ODModalResponderInstanceValues
     /**The user who triggered this modal. */
@@ -1208,19 +1205,18 @@ export class ODModalResponderInstance extends ODBaseResponderInstance {
         this.channel = interaction.channel
         
         setTimeout(async () => {
-            if (!this.didReply){
-                try {
-                    if (!errorCallback){
-                        this.reply({id:new ODId("opendiscord:unknown-error"), ephemeral:true, message:{
-                            content:":x: **Something went wrong while replying to this modal!**"
-                        }})
-                    }else{
-                        await errorCallback(this,"modal")
-                    }
-                    
-                }catch(err){
-                    process.emit("uncaughtException",err)
+            if (this.ignoreResponderTimeout) return
+            try {
+                if (!errorCallback){
+                    this.reply({id:new ODId("opendiscord:unknown-error"), ephemeral:true, message:{
+                        content:":x: **Something went wrong while replying to this modal!**"
+                    }})
+                }else{
+                    await errorCallback(this,"modal")
                 }
+                
+            }catch(err){
+                process.emit("uncaughtException",err)
             }
         },timeoutMs ?? 2500)
     }
@@ -1230,7 +1226,7 @@ export class ODModalResponderInstance extends ODBaseResponderInstance {
         try {
             const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             const sent = await this.interaction.followUp(finalMessage)
-            this.didReply = true
+            this.ignoreResponderTimeout = true
             return {success:true,message:sent}
         }catch{
             return {success:false,message:null}
@@ -1242,11 +1238,11 @@ export class ODModalResponderInstance extends ODBaseResponderInstance {
             const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             if (this.interaction.replied || this.interaction.deferred){
                 const sent = await this.interaction.editReply(finalMessage)
-                this.didReply = true
+                this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch()}
             }else{
                 const sent = await this.interaction.reply(finalMessage)
-                this.didReply = true
+                this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch()}
             }
         }catch{
@@ -1255,6 +1251,7 @@ export class ODModalResponderInstance extends ODBaseResponderInstance {
     }
     /**Defer this modal. */
     async defer(type:"reply"|"update", ephemeral:boolean){
+        this.ignoreResponderTimeout = true
         if (this.interaction.deferred || this.interaction.replied) return false
         if (type == "reply"){
             const msgFlags: number[] = ephemeral ? [discord.MessageFlags.Ephemeral] : []
@@ -1262,7 +1259,6 @@ export class ODModalResponderInstance extends ODBaseResponderInstance {
         }else{
             await this.interaction.deferUpdate()
         }
-        this.didReply = true
         return true
     }
 }
@@ -1359,8 +1355,8 @@ export class ODContextMenuResponderManager<IdList extends ODContextMenuResponder
 export class ODContextMenuResponderInstance extends ODBaseResponderInstance {
     /**The interaction which is the source of this instance. */
     interaction: discord.ContextMenuCommandInteraction
-    /**Did a worker already reply to this instance/interaction? */
-    didReply: boolean = false
+    /**Switches to `true` when a worker replies, edits or defers interaction. Will stop the timeout error from being shown. */
+    protected ignoreResponderTimeout: boolean = false
     /**The context menu wich is the source of this instance. */
     menu:ODContextMenu
     /**The user who triggered this context menu. */
@@ -1388,19 +1384,18 @@ export class ODContextMenuResponderInstance extends ODBaseResponderInstance {
         else throw new ODSystemError("ODContextMenuResponderInstance: Invalid context menu type. Should be of the type User/Message!")
         
         setTimeout(async () => {
-            if (!this.didReply){
-                try {
-                    if (!errorCallback){
-                        this.reply({id:new ODId("opendiscord:unknown-error"), ephemeral:true, message:{
-                            content:":x: **Something went wrong while replying to this context menu!**"
-                        }})
-                    }else{
-                        await errorCallback(this,"context-menu")
-                    }
-                    
-                }catch(err){
-                    process.emit("uncaughtException",err)
+            if (this.ignoreResponderTimeout) return
+            try {
+                if (!errorCallback){
+                    this.reply({id:new ODId("opendiscord:unknown-error"), ephemeral:true, message:{
+                        content:":x: **Something went wrong while replying to this context menu!**"
+                    }})
+                }else{
+                    await errorCallback(this,"context-menu")
                 }
+                
+            }catch(err){
+                process.emit("uncaughtException",err)
             }
         },timeoutMs ?? 2500)
     }
@@ -1411,11 +1406,11 @@ export class ODContextMenuResponderInstance extends ODBaseResponderInstance {
             const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             if (this.interaction.replied || this.interaction.deferred){
                 const sent = await this.interaction.editReply(finalMessage)
-                this.didReply = true
+                this.ignoreResponderTimeout = true
                 return {success:true,message:sent}
             }else{
                 const sent = await this.interaction.reply(finalMessage)
-                this.didReply = true
+                this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch()}
             }
         }catch{
@@ -1428,7 +1423,7 @@ export class ODContextMenuResponderInstance extends ODBaseResponderInstance {
             const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             if (this.interaction.replied || this.interaction.deferred){
                 const sent = await this.interaction.editReply(finalMessage)
-                this.didReply = true
+                this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch()}
             }else throw new ODSystemError("Unable to update context menu interaction!")
         }catch{
@@ -1437,19 +1432,19 @@ export class ODContextMenuResponderInstance extends ODBaseResponderInstance {
     }
     /**Defer this context menu. */
     async defer(type:"reply", ephemeral:boolean){
+        this.ignoreResponderTimeout = true
         if (this.interaction.deferred || this.interaction.replied) return false
         if (type == "reply"){
             const msgFlags: number[] = ephemeral ? [discord.MessageFlags.Ephemeral] : []
             await this.interaction.deferReply({flags:msgFlags})
         }
-        this.didReply = true
         return true
     }
     /**Show a modal as reply to this context menu. */
     async modal(modal:ODModalBuildResult){
+        this.ignoreResponderTimeout = true
         if (this.interaction.deferred || this.interaction.replied) return false
         await this.interaction.showModal(modal.modal)
-        this.didReply = true
         return true
     }
 }
