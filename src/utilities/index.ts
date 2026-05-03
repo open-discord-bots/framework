@@ -1,6 +1,7 @@
 import * as fs from "fs"
 import ansis from "ansis"
 import * as api from "../api/index.js"
+import * as discord from "discord.js"
 
 /**## sharedFuses `utility variable`
  * All shared fuses from Open Discord. Please use `opendiscord.sharedFuses` instead!
@@ -164,6 +165,27 @@ export function ordinalNumber(num:number){
  */
 export function trimEmojis(text:string){
     return text.replace(/(\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?)*)/gu,"")
+}
+
+/**## getMessageFromBuildResult `utility function`
+ * Get the final `messageCreateOptions` from a returned build result from builders/components.
+ */
+export function getMessageFromBuildResult(build:api.ODMessageBuildResult|api.ODMessageComponentBuildResult,type:"interaction"|"message"){
+    const msgFlags: number[] = []
+    let msgData: discord.MessageCreateOptions
+    if ('message' in build){
+        //USING BUILDERS (deprecated)
+        msgData = build.message
+        if (build.ephemeral) msgFlags.push(discord.MessageFlags.Ephemeral)
+    }else{
+        //USING COMPONENTS
+        msgData = build.msg
+        if (type == "interaction" && build.ephemeral) msgFlags.push(discord.MessageFlags.Ephemeral) //disabled with regular messages
+        if (build.componentsV2) msgFlags.push(discord.MessageFlags.IsComponentsV2)
+        if (build.supressEmbeds) msgFlags.push(discord.MessageFlags.SuppressEmbeds)
+        if (build.supressNotifications) msgFlags.push(discord.MessageFlags.SuppressNotifications)
+    }
+    return Object.assign(msgData,{flags:msgFlags})
 }
 
 /**## easterEggs `utility object`
