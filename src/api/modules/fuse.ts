@@ -177,6 +177,13 @@ export interface ODSharedFuseList {
     /**Load the default Open Discord modal builders. */
     modalBuildersLoading:boolean,
 
+    /**Load the default Open Discord shared components. */
+    sharedComponentsLoading:boolean,
+    /**Load the default Open Discord message components. */
+    messageComponentsLoading:boolean,
+    /**Load the default Open Discord modal components. */
+    modalComponentsLoading:boolean,
+
     /**Load the default Open Discord command responders. */
     commandRespondersLoading:boolean,
     /**Load the default Open Discord button responders. */
@@ -309,6 +316,10 @@ export class ODSharedFuseManager extends ODFuseManager<ODSharedFuseList> {
             embedBuildersLoading:true,
             messageBuildersLoading:true,
             modalBuildersLoading:true,
+
+            sharedComponentsLoading:true,
+            messageComponentsLoading:true,
+            modalComponentsLoading:true,
 
             commandRespondersLoading:true,
             buttonRespondersLoading:true,
