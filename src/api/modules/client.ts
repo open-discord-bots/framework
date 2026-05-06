@@ -329,14 +329,14 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
             const finalMessage = Object.assign(msgData,{flags:msgFlags})
 
             if (user instanceof discord.User){
-                if (user.bot) return {success:false,message:null}
+                if (user.bot) return {success:false}
                 const channel = await user.createDM()
                 const msg = await channel.send(finalMessage)
                 return {success:true,message:msg}
             }else{
                 const newUser = await this.fetchUser(user)
                 if (!newUser) throw new Error()
-                if (newUser.bot) return {success:false,message:null}
+                if (newUser.bot) return {success:false}
                 const channel = await newUser.createDM()
                 const msg = await channel.send(finalMessage)
                 return {success:true,message:msg}
@@ -348,7 +348,7 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
                     {key:"message-build",value:build.id.value}
                 ])
             }catch{}
-            return {success:false,message:null}
+            return {success:false}
         }
     }
 }

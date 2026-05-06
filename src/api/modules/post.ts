@@ -107,13 +107,13 @@ export class ODPost<ChannelType extends discord.GuildBasedChannel> extends ODMan
     }
     /**Send a message to this channel using the Open Discord builder system */
     async send(build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<true>> {
-        if (!this.channel || !this.channel.isTextBased()) return {success:false,message:null}
+        if (!this.channel || !this.channel.isTextBased()) return {success:false}
         try{
             const finalMessage = this.getMessageFromBuildResult(build,"message")
             const sent = await this.channel.send(finalMessage)
             return {success:true,message:sent}
         }catch{
-            return {success:false,message:null}
+            return {success:false}
         }
     }
     /**Get the final `messageCreateOptions` from a returned build result from builders/components. */

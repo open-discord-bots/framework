@@ -47,9 +47,7 @@ export type ODResponderSendResult<InGuild extends boolean> = {
     message:discord.Message<InGuild>
 } | {
     /**Did the message get sent successfully? */
-    success:boolean,
-    /**The message that got sent. */
-    message:null
+    success:false
 }
 
 /**## ODResponderManager `class`
@@ -485,9 +483,9 @@ export class ODCommandResponderInstance extends ODBaseResponderInstance {
                 const sent = await this.interaction.channel.send(finalMessage)
                 this.ignoreResponderTimeout = true
                 return {success:true,message:sent}
-            }else return {success:false,message:null}
+            }else return {success:false}
         }catch{
-            return {success:false,message:null}
+            return {success:false}
         }
     }
     /**Defer this command. */
@@ -670,7 +668,7 @@ export class ODButtonResponderInstance extends ODBaseResponderInstance {
                 return {success:true,message:await sent.fetch()}
             }
         }catch{
-            return {success:false,message:null}
+            return {success:false}
         }
     }
     /**Update the message of this button. */
@@ -687,7 +685,7 @@ export class ODButtonResponderInstance extends ODBaseResponderInstance {
                 return {success:true,message:await sent.fetch()}
             }
         }catch{
-            return {success:false,message:null}
+            return {success:false}
         }
     }
     /**Defer this button. */
@@ -985,7 +983,7 @@ export class ODDropdownResponderInstance extends ODBaseResponderInstance {
                 return {success:true,message:await sent.fetch()}
             }
         }catch{
-            return {success:false,message:null}
+            return {success:false}
         }
     }
     /**Update the message of this dropdown. */
@@ -1002,7 +1000,7 @@ export class ODDropdownResponderInstance extends ODBaseResponderInstance {
                 return {success:true,message:await sent.fetch()}
             }
         }catch{
-            return {success:false,message:null}
+            return {success:false}
         }
     }
     /**Defer this dropdown. */
@@ -1229,7 +1227,7 @@ export class ODModalResponderInstance extends ODBaseResponderInstance {
             this.ignoreResponderTimeout = true
             return {success:true,message:sent}
         }catch{
-            return {success:false,message:null}
+            return {success:false}
         }
     }
     /**Update the message of this modal. */
@@ -1246,7 +1244,7 @@ export class ODModalResponderInstance extends ODBaseResponderInstance {
                 return {success:true,message:await sent.fetch()}
             }
         }catch{
-            return {success:false,message:null}
+            return {success:false}
         }
     }
     /**Defer this modal. */
@@ -1414,7 +1412,7 @@ export class ODContextMenuResponderInstance extends ODBaseResponderInstance {
                 return {success:true,message:await sent.fetch()}
             }
         }catch{
-            return {success:false,message:null}
+            return {success:false}
         }
     }
     /**Update the message of this context menu. */
@@ -1427,7 +1425,7 @@ export class ODContextMenuResponderInstance extends ODBaseResponderInstance {
                 return {success:true,message:await sent.fetch()}
             }else throw new ODSystemError("Unable to update context menu interaction!")
         }catch{
-            return {success:false,message:null}
+            return {success:false}
         }
     }
     /**Defer this context menu. */
