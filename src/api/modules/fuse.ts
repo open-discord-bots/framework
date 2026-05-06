@@ -161,6 +161,11 @@ export interface ODSharedFuseList {
     /**Load the default Open Discord text commands. */
     textCommandLoading:boolean,
 
+    /**Load the default Open Discord message states. */
+    stateLoading:boolean,
+    /**Initiate the default Open Discord message states. */
+    stateInitiating:boolean,
+
     /**Load the default Open Discord button builders. */
     buttonBuildersLoading:boolean,
     /**Load the default Open Discord dropdown builders. */
@@ -304,6 +309,9 @@ export class ODSharedFuseManager extends ODFuseManager<ODSharedFuseList> {
             forceContextMenuRegistration:false,
             allowContextMenuRemoval:true,
             textCommandLoading:true,
+
+            stateLoading:true,
+            stateInitiating:true,
 
             buttonBuildersLoading:true,
             dropdownBuildersLoading:true,

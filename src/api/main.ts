@@ -24,6 +24,7 @@ import { ODClientManager } from "./modules/client.js"
 import { ODSharedFuseManager } from "./modules/fuse.js"
 import { ODStartScreenManager } from "./modules/startscreen.js"
 import { ODComponentManager } from "./modules/component.js"
+import { ODStateManager } from "./modules/state.js"
 
 /**## ODMainManagers `interface`
  * The global properties for the main class of the bot.
@@ -89,6 +90,8 @@ export interface ODMainManagers {
     code: ODCodeManager
     /**A collection of static Discord post channels. It allows the bot to find back log, transcript or configured channels based on a linked ID. */
     posts: ODPostManager
+    /**A system for tracking messages or linking metadata, states or progress to Discord messages (ID-based). Features automatic garbage collection. */
+    states: ODStateManager
     
     /**A wrapper around the `discord.Client` class. It handles client login, activity and registering text/slash commands. */
     client: ODClientManager
@@ -140,6 +143,7 @@ export abstract class ODMain implements ODMainManagers {
     readonly statistics: ODStatisticManager
     readonly code: ODCodeManager
     readonly posts: ODPostManager
+    readonly states: ODStateManager
     
     readonly client: ODClientManager
     readonly sharedFuses: ODSharedFuseManager
@@ -179,6 +183,7 @@ export abstract class ODMain implements ODMainManagers {
         this.statistics = managers.statistics
         this.code = managers.code
         this.posts = managers.posts
+        this.states = managers.states
         
         this.sharedFuses = managers.sharedFuses
         this.env = managers.env
