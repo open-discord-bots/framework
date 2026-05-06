@@ -142,9 +142,6 @@ export interface ODSharedFuseList {
     /**Load the default Open Discord client activity initialization (& status refresh). */
     clientActivityInitiating:boolean,
 
-    /**Load the default Open Discord priority levels. */
-    priorityLoading:boolean,
-
     /**Load the default Open Discord slash commands. */
     slashCommandLoading:boolean,
     /**Load the default Open Discord slash command registerer (register slash cmds in discord). */
@@ -298,8 +295,6 @@ export class ODSharedFuseManager extends ODFuseManager<ODSharedFuseList> {
             clientActivityLoading:true,
             clientActivityInitiating:true,
 
-            priorityLoading:true,
-            
             slashCommandLoading:true,
             slashCommandRegistering:true,
             forceSlashCommandRegistration:false,

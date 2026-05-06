@@ -89,7 +89,7 @@ export abstract class ODDatabase<IdList extends ODDatabaseIdConstraint = ODDatab
     abstract get(category:string, key:string): ODOptionalPromise<ODValidJsonType|undefined>
     abstract get(category:string, key:string): ODOptionalPromise<ODValidJsonType|undefined>
     
-    /**Delete a specific category & key in the database */
+    /**Delete a specific category & key in the database. Returns `true` when deleted. */
     abstract delete<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string): ODOptionalPromise<boolean>
     abstract delete(category:string, key:string): ODOptionalPromise<boolean>
     abstract delete(category:string, key:string): ODOptionalPromise<boolean>

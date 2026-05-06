@@ -123,7 +123,7 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
     }
     /**Get all servers the bot is part of. */
     async getGuilds(): Promise<discord.Guild[]> {
-        if (!this.initiated) throw new ODSystemError("Client isn't initiated yet!")
+        if (!this.initiated) throw new ODSystemError("ODClientManager() => Unable to use this method. Client isn't initiated yet.")
         if (!this.ready) throw new ODSystemError("Client isn't ready yet!")
         
         return this.client.guilds.cache.map((guild) => guild)
@@ -146,15 +146,15 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
     /**Log-in with a discord auth token. Rejects returns `false` using 'softErrors' on failure. */
     login(softErrors?:boolean): Promise<boolean> {
         return new Promise(async (resolve,reject) => {
-            if (!this.initiated) reject("Client isn't initiated yet!")
-            if (!this.token) reject("Client doesn't have a token!")
+            if (!this.initiated) reject("ODClientManager.login() => Unable to use this method. Client isn't initiated yet.")
+            if (!this.token) reject("ODClientManager.login() => Unable to login, client does not have a token.")
             
             try {
                 this.client.once("clientReady",async () => {
                     this.ready = true
 
                     //set slashCommandManager & contextMenuManager to client applicationCommandManager
-                    if (!this.client.application) throw new ODSystemError("Couldn't get client application for slashCommand & contextMenu managers!")
+                    if (!this.client.application) throw new ODSystemError("ODClientManager.login() => Unable to fetch client application for slashCommand & contextMenu managers.")
                     this.slashCommands.commandManager = this.client.application.commands
                     this.contextMenus.commandManager = this.client.application.commands
                     this.autocompletes.commandManager = this.client.application.commands
@@ -177,10 +177,10 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
             }
         })
     }
-    /**A simplified shortcut to get a `discord.User` :) */
+    /**A simplified shortcut to get a `discord.User`. */
     async fetchUser(id:string): Promise<discord.User|null> {
-        if (!this.initiated) throw new ODSystemError("Client isn't initiated yet!")
-        if (!this.ready) throw new ODSystemError("Client isn't ready yet!")
+        if (!this.initiated) throw new ODSystemError("ODClientManager.fetchUser() => Unable to use this method. Client isn't initiated yet.")
+        if (!this.ready) throw new ODSystemError("ODClientManager.fetchUser() => Unable to use this method. Client isn't ready and logged in yet.")
 
         try{
             return await this.client.users.fetch(id)
@@ -188,10 +188,10 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
             return null
         }
     }
-    /**A simplified shortcut to get a `discord.Guild` :) */
+    /**A simplified shortcut to get a `discord.Guild`. */
     async fetchGuild(id:string): Promise<discord.Guild|null> {
-        if (!this.initiated) throw new ODSystemError("Client isn't initiated yet!")
-        if (!this.ready) throw new ODSystemError("Client isn't ready yet!")
+        if (!this.initiated) throw new ODSystemError("ODClientManager.fetchGuild() => Unable to use this method. Client isn't initiated yet.")
+        if (!this.ready) throw new ODSystemError("ODClientManager.fetchGuild() => Unable to use this method. Client isn't ready and logged in yet.")
 
         try{
             return await this.client.guilds.fetch(id)
@@ -199,10 +199,10 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
             return null
         }
     }
-    /**A simplified shortcut to get a `discord.Channel` :) */
+    /**A simplified shortcut to get a `discord.Channel`. */
     async fetchChannel(id:string): Promise<discord.Channel|null> {
-        if (!this.initiated) throw new ODSystemError("Client isn't initiated yet!")
-        if (!this.ready) throw new ODSystemError("Client isn't ready yet!")
+        if (!this.initiated) throw new ODSystemError("ODClientManager.fetchChannel() => Unable to use this method. Client isn't initiated yet.")
+        if (!this.ready) throw new ODSystemError("ODClientManager.fetchChannel() => Unable to use this method. Client isn't ready and logged in yet.")
 
         try{
             return await this.client.channels.fetch(id)
@@ -210,10 +210,23 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
             return null
         }
     }
-    /**A simplified shortcut to get a `discord.GuildBasedChannel` :) */
+    /**A simplified shortcut to get a `discord.TextChannel` (guild or DM). */
+    async fetchTextChannel(id:string): Promise<discord.TextChannel|discord.DMChannel|discord.PartialDMChannel|null> {
+        if (!this.initiated) throw new ODSystemError("ODClientManager.fetchTextChannel() => Unable to use this method. Client isn't initiated yet.")
+        if (!this.ready) throw new ODSystemError("ODClientManager.fetchTextChannel() => Unable to use this method. Client isn't ready and logged in yet.")
+
+        try{
+            const channel = await this.client.channels.fetch(id)
+            if (!channel || (channel.type != discord.ChannelType.GuildText && channel.type != discord.ChannelType.DM)) return null
+            return channel
+        }catch{
+            return null
+        }
+    }
+    /**A simplified shortcut to get a `discord.GuildBasedChannel`. */
     async fetchGuildChannel(guildId:string|discord.Guild, id:string): Promise<discord.GuildBasedChannel|null> {
-        if (!this.initiated) throw new ODSystemError("Client isn't initiated yet!")
-        if (!this.ready) throw new ODSystemError("Client isn't ready yet!")
+        if (!this.initiated) throw new ODSystemError("ODClientManager.fetchGuildChannel() => Unable to use this method. Client isn't initiated yet.")
+        if (!this.ready) throw new ODSystemError("ODClientManager.fetchGuildChannel() => Unable to use this method. Client isn't ready and logged in yet.")
 
         try{
             const guild = (guildId instanceof discord.Guild) ? guildId : await this.fetchGuild(guildId)
@@ -224,10 +237,10 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
             return null
         }
     }
-    /**A simplified shortcut to get a `discord.TextChannel` :) */
+    /**A simplified shortcut to get a `discord.TextChannel`. */
     async fetchGuildTextChannel(guildId:string|discord.Guild, id:string): Promise<discord.TextChannel|null> {
-        if (!this.initiated) throw new ODSystemError("Client isn't initiated yet!")
-        if (!this.ready) throw new ODSystemError("Client isn't ready yet!")
+        if (!this.initiated) throw new ODSystemError("ODClientManager.fetchGuildTextChannel() => Unable to use this method. Client isn't initiated yet.")
+        if (!this.ready) throw new ODSystemError("ODClientManager.fetchGuildTextChannel() => Unable to use this method. Client isn't ready and logged in yet.")
 
         try{
             const guild = (guildId instanceof discord.Guild) ? guildId : await this.fetchGuild(guildId)
@@ -239,10 +252,10 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
             return null
         }
     }
-    /**A simplified shortcut to get a `discord.CategoryChannel` :) */
+    /**A simplified shortcut to get a `discord.CategoryChannel`. */
     async fetchGuildCategoryChannel(guildId:string|discord.Guild, id:string): Promise<discord.CategoryChannel|null> {
-        if (!this.initiated) throw new ODSystemError("Client isn't initiated yet!")
-        if (!this.ready) throw new ODSystemError("Client isn't ready yet!")
+        if (!this.initiated) throw new ODSystemError("ODClientManager.fetchGuildCategoryChannel() => Unable to use this method. Client isn't initiated yet.")
+        if (!this.ready) throw new ODSystemError("ODClientManager.fetchGuildCategoryChannel() => Unable to use this method. Client isn't ready and logged in yet.")
 
         try{
             const guild = (guildId instanceof discord.Guild) ? guildId : await this.fetchGuild(guildId)
@@ -254,12 +267,11 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
             return null
         }
     }
-    /**A simplified shortcut to get a `discord.GuildMember` :) */
+    /**A simplified shortcut to get a `discord.GuildMember`. */
     async fetchGuildMember(guildId:string|discord.Guild, id:string): Promise<discord.GuildMember|null> {
-        if (!this.initiated) throw new ODSystemError("Client isn't initiated yet!")
-        if (!this.ready) throw new ODSystemError("Client isn't ready yet!")
-        if (typeof id != "string") throw new ODSystemError("TEMP ERROR => ODClientManager.fetchGuildMember() => id param isn't string")
-
+        if (!this.initiated) throw new ODSystemError("ODClientManager.fetchGuildMember() => Unable to use this method. Client isn't initiated yet.")
+        if (!this.ready) throw new ODSystemError("ODClientManager.fetchGuildMember() => Unable to use this method. Client isn't ready and logged in yet.")
+        
         try{
             const guild = (guildId instanceof discord.Guild) ? guildId : await this.fetchGuild(guildId)
             if (!guild) return null
@@ -268,12 +280,11 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
             return null
         }
     }
-    /**A simplified shortcut to get a `discord.Role` :) */
+    /**A simplified shortcut to get a `discord.Role`. */
     async fetchGuildRole(guildId:string|discord.Guild, id:string): Promise<discord.Role|null> {
-        if (!this.initiated) throw new ODSystemError("Client isn't initiated yet!")
-        if (!this.ready) throw new ODSystemError("Client isn't ready yet!")
-        if (typeof id != "string") throw new ODSystemError("TEMP ERROR => ODClientManager.fetchGuildRole() => id param isn't string")
-
+        if (!this.initiated) throw new ODSystemError("ODClientManager.fetchGuildRole() => Unable to use this method. Client isn't initiated yet.")
+        if (!this.ready) throw new ODSystemError("ODClientManager.fetchGuildRole() => Unable to use this method. Client isn't ready and logged in yet.")
+        
         try{
             const guild = (guildId instanceof discord.Guild) ? guildId : await this.fetchGuild(guildId)
             if (!guild) return null
@@ -282,30 +293,23 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
             return null
         }
     }
-    /**A simplified shortcut to get a `discord.Message` :) */
-    async fetchGuildChannelMessage(guildId:string|discord.Guild, channelId:string|discord.TextChannel, id:string): Promise<discord.Message<true>|null>
-    async fetchGuildChannelMessage(channelId:discord.TextChannel, id:string): Promise<discord.Message<true>|null>
-    async fetchGuildChannelMessage(guildId:string|discord.Guild|discord.TextChannel, channelId:string|discord.TextChannel|string, id?:string): Promise<discord.Message<true>|null> {
-        if (!this.initiated) throw new ODSystemError("Client isn't initiated yet!")
-        if (!this.ready) throw new ODSystemError("Client isn't ready yet!")
+    /**A simplified shortcut to get a `discord.Message`. */
+    async fetchChannelMessage(channelId:string|discord.TextChannel|discord.DMChannel, id:string): Promise<discord.Message<boolean>|null> {
+        if (!this.initiated) throw new ODSystemError("ODClientManager.fetchChannelMessage() => Unable to use this method. Client isn't initiated yet.")
+        if (!this.ready) throw new ODSystemError("ODClientManager.fetchChannelMessage() => Unable to use this method. Client isn't ready and logged in yet.")
 
         try{
-            if (guildId instanceof discord.TextChannel && typeof channelId == "string"){
-                const channel = guildId
-                return await channel.messages.fetch(channelId)
-            }else if (!(guildId instanceof discord.TextChannel) && id){
-                const channel = (channelId instanceof discord.TextChannel) ? channelId : await this.fetchGuildTextChannel(guildId,channelId)
-                if (!channel) return null
-                return await channel.messages.fetch(id)
-            }else return null
+            const channel = (channelId instanceof discord.TextChannel || channelId instanceof discord.DMChannel) ? channelId : await this.fetchTextChannel(channelId)
+            if (!channel) return null
+            return await channel.messages.fetch(id)
         }catch{
             return null
         }
     }
-    /**A simplified shortcut to send a DM to a user :) */
+    /**A simplified shortcut to send a DM to a user. */
     async sendUserDm(user:string|discord.User, build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<false>> {
-        if (!this.initiated) throw new ODSystemError("Client isn't initiated yet!")
-        if (!this.ready) throw new ODSystemError("Client isn't ready yet!")
+        if (!this.initiated) throw new ODSystemError("ODClientManager.sendUserDm() => Unable to use this method. Client isn't initiated yet.")
+        if (!this.ready) throw new ODSystemError("ODClientManager.sendUserDm() => Unable to use this method. Client isn't ready and logged in yet.")
 
         try{
             const msgFlags: number[] = []
@@ -339,7 +343,7 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
             }
         }catch{
             try{
-                this.debug.console.log("Failed to send DM to user! ","warning",[
+                this.debug.console.log("ODClientManager.sendUserDm() => Failed to send DM. User may have DMs disabled for non-friends. ","warning",[
                     {key:"id",value:(user instanceof discord.User ? user.id : user)},
                     {key:"message-build",value:build.id.value}
                 ])
@@ -417,7 +421,7 @@ export class ODClientActivityManager {
 
     /**Update the client status */
     private updateClientActivity(type:ODClientActivityType,text:string){
-        if (!this.client.client.user) throw new ODSystemError("Couldn't set client status: client.user == undefined")
+        if (!this.client.client.user) throw new ODSystemError("ODClientActivityManager.updateClientActivity() => Couldn't set client status: client.user is 'undefined'.")
         if (type == false){
             this.client.client.user.setActivity()
             return
