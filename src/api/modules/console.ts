@@ -217,7 +217,9 @@ export class ODError {
     }
     /**Create a more-detailed, non-colored version of this error to store it in the `debug.txt` file! */
     toDebugString(){
-        return "[UNKNOWN OD ERROR]: "+this.error.message+" | origin: "+this.origin+"\n"+this.error.stack
+        const date = new Date()
+        const dstring = `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
+        return "["+dstring+" UNKNOWN OPENDISCORD ERROR]: "+this.error.message+" | Error Origin: "+this.origin+" | Stacktrace:\n"+this.error.stack
     }
 }
 
