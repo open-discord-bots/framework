@@ -10,16 +10,20 @@ import * as discord from "discord.js"
 /**## ODStateKey `type`
  * The key template for message states.
  */
-export interface ODStateKey {
-    /**A valid discord server/guild ID or instance. */
-    guild?:discord.Guild|string|null,
+export type ODStateKey<WithGuildKey extends boolean,WithUserKey extends boolean> = {
     /**A valid discord channel ID or instance. */
     channel:discord.Channel|string,
     /**A valid discord message ID or instance. */
     message:discord.Message|string,
-    /**A valid discord user ID or instance. */
-    user?:discord.User|discord.GuildMember|string|null
 }
+& (WithGuildKey extends true ? {
+    /**A valid discord server/guild ID or instance. */
+    guild:discord.Guild|string,
+} : {})
+& (WithUserKey extends true ? {
+    /**A valid discord user ID or instance. */
+    user:discord.User|discord.GuildMember|string
+} : {})
 
 /**## ODStateData `type`
  * The raw data template for message states used for storing in the database.
@@ -69,7 +73,7 @@ export interface ODStateSettings {
  * 
  * Features automatic garbage collection to clear expired states. 
  */
-export class ODState<StateData extends any> extends ODManagerData {
+export class ODState<StateData extends any,WithGuildKey extends boolean,WithUserKey extends boolean> extends ODManagerData {
     /**Alias to Open Discord message states database. */
     protected database: ODDatabase<ODDatabaseIdConstraint>
     /**Alias to Open Discord client manager. */
@@ -175,20 +179,20 @@ export class ODState<StateData extends any> extends ODManagerData {
         }
     }
     /**Transform the object-based message state key contents to a string. */
-    protected transformKey(key:ODStateKey){
-        const newGuild = (!key.guild) ? "NULL" : (typeof key.guild === "string" ? key.guild : key.guild.id)
+    protected transformKey(key:ODStateKey<WithGuildKey,WithUserKey>){
+        const newGuild = (!("guild" in key) || !key.guild) ? "NULL" : (typeof key.guild === "string" ? key.guild : key.guild.id)
         const newChannel = (!key.channel) ? "NULL" : (typeof key.channel === "string" ? key.channel : key.channel.id)
         const newMessage = (!key.message) ? "NULL" : (typeof key.message === "string" ? key.message : key.message.id)
-        const newUser = (!key.user) ? "NULL" : (typeof key.user === "string" ? key.user : key.user.id)
+        const newUser = (!("user" in key) || !key.user) ? "NULL" : (typeof key.user === "string" ? key.user : key.user.id)
 
         return `G:${newGuild},C:${newChannel},M:${newMessage},U:${newUser}`
     }
     /**Transform the message state data contents for storage in the database. */
-    protected transformData(key:ODStateKey,data:StateData,isEphemeral:boolean,keepCreatedDate?:number): ODStateData<StateData> {
-        const guildId = (!key.guild) ? null : (typeof key.guild === "string" ? key.guild : key.guild.id)
+    protected transformData(key:ODStateKey<WithGuildKey,WithUserKey>,data:StateData,isEphemeral:boolean,keepCreatedDate?:number): ODStateData<StateData> {
+        const guildId = (!("guild" in key) || !key.guild) ? null : (typeof key.guild === "string" ? key.guild : key.guild.id)
         const channelId = (typeof key.channel === "string" ? key.channel : key.channel.id)
         const messageId = (typeof key.message === "string" ? key.message : key.message.id)
-        const userId = (!key.user) ? null : (typeof key.user === "string" ? key.user : key.user.id)
+        const userId = (!("user" in key) || !key.user) ? null : (typeof key.user === "string" ? key.user : key.user.id)
         const createdDate = keepCreatedDate ?? Date.now()
         const modifiedDate = Date.now()
 
@@ -209,7 +213,7 @@ export class ODState<StateData extends any> extends ODManagerData {
         else return null
     }
     /**Set a message state using guild, channel & message id as key. Returns `true` when overwritten. */
-    async setMsgState(key:ODStateKey,data:StateData,isEphemeral:boolean): Promise<boolean> {
+    async setMsgState(key:ODStateKey<WithGuildKey,WithUserKey>,data:StateData,isEphemeral:boolean): Promise<boolean> {
         const rawKey = this.transformKey(key)
         
         const existingData = await this.getMsgState(key)
@@ -217,14 +221,14 @@ export class ODState<StateData extends any> extends ODManagerData {
         return await this.database.set(this.id.value,rawKey,contents)
     }
     /**Get a message state using guild, channel & message id as key. */
-    async getMsgState(key:ODStateKey): Promise<ODStateData<StateData>|null> {
+    async getMsgState(key:ODStateKey<WithGuildKey,WithUserKey>): Promise<ODStateData<StateData>|null> {
         const rawKey = this.transformKey(key)
         const rawData = await this.database.get(this.id.value,rawKey)
         if (typeof rawData !== "object") return null
         else return rawData as ODStateData<StateData>
     }
     /**Delete a message state using guild, channel & message id as key. Returns `true` when deleted. */
-    async deleteMsgState(key:ODStateKey): Promise<boolean> {
+    async deleteMsgState(key:ODStateKey<WithGuildKey,WithUserKey>): Promise<boolean> {
         const rawKey = this.transformKey(key)
         return await this.database.delete(this.id.value,rawKey)
     }
@@ -247,14 +251,14 @@ export class ODState<StateData extends any> extends ODManagerData {
 /**## ODStateManagerIdConstraint `type`
  * The constraint/layout for id mappings/interfaces of the `ODStateManager` class.
  */
-export type ODStateManagerIdConstraint = Record<string,ODState<any>>
+export type ODStateManagerIdConstraint = Record<string,ODState<any,boolean,boolean>>
 
 /**## ODStateManager `class`
  * The Open Discord state manager is a system for tracking messages or linking metadata, states or progress to Discord messages (ID-based).
  * 
  * Features automatic garbage collection to clear expired states. 
  */
-export class ODStateManager<IdList extends ODStateManagerIdConstraint = ODStateManagerIdConstraint> extends ODManager<ODState<any>> {
+export class ODStateManager<IdList extends ODStateManagerIdConstraint = ODStateManagerIdConstraint> extends ODManager<ODState<any,boolean,boolean>> {
     constructor(debug:ODDebugger){
         super(debug,"state")
     }
@@ -266,22 +270,22 @@ export class ODStateManager<IdList extends ODStateManagerIdConstraint = ODStateM
         }
     }
 
-    add(data:ODState<any>, overwrite?:boolean): boolean {
+    add(data:ODState<any,boolean,boolean>, overwrite?:boolean): boolean {
         data.useDebug(this.debug)
         return super.add(data,overwrite)
     }
 
     get<StateId extends keyof ODNoGeneric<IdList>>(id:StateId): IdList[StateId]
-    get(id:ODValidId): ODState<any>|null
+    get(id:ODValidId): ODState<any,boolean,boolean>|null
     
-    get(id:ODValidId): ODState<any>|null {
+    get(id:ODValidId): ODState<any,boolean,boolean>|null {
         return super.get(id)
     }
 
     remove<StateId extends keyof ODNoGeneric<IdList>>(id:StateId): IdList[StateId]
-    remove(id:ODValidId): ODState<any>|null
+    remove(id:ODValidId): ODState<any,boolean,boolean>|null
     
-    remove(id:ODValidId): ODState<any>|null {
+    remove(id:ODValidId): ODState<any,boolean,boolean>|null {
         return super.remove(id)
     }
 
