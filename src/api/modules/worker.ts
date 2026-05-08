@@ -29,6 +29,11 @@ export class ODWorker<Instance, Origin extends string, Params> extends ODManager
         this.priority = priority
         this.callback = callback
     }
+
+    /**Duplicate this worker. Warning: If the callback accesses external variables (outside parameters), the clone will still use those variables. This might result in unexpected behaviour! */
+    duplicate(newId?:ODValidId): ODWorker<Instance,Origin,Params> {
+        return new ODWorker<Instance,Origin,Params>(newId ?? this.id.value,this.priority,this.callback)
+    }
 }
 
 /**## ODWorker `class`

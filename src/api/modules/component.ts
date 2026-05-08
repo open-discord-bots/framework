@@ -5,6 +5,7 @@ import { ODId, ODValidId, ODSystemError, ODManagerData, ODNoGeneric, ODManager, 
 import * as discord from "discord.js"
 import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker.js"
 import { ODDebugger } from "./console.js"
+import { ODMessage, ODMessageInstance } from "./builder.js"
 
 /**## ODComponentFactoryInstance `class`
  * An Open Discord component factory instance.
@@ -49,6 +50,14 @@ export class ODComponentFactory<Component extends ODComponent<object,any>,Origin
         if (!rootComponent) throw new ODSystemError("ODComponentFactory.build() --> Failed to build component! (id: "+this.id.value+")")
         return rootComponent.build()
     }
+    /**Duplicate this component factory. Warning: If workers access external variables (outside parameters), the clone will still use those variables. This might result in unexpected behaviour! */
+    duplicate(newId?:ODValidId): ODComponentFactory<Component,Origin,Params,WorkerIds> {
+        const newMessage = new ODComponentFactory<Component,Origin,Params,WorkerIds>(newId ?? this.id.value)
+        for (const worker of this.workers.getAll()){
+            newMessage.workers.add(worker.duplicate())
+        }
+        return newMessage
+    }
 }
 
 /**## ODComponentManagerIdConstraint `type`
@@ -77,6 +86,46 @@ export class ODBaseComponentManager<IdList extends ODComponentManagerIdConstrain
     remove(id:ODValidId): ODComponentFactory<Component,string,{},string>|null
     
     remove(id:ODValidId): ODComponentFactory<Component,string,{},string>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof ODNoGeneric<IdList>): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
+    }
+}
+
+
+/**## ODComponentModifierManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODComponentModifierManager` class.
+ */
+export type ODComponentModifierManagerIdConstraint = Record<string,ODMessageComponentModifier<string,{}>>
+
+/**## ODComponentModifierManager `class`
+ * An Open Discord component modifier manager.
+ * 
+ * It contains a collection of all `ODMessageComponentModifier`'s. You can:
+ * - Patch, modify, expand or update existing messages
+ * - It Does not affect the original message (cloned)
+ */
+export class ODComponentModifierManager<IdList extends ODComponentModifierManagerIdConstraint = ODComponentModifierManagerIdConstraint> extends ODManager<ODMessageComponentModifier<string,{}>> {
+    constructor(debug:ODDebugger){
+        super(debug,"component modifier")
+    }
+    
+    get<ModifierId extends keyof ODNoGeneric<IdList>>(id:ModifierId): IdList[ModifierId]
+    get(id:ODValidId): ODMessageComponentModifier<string,{}>|null
+    
+    get(id:ODValidId): ODMessageComponentModifier<string,{}>|null {
+        return super.get(id)
+    }
+
+    remove<ModifierId extends keyof ODNoGeneric<IdList>>(id:ModifierId): IdList[ModifierId]
+    remove(id:ODValidId): ODMessageComponentModifier<string,{}>|null
+    
+    remove(id:ODValidId): ODMessageComponentModifier<string,{}>|null {
         return super.remove(id)
     }
 
@@ -135,7 +184,8 @@ export class ODModalComponentManager<IdList extends ODComponentManagerIdConstrai
 export class ODComponentManager<
     SharedIdList extends ODComponentManagerIdConstraint = ODComponentManagerIdConstraint,
     MessageIdList extends ODComponentManagerIdConstraint = ODComponentManagerIdConstraint,
-    ModalIdList extends ODComponentManagerIdConstraint = ODComponentManagerIdConstraint
+    ModalIdList extends ODComponentManagerIdConstraint = ODComponentManagerIdConstraint,
+    ModifierIdList extends ODComponentModifierManagerIdConstraint = ODComponentModifierManagerIdConstraint
 > {
     /**The manager for all shared components. */
     shared: ODSharedComponentManager<SharedIdList>
@@ -143,11 +193,14 @@ export class ODComponentManager<
     messages: ODMessageComponentManager<MessageIdList>
     /**The manager for all modals components. */
     modals: ODModalComponentManager<ModalIdList>
+    /**The collection of all component modifiers. */
+    modifiers: ODComponentModifierManager<ModifierIdList>
 
     constructor(debug:ODDebugger){
         this.shared = new ODSharedComponentManager(debug)
         this.messages = new ODMessageComponentManager(debug)
         this.modals = new ODModalComponentManager(debug)
+        this.modifiers = new ODComponentModifierManager(debug)
     }
 }
 
@@ -160,21 +213,58 @@ export class ODComponentManager<
  */
 export type ODComponentInferBuildResult<Component> = Component extends ODComponent<object,infer BuildResult> ? BuildResult : never
 
+/**## ODComponentType `type`
+ * The type of an `ODComponent`.
+ */
+export type ODComponentType = "message"|"simple-message"|"modal"|"action-row"|"container"|"section"|"label"|"separator"|"text"|"file"|"gallery"|"thumbnail"|"simple-content"|"simple-embed"|"simple-poll"|"button"|"short-input"|"paragraph-input"|"dropdown"|"radio-group"|"checkbox-group"|"checkbox"|"file-upload"
+
+/**## ODComponentType `type`
+ * Get the `ODComponent` class for a specific `ODComponentType`.
+ */
+export interface ODComponentForType {
+    "message":ODMessageComponent,
+    "simple-message":ODSimpleMessageComponent,
+    "modal":ODModalComponent,
+    "action-row":ODActionRowComponent,
+    "container":ODContainerComponent,
+    "section":ODSectionComponent,
+    "label":ODLabelComponent,
+    "separator":ODSeparatorComponent,
+    "text":ODTextComponent,
+    "file":ODFileComponent,
+    "gallery":ODGalleryComponent,
+    "thumbnail":ODThumbnailComponent,
+    "simple-content":ODContentComponent,
+    "simple-embed":ODEmbedComponent,
+    "simple-poll":ODPollComponent,
+    "button":ODButtonComponent,
+    "short-input":ODShortInputComponent,
+    "paragraph-input":ODParagraphInputComponent,
+    "dropdown":ODDropdownComponent,
+    "radio-group":ODRadioGroupComponent,
+    "checkbox-group":ODCheckboxGroupComponent,
+    "checkbox":ODCheckboxComponent,
+    "file-upload":ODFileUploadComponent,
+}
+
 /**## ODComponent `class`
  * An Open Discord message/modal component.
  * 
  * This class itself doesn't do anything, but is a blueprint for other   
  * `ODComponent` classes which represent the new Discord message/modal components.
  */
-export abstract class ODComponent<Data extends object,BuildResult> {
+export abstract class ODComponent<Data extends object,BuildResult,Type extends ODComponentType = ODComponentType> {
     /**The id of this message/modal component. */
     id: ODId
     /**The data or configuration of this message/modal component. */
     readonly data: Data
+    /**The type of this component. */
+    readonly type: Type
 
-    constructor(id:ODValidId,data:Data){
+    constructor(id:ODValidId,type:Type,data:Data){
         this.id = new ODId(id)
         this.data = data
+        this.type = type
     }
 
     /**Build this component. Returns `null` when invalid. */
@@ -189,7 +279,7 @@ export abstract class ODComponent<Data extends object,BuildResult> {
  */
 export abstract class ODGroupComponent<Data extends object,ChildComponent extends ODComponent<object,any>,BuildResult> extends ODComponent<Data,BuildResult> {
     /**The collection of child components. */
-    readonly children: ChildComponent[] = []
+    children: ChildComponent[] = []
 
     /**Add a new component to this group. There are multiple modes available:
      * - `start`: insert at the start of the list.
@@ -223,14 +313,54 @@ export abstract class ODGroupComponent<Data extends object,ChildComponent extend
             }
         }
     }
-    /**Get a component with a certain ID in this group. Returns `null` if non-existent. */
-    getComponent(id:ODValidId){
+    /**Get a component with a certain ID in this group. Returns `null` if non-existent. Also able to search for components recursively. */
+    getComponent(id:ODValidId): ChildComponent|null
+    getComponent(id:ODValidId,recursive:true,recursiveLimit?:number): ODComponent<any,any,ODComponentType>|null
+    getComponent(id:ODValidId,recursive?:boolean,recursiveLimit:number=15){
         const component = this.children.find((c) => c.id.value === new ODId(id).value)
-        return component ?? null
+        if (component) return component
+        else if (recursive && (recursiveLimit > 0)){
+            for (const child of this.children){
+                if (child instanceof ODGroupComponent){
+                    const finalComponent = child.getComponent(id,recursive,recursiveLimit-1) as ODComponent<any,any,ODComponentType>
+                    if (finalComponent) return finalComponent
+                }else if (child instanceof ODParentComponent){
+                    const finalComponent = child.child as ODComponent<any,any,ODComponentType>
+                    if (finalComponent.id.value === new ODId(id).value) return finalComponent
+                }
+            }
+            return null
+        }else return null
+    }
+    /**Get all components of a certain type in this group. Also able to search for components recursively. */
+    getComponentsOfType<Type extends ODComponentType>(type:Type): ODComponentForType[Type][]
+    getComponentsOfType<Type extends ODComponentType>(type:Type,recursive:true,recursiveLimit?:number): ODComponentForType[Type][]
+    getComponentsOfType(type:ODComponentType,recursive?:boolean,recursiveLimit:number=15){
+        if (recursive && (recursiveLimit > 0)){
+            const finalComponents: ODComponent<any,any,ODComponentType>[] = [...this.children.filter((c) => c.type === type)]
+
+            for (const child of this.children){
+                if (child instanceof ODGroupComponent){
+                    finalComponents.push(...(child.getComponentsOfType(type,recursive,recursiveLimit-1) as ODComponent<any,any,ODComponentType>[]))
+                    
+                }else if (child instanceof ODParentComponent){
+                    const finalComponent = child.child as ODComponent<any,any,ODComponentType>
+                    if (finalComponent.type === type) finalComponents.push(finalComponent)
+                }
+            }
+            return finalComponents
+        }else{
+            const finalComponents: ChildComponent[] = [...this.children.filter((c) => c.type === type)]
+            return finalComponents
+        }
     }
     /**Get the position of a component with a certain ID in this group. Returns `-1` if non-existent. */
     getComponentPosition(id:ODValidId){
         return this.children.findIndex((c) => c.id.value === new ODId(id).value)
+    }
+    /**List all child components of this group. */
+    listComponent(){
+        return this.children
     }
     /**Returns if a component with a certain ID exists in this group. */
     existsComponent(id:ODValidId){
@@ -242,6 +372,12 @@ export abstract class ODGroupComponent<Data extends object,ChildComponent extend
         const index = this.children.findIndex((c) => c.id.value === new ODId(id).value)
         if (index < 0) return null
         else return this.children.splice(index,1)[0]
+    }
+    /**Remove all child components from this group. Returns the removed components. */
+    clearComponents(){
+        const removedChildren = this.children
+        this.children = []
+        return removedChildren
     }
     /**Moves an existing component to a new location in this group. There are multiple modes available:
      * - `start`: move to the start of the list.
@@ -284,6 +420,36 @@ export abstract class ODParentComponent<Data extends object,ChildComponent exten
     }
 }
 
+/////////////////////////////
+//   COMPONENT MODIFIERS   //
+/////////////////////////////
+
+/**## ODMessageComponentModifier `class`
+ * This is an Open Discord message component modifier.
+ * 
+ * It contains a worker which is can be added to a message.
+ * 
+ * The original message is preserved and a duplicate of `ODMessage` or `ODComponentFactory` is returned.
+ * 
+ * Warning: If workers access external variables (outside parameters), the clone will still use those variables. This might result in unexpected behaviour!
+ */
+export class ODMessageComponentModifier<Origin extends string,Params> extends ODManagerData {
+    /**The worker which will modify the message. */
+    worker: ODWorker<ODMessageInstance|ODComponentFactoryInstance<ODMessageComponent>,Origin,Params>
+
+    constructor(id:ODValidId,worker:ODWorker<ODMessageInstance|ODComponentFactoryInstance<ODMessageComponent>,Origin,Params>){
+        super(id)
+        this.worker = worker
+    }
+
+    /**Modify an `ODMessage` or `ODComponentFactory` with the worker. A copy will be returned and the original is preserved. */
+    modify<Message extends ODMessage<any,any,any>|ODComponentFactory<ODMessageComponent,any,any,any>>(message:Message): Message {
+        const newMsg = message.duplicate(message.id.value+"-VERIFYBAR") as Message
+        newMsg.workers.add(this.worker.duplicate())
+        return newMsg
+    }
+}
+
 //////////////////////////////////////
 //   GLOBAL COMPONENT DEFINITIONS   //
 //////////////////////////////////////
@@ -307,7 +473,7 @@ export interface ODMessageComponentData {
 /**## ODValidMessageComponents `type`
  * A collection of all valid top-level components that can be sent in a message.
  */
-export type ODValidMessageComponents = ODTextComponent|ODFileComponent|ODGalleryComponent
+export type ODValidMessageComponents = ODTextComponent|ODFileComponent|ODGalleryComponent|ODActionRowComponent|ODContainerComponent|ODSectionComponent|ODSeparatorComponent
 
 /**## ODMessageComponentBuildResult `type`
  * The constructed message from an `ODMessageComponent`.
@@ -336,7 +502,7 @@ export interface ODMessageComponentBuildResult {
 export class ODMessageComponent extends ODGroupComponent<ODMessageComponentData,ODValidMessageComponents,ODMessageComponentBuildResult> {
     constructor(id:ODValidId,data?:Partial<ODMessageComponentData>){
         const initData: ODMessageComponentData = {...data}
-        super(id,initData)
+        super(id,"message",initData)
     }
 
     async build(){
@@ -356,6 +522,11 @@ export class ODMessageComponent extends ODGroupComponent<ODMessageComponentData,
                 //ODGalleryComponent (special)
                 const res = await component.build()
                 if (res) components.push(res.gallery)
+                if (res?.attachments) attachments.push(...res.attachments)
+            }else if (component instanceof ODContainerComponent){
+                //ODContainerComponent (special)
+                const res = await component.build()
+                if (res) components.push(res.container)
                 if (res?.attachments) attachments.push(...res.attachments)
             }else{
                 //general ODComponent's
@@ -429,7 +600,7 @@ export type ODValidSimpleMessageComponents = ODContentComponent|ODEmbedComponent
 export class ODSimpleMessageComponent extends ODGroupComponent<ODSimpleMessageComponentData,ODValidSimpleMessageComponents,ODMessageComponentBuildResult> {
     constructor(id:ODValidId,data?:Partial<ODMessageComponentData>){
         const initData: ODMessageComponentData = {...data}
-        super(id,initData)
+        super(id,"simple-message",initData)
     }
 
     async build(){
@@ -521,7 +692,7 @@ export type ODValidModalComponents = ODLabelComponent|ODTextComponent
 export class ODModalComponent extends ODGroupComponent<ODModalComponentData,ODValidModalComponents,discord.ModalBuilder> {
     constructor(id:ODValidId,data?:Partial<ODModalComponentData>){
         const initData: ODModalComponentData = {title:"<empty>",...data}
-        super(id,initData)
+        super(id,"modal",initData)
     }
 
     async build(){
@@ -584,7 +755,7 @@ export type ODValidActionRowComponents = ODButtonComponent|ODDropdownComponent
 export class ODActionRowComponent extends ODGroupComponent<ODActionRowComponentData,ODValidActionRowComponents,discord.ActionRowBuilder<discord.MessageActionRowComponentBuilder>> {
     constructor(id:ODValidId,data?:Partial<ODActionRowComponentData>){
         const initData: ODActionRowComponentData = {...data}
-        super(id,initData)
+        super(id,"action-row",initData)
     }
 
     async build(){
@@ -624,7 +795,7 @@ export type ODValidContainerComponents = ODActionRowComponent|ODTextComponent|OD
 export class ODContainerComponent extends ODGroupComponent<ODContainerComponentData,ODValidContainerComponents,{container:discord.ContainerBuilder,attachments:discord.AttachmentBuilder[]}> {
     constructor(id:ODValidId,data?:Partial<ODContainerComponentData>){
         const initData: ODContainerComponentData = {spoiler:false,...data}
-        super(id,initData)
+        super(id,"container",initData)
     }
 
     async build(){
@@ -689,7 +860,7 @@ export interface ODSectionComponentData {
 export class ODSectionComponent extends ODGroupComponent<ODSectionComponentData,ODTextComponent,discord.SectionBuilder> {
     constructor(id:ODValidId,data?:Partial<ODSectionComponentData>){
         const initData: ODSectionComponentData = {...data}
-        super(id,initData)
+        super(id,"section",initData)
     }
 
     async build(){
@@ -741,7 +912,7 @@ export type ODValidLabelComponents = ODShortInputComponent|ODParagraphInputCompo
 export class ODLabelComponent extends ODParentComponent<ODLabelComponentData,ODValidLabelComponents,discord.LabelBuilder> {
     constructor(id:ODValidId,data:Partial<ODLabelComponentData>){
         const initData: ODLabelComponentData = {title:"<empty>",...data}
-        super(id,initData)
+        super(id,"label",initData)
     }
     
     async build(){
@@ -785,7 +956,7 @@ export interface ODSeparatorComponentData {
 export class ODSeparatorComponent extends ODComponent<ODSeparatorComponentData,discord.SeparatorBuilder> {
     constructor(id:ODValidId,data:Partial<ODSeparatorComponentData>){
         const initData: ODSeparatorComponentData = {divider:true,spacing:"small",...data}
-        super(id,initData)
+        super(id,"separator",initData)
     }
     
     async build(){
@@ -823,7 +994,7 @@ export interface ODTextComponentData {
 export class ODTextComponent extends ODComponent<ODTextComponentData,discord.TextDisplayBuilder> {
     constructor(id:ODValidId,data:Partial<ODTextComponentData>){
         const initData: ODTextComponentData = {content:"",...data}
-        super(id,initData)
+        super(id,"text",initData)
     }
     
     async build(){
@@ -861,7 +1032,7 @@ export interface ODFileComponentData {
 export class ODFileComponent extends ODComponent<ODFileComponentData,{file:discord.FileBuilder,attachment:discord.AttachmentBuilder|null}> {
     constructor(id:ODValidId,data:Partial<ODFileComponentData>){
         const initData: ODFileComponentData = {name:"file.txt",...data}
-        super(id,initData)
+        super(id,"file",initData)
     }
     
     async build(){
@@ -919,7 +1090,7 @@ export interface ODGalleryComponentData {
 export class ODGalleryComponent extends ODGroupComponent<ODGalleryComponentData,ODFileComponent,{gallery:discord.MediaGalleryBuilder,attachments:discord.AttachmentBuilder[]}> {
     constructor(id:ODValidId,data?:Partial<ODGalleryComponentData>){
         const initData: ODGalleryComponentData = {...data}
-        super(id,initData)
+        super(id,"gallery",initData)
     }
     
     async build(){
@@ -966,7 +1137,7 @@ export interface ODThumbnailComponentData {
 export class ODThumbnailComponent extends ODComponent<ODThumbnailComponentData,discord.ThumbnailBuilder> {
     constructor(id:ODValidId,data:Partial<ODThumbnailComponentData>){
         const initData: ODThumbnailComponentData = {url:"",...data}
-        super(id,initData)
+        super(id,"thumbnail",initData)
     }
     
     async build(){
@@ -1007,7 +1178,7 @@ export interface ODContentComponentData {
 export class ODContentComponent extends ODComponent<ODContentComponentData,{content:string}> {
     constructor(id:ODValidId,data:Partial<ODContentComponentData>){
         const initData: ODContentComponentData = {content:"",...data}
-        super(id,initData)
+        super(id,"simple-content",initData)
     }
     
     async build(){
@@ -1062,7 +1233,7 @@ export interface ODEmbedComponentData {
 export class ODEmbedComponent extends ODComponent<ODEmbedComponentData,discord.EmbedBuilder> {
     constructor(id:ODValidId,data:Partial<ODEmbedComponentData>){
         const initData: ODEmbedComponentData = {...data}
-        super(id,initData)
+        super(id,"simple-embed",initData)
     }
     
     async build(){
@@ -1195,7 +1366,7 @@ export interface ODPollComponentData {
 export class ODPollComponent extends ODComponent<ODPollComponentData,discord.PollData> {
     constructor(id:ODValidId,data:Partial<ODPollComponentData>){
         const initData: ODPollComponentData = {question:"<empty>",durationHours:1,allowMultiSelect:false,answers:[],...data}
-        super(id,initData)
+        super(id,"simple-poll",initData)
     }
     
     async build(){
@@ -1262,7 +1433,7 @@ export interface ODButtonComponentData {
 export class ODButtonComponent extends ODComponent<ODButtonComponentData,discord.ButtonBuilder> {
     constructor(id:ODValidId,data:Partial<ODButtonComponentData>){
         const initData: ODButtonComponentData = {color:"gray",disabled:false,...data}
-        super(id,initData)
+        super(id,"button",initData)
     }
     
     async build(){
@@ -1346,7 +1517,7 @@ export interface ODShortInputComponentData {
 export class ODShortInputComponent extends ODComponent<ODShortInputComponentData,discord.TextInputBuilder> {
     constructor(id:ODValidId,data:Partial<ODShortInputComponentData>){
         const initData: ODShortInputComponentData = {required:false,...data}
-        super(id,initData)
+        super(id,"short-input",initData)
     }
     
     async build(){
@@ -1418,7 +1589,7 @@ export interface ODParagraphInputComponentData {
 export class ODParagraphInputComponent extends ODComponent<ODParagraphInputComponentData,discord.TextInputBuilder> {
     constructor(id:ODValidId,data:Partial<ODParagraphInputComponentData>){
         const initData: ODParagraphInputComponentData = {required:false,...data}
-        super(id,initData)
+        super(id,"paragraph-input",initData)
     }
     
     async build(){
@@ -1504,7 +1675,7 @@ export interface ODDropdownComponentData {
 export class ODDropdownComponent extends ODComponent<ODDropdownComponentData,discord.BaseSelectMenuBuilder<discord.APISelectMenuComponent>> {
     constructor(id:ODValidId,data:Partial<ODDropdownComponentData>){
         const initData: ODDropdownComponentData = {type:"string",...data}
-        super(id,initData)
+        super(id,"dropdown",initData)
     }
     
     async build(){
@@ -1631,7 +1802,7 @@ export interface ODRadioGroupComponentData {
 export class ODRadioGroupComponent extends ODComponent<ODRadioGroupComponentData,discord.RadioGroupBuilder> {
     constructor(id:ODValidId,data:Partial<ODRadioGroupComponentData>){
         const initData: ODRadioGroupComponentData = {required:false,options:[],...data}
-        super(id,initData)
+        super(id,"radio-group",initData)
     }
     
     async build(){
@@ -1684,7 +1855,7 @@ export interface ODCheckboxGroupComponentData {
 export class ODCheckboxGroupComponent extends ODComponent<ODCheckboxGroupComponentData,discord.CheckboxGroupBuilder> {
     constructor(id:ODValidId,data:Partial<ODCheckboxGroupComponentData>){
         const initData: ODCheckboxGroupComponentData = {required:false,options:[],...data}
-        super(id,initData)
+        super(id,"checkbox-group",initData)
     }
     
     async build(){
@@ -1744,7 +1915,7 @@ export interface ODCheckboxComponentData {
 export class ODCheckboxComponent extends ODComponent<ODCheckboxComponentData,discord.CheckboxBuilder> {
     constructor(id:ODValidId,data:Partial<ODCheckboxComponentData>){
         const initData: ODCheckboxComponentData = {default:false,...data}
-        super(id,initData)
+        super(id,"checkbox",initData)
     }
     
     async build(){
@@ -1788,7 +1959,7 @@ export interface ODFileUploadComponentData {
 export class ODFileUploadComponent extends ODComponent<ODFileUploadComponentData,discord.FileUploadBuilder> {
     constructor(id:ODValidId,data:Partial<ODFileUploadComponentData>){
         const initData: ODFileUploadComponentData = {required:false,...data}
-        super(id,initData)
+        super(id,"file-upload",initData)
     }
     
     async build(){

@@ -1469,6 +1469,14 @@ export class ODMessage<Origin extends string,Params,WorkerIds extends string = s
         this.didCache = true
         return result
     }
+    /**Duplicate this message. Warning: If workers access external variables (outside parameters), the clone will still use those variables. This might result in unexpected behaviour! */
+    duplicate(newId?:ODValidId): ODMessage<Origin,Params,WorkerIds> {
+        const newMessage = new ODMessage<Origin,Params,WorkerIds>(newId ?? this.id.value)
+        for (const worker of this.workers.getAll()){
+            newMessage.workers.add(worker.duplicate())
+        }
+        return newMessage
+    }
 }
 
 /**## ODQuickMessage `class`

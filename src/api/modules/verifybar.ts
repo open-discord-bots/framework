@@ -9,6 +9,7 @@ import * as discord from "discord.js"
 import { ODWorkerManager } from "./worker.js"
 
 /**## ODVerifyBar `class`
+ * @deprecated Use `ODMessageComponentModifier`'s instead.
  * This is an Open Discord verifybar.
  * 
  * It is contains 2 sets of workers and a lot of utilities for the (✅ ❌) verifybars in the bot.
@@ -47,14 +48,15 @@ export class ODVerifyBar<SuccessWorkerIds extends string = string,FailureWorkerI
 }
 
 /**## ODVerifyBarManagerIdConstraint `type`
+ * @deprecated Use `ODMessageComponentModifier`'s instead.
  * The constraint/layout for id mappings/interfaces of the `ODVerifyBarManager` class.
  */
 export type ODVerifyBarManagerIdConstraint = Record<string,{successWorkerIds:string,failureWorkerIds:string}>
 
 /**## ODVerifyBarManager `class`
- * This is an Open Discord verifybar manager.
+ * @deprecated Use `ODMessageComponentModifier`'s instead.
  * 
- * It contains all (✅ ❌) verifybars in the bot.
+ * The Open Discord verifybar manager manages all (✅ ❌) verifybars in the bot.
  * The `ODVerifyBar` classes contain `ODWorkerManager`'s that will be fired when the continue/stop buttons are pressed.
  * 
  * It doesn't contain the code which activates the verifybars! This should be implemented by your own.
