@@ -232,7 +232,7 @@ export class ODStartScreenCategoryComponent extends ODStartScreenComponent {
         super(id,priority,async (location) => {
             const contents = await render(location)
             if (contents != "" || this.renderIfEmpty){
-                return ansis.bold.underline("\n"+name.toUpperCase()+(contents != "" ? ":\n" : ":")) + contents
+                return ansis.bold.underline("\n"+this.name.toUpperCase()+(contents != "" ? ":\n" : ":")) + contents
             }else return ""
         })
         this.name = name
@@ -324,7 +324,7 @@ export class ODStartScreenLiveStatusCategoryComponent<LiveStatus extends ODLiveS
     livestatus: LiveStatus
 
     constructor(id:ODValidId, priority:number, livestatus:LiveStatus){
-        super(id,priority,"livestatus",async () => {
+        super(id,priority,"news & updates",async () => {
             const messages = await this.livestatus.getAllMessages()
             return this.livestatus.renderer.render(messages)
         },false)

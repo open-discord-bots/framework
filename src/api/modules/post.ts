@@ -111,7 +111,7 @@ export class ODPost<ChannelType extends discord.GuildBasedChannel> extends ODMan
         try{
             const finalMessage = this.getMessageFromBuildResult(build,"message")
             const sent = await this.channel.send(finalMessage)
-            return {success:true,message:sent}
+            return {success:true,message:sent,ephemeral:false}
         }catch{
             return {success:false}
         }

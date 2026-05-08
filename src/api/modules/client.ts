@@ -332,14 +332,14 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
                 if (user.bot) return {success:false}
                 const channel = await user.createDM()
                 const msg = await channel.send(finalMessage)
-                return {success:true,message:msg}
+                return {success:true,message:msg,ephemeral:false}
             }else{
                 const newUser = await this.fetchUser(user)
                 if (!newUser) throw new Error()
                 if (newUser.bot) return {success:false}
                 const channel = await newUser.createDM()
                 const msg = await channel.send(finalMessage)
-                return {success:true,message:msg}
+                return {success:true,message:msg,ephemeral:false}
             }
         }catch{
             try{

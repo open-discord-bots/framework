@@ -44,7 +44,9 @@ export type ODResponderSendResult<InGuild extends boolean> = {
     /**Did the message get sent successfully? */
     success:true,
     /**The message that got sent. */
-    message:discord.Message<InGuild>
+    message:discord.Message<InGuild>,
+    /**Was the message sent as ephemeral? */
+    ephemeral:boolean
 } | {
     /**Did the message get sent successfully? */
     success:false
@@ -473,16 +475,16 @@ export class ODCommandResponderInstance extends ODBaseResponderInstance {
                 if (this.interaction.replied || this.interaction.deferred){
                     const sent = await this.interaction.editReply(finalMessage)
                     this.ignoreResponderTimeout = true
-                    return {success:true,message:sent}
+                    return {success:true,message:sent,ephemeral:build.ephemeral}
                 }else{
                     const sent = await this.interaction.reply(finalMessage)
                     this.ignoreResponderTimeout = true
-                    return {success:true,message:await sent.fetch()}
+                    return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
                 }
             }else if (this.type == "message" && this.interaction instanceof discord.Message && this.interaction.channel.type != discord.ChannelType.GroupDM){
                 const sent = await this.interaction.channel.send(finalMessage)
                 this.ignoreResponderTimeout = true
-                return {success:true,message:sent}
+                return {success:true,message:sent,ephemeral:false}
             }else return {success:false}
         }catch{
             return {success:false}
@@ -661,11 +663,11 @@ export class ODButtonResponderInstance extends ODBaseResponderInstance {
             if (this.interaction.replied || this.interaction.deferred){
                 const sent = await this.interaction.editReply(finalMessage)
                 this.ignoreResponderTimeout = true
-                return {success:true,message:sent}
+                return {success:true,message:sent,ephemeral:build.ephemeral}
             }else{
                 const sent = await this.interaction.reply(finalMessage)
                 this.ignoreResponderTimeout = true
-                return {success:true,message:await sent.fetch()}
+                return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }
         }catch{
             return {success:false}
@@ -678,11 +680,11 @@ export class ODButtonResponderInstance extends ODBaseResponderInstance {
             if (this.interaction.replied || this.interaction.deferred){
                 const sent = await this.interaction.editReply(finalMessage)
                 this.ignoreResponderTimeout = true
-                return {success:true,message:await sent.fetch()}
+                return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }else{
                 const sent = await this.interaction.update(finalMessage)
                 this.ignoreResponderTimeout = true
-                return {success:true,message:await sent.fetch()}
+                return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }
         }catch{
             return {success:false}
@@ -976,11 +978,11 @@ export class ODDropdownResponderInstance extends ODBaseResponderInstance {
             if (this.interaction.replied || this.interaction.deferred){
                 const sent = await this.interaction.editReply(finalMessage)
                 this.ignoreResponderTimeout = true
-                return {success:true,message:sent}
+                return {success:true,message:sent,ephemeral:build.ephemeral}
             }else{
                 const sent = await this.interaction.reply(finalMessage)
                 this.ignoreResponderTimeout = true
-                return {success:true,message:await sent.fetch()}
+                return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }
         }catch{
             return {success:false}
@@ -993,11 +995,11 @@ export class ODDropdownResponderInstance extends ODBaseResponderInstance {
             if (this.interaction.replied || this.interaction.deferred){
                 const sent = await this.interaction.editReply(finalMessage)
                 this.ignoreResponderTimeout = true
-                return {success:true,message:await sent.fetch()}
+                return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }else{
                 const sent = await this.interaction.update(finalMessage)
                 this.ignoreResponderTimeout = true
-                return {success:true,message:await sent.fetch()}
+                return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }
         }catch{
             return {success:false}
@@ -1225,7 +1227,7 @@ export class ODModalResponderInstance extends ODBaseResponderInstance {
             const finalMessage = this.getMessageFromBuildResult(build,"interaction")
             const sent = await this.interaction.followUp(finalMessage)
             this.ignoreResponderTimeout = true
-            return {success:true,message:sent}
+            return {success:true,message:sent,ephemeral:build.ephemeral}
         }catch{
             return {success:false}
         }
@@ -1237,11 +1239,11 @@ export class ODModalResponderInstance extends ODBaseResponderInstance {
             if (this.interaction.replied || this.interaction.deferred){
                 const sent = await this.interaction.editReply(finalMessage)
                 this.ignoreResponderTimeout = true
-                return {success:true,message:await sent.fetch()}
+                return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }else{
                 const sent = await this.interaction.reply(finalMessage)
                 this.ignoreResponderTimeout = true
-                return {success:true,message:await sent.fetch()}
+                return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }
         }catch{
             return {success:false}
@@ -1405,11 +1407,11 @@ export class ODContextMenuResponderInstance extends ODBaseResponderInstance {
             if (this.interaction.replied || this.interaction.deferred){
                 const sent = await this.interaction.editReply(finalMessage)
                 this.ignoreResponderTimeout = true
-                return {success:true,message:sent}
+                return {success:true,message:sent,ephemeral:build.ephemeral}
             }else{
                 const sent = await this.interaction.reply(finalMessage)
                 this.ignoreResponderTimeout = true
-                return {success:true,message:await sent.fetch()}
+                return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }
         }catch{
             return {success:false}
@@ -1422,7 +1424,7 @@ export class ODContextMenuResponderInstance extends ODBaseResponderInstance {
             if (this.interaction.replied || this.interaction.deferred){
                 const sent = await this.interaction.editReply(finalMessage)
                 this.ignoreResponderTimeout = true
-                return {success:true,message:await sent.fetch()}
+                return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }else throw new ODSystemError("Unable to update context menu interaction!")
         }catch{
             return {success:false}

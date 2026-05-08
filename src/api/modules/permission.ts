@@ -310,7 +310,7 @@ export class ODPermissionManager<IdList extends ODPermissionManagerIdConstraint 
         return {...this.defaultResult}
     }
 
-    /**Check the permissions for a certain command of the bot. */
+    /**Check the permissions for a certain command of the bot. Permission mode: `none`, `everyone`, `admin` or any valid discord role ID. */
     async checkCommandPerms(permissionMode:string,requiredLevel:ODPermissionType,user:discord.User,member?:discord.GuildMember|null,channel?:discord.Channel|null,guild?:discord.Guild|null,settings?:ODPermissionSettings): Promise<ODPermissionCommandResult> {
         if (permissionMode === "none"){
             return {hasPerms:false,reason:"disabled"}
