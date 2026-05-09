@@ -101,7 +101,7 @@ export class ODBaseComponentManager<IdList extends ODComponentManagerIdConstrain
 /**## ODComponentModifierManagerIdConstraint `type`
  * The constraint/layout for id mappings/interfaces of the `ODComponentModifierManager` class.
  */
-export type ODComponentModifierManagerIdConstraint = Record<string,ODMessageComponentModifier<string,{}>>
+export type ODComponentModifierManagerIdConstraint = Record<string,ODMessageComponentModifier<string,{},string>>
 
 /**## ODComponentModifierManager `class`
  * An Open Discord component modifier manager.
@@ -110,22 +110,22 @@ export type ODComponentModifierManagerIdConstraint = Record<string,ODMessageComp
  * - Patch, modify, expand or update existing messages
  * - It Does not affect the original message (cloned)
  */
-export class ODComponentModifierManager<IdList extends ODComponentModifierManagerIdConstraint = ODComponentModifierManagerIdConstraint> extends ODManager<ODMessageComponentModifier<string,{}>> {
+export class ODComponentModifierManager<IdList extends ODComponentModifierManagerIdConstraint = ODComponentModifierManagerIdConstraint> extends ODManager<ODMessageComponentModifier<string,{},string>> {
     constructor(debug:ODDebugger){
         super(debug,"component modifier")
     }
     
     get<ModifierId extends keyof ODNoGeneric<IdList>>(id:ModifierId): IdList[ModifierId]
-    get(id:ODValidId): ODMessageComponentModifier<string,{}>|null
+    get(id:ODValidId): ODMessageComponentModifier<string,{},string>|null
     
-    get(id:ODValidId): ODMessageComponentModifier<string,{}>|null {
+    get(id:ODValidId): ODMessageComponentModifier<string,{},string>|null {
         return super.get(id)
     }
 
     remove<ModifierId extends keyof ODNoGeneric<IdList>>(id:ModifierId): IdList[ModifierId]
-    remove(id:ODValidId): ODMessageComponentModifier<string,{}>|null
+    remove(id:ODValidId): ODMessageComponentModifier<string,{},string>|null
     
-    remove(id:ODValidId): ODMessageComponentModifier<string,{}>|null {
+    remove(id:ODValidId): ODMessageComponentModifier<string,{},string>|null {
         return super.remove(id)
     }
 
@@ -433,19 +433,22 @@ export abstract class ODParentComponent<Data extends object,ChildComponent exten
  * 
  * Warning: If workers access external variables (outside parameters), the clone will still use those variables. This might result in unexpected behaviour!
  */
-export class ODMessageComponentModifier<Origin extends string,Params> extends ODManagerData {
-    /**The worker which will modify the message. */
-    worker: ODWorker<ODMessageInstance|ODComponentFactoryInstance<ODMessageComponent>,Origin,Params>
+export class ODMessageComponentModifier<Origin extends string,Params,WorkerIds extends string> extends ODManagerData {
+    /**The workers which will modify the message. */
+    workers: ODWorkerManager<ODMessageInstance|ODComponentFactoryInstance<ODMessageComponent>,Origin,Params,WorkerIds>
 
-    constructor(id:ODValidId,worker:ODWorker<ODMessageInstance|ODComponentFactoryInstance<ODMessageComponent>,Origin,Params>){
+    constructor(id:ODValidId,callback?:ODWorkerCallback<ODMessageInstance|ODComponentFactoryInstance<ODMessageComponent>,Origin,Params>, priority?:number, callbackId?:ODValidId){
         super(id)
-        this.worker = worker
+        this.workers = new ODWorkerManager("ascending")
+        if (callback) this.workers.add(new ODWorker(callbackId ? callbackId : id,priority ?? 0,callback))
     }
 
-    /**Modify an `ODMessage` or `ODComponentFactory` with the worker. A copy will be returned and the original is preserved. */
-    modify<Message extends ODMessage<any,any,any>|ODComponentFactory<ODMessageComponent,any,any,any>>(message:Message): Message {
+    /**Modify an `ODMessage` or `ODComponentFactory` with these workers. A copy will be returned and the original is preserved. */
+    modify<Message extends ODMessage<any,any,any>|ODComponentFactory<ODMessageComponent,any,any,any>>(message:Message,origin:Origin,params:Params): Message {
         const newMsg = message.duplicate(message.id.value+"-VERIFYBAR") as Message
-        newMsg.workers.add(this.worker.duplicate())
+        newMsg.workers.add(new ODWorker<any,any,any>("opendiscord:VERIFYBAR",1000,async (msgInstance,msgParams,msgOrigin,msgCancel) => {
+            await this.workers.executeWorkers(msgInstance,origin,params)
+        }))
         return newMsg
     }
 }
