@@ -227,7 +227,8 @@ export class ODCommandResponderInstanceOptions {
         if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
                 return this.interaction.options.getString(name,required)
-            }catch{
+            }catch(err){
+                process.emit("uncaughtException",err)
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getString() slash command option not found!")
             }
 
@@ -245,7 +246,8 @@ export class ODCommandResponderInstanceOptions {
         if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
                 return this.interaction.options.getBoolean(name,required)
-            }catch{
+            }catch(err){
+                process.emit("uncaughtException",err)
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getBoolean() slash command option not found!")
             }
 
@@ -263,7 +265,8 @@ export class ODCommandResponderInstanceOptions {
         if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
                 return this.interaction.options.getNumber(name,required)
-            }catch{
+            }catch(err){
+                process.emit("uncaughtException",err)
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getNumber() slash command option not found!")
             }
 
@@ -281,7 +284,8 @@ export class ODCommandResponderInstanceOptions {
         if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
                 return this.interaction.options.getChannel(name,required)
-            }catch{
+            }catch(err){
+                process.emit("uncaughtException",err)
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getChannel() slash command option not found!")
             }
 
@@ -299,7 +303,8 @@ export class ODCommandResponderInstanceOptions {
         if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
                 return this.interaction.options.getRole(name,required)
-            }catch{
+            }catch(err){
+                process.emit("uncaughtException",err)
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getRole() slash command option not found!")
             }
 
@@ -317,7 +322,8 @@ export class ODCommandResponderInstanceOptions {
         if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
                 return this.interaction.options.getUser(name,required)
-            }catch{
+            }catch(err){
+                process.emit("uncaughtException",err)
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getUser() slash command option not found!")
             }
 
@@ -337,7 +343,8 @@ export class ODCommandResponderInstanceOptions {
                 const member = this.interaction.options.getMember(name)
                 if (!member && required) throw new ODSystemError("ODCommandResponderInstanceOptions:getGuildMember() slash command option not found!")
                 return member
-            }catch{
+            }catch(err){
+                process.emit("uncaughtException",err)
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getGuildMember() slash command option not found!")
             }
 
@@ -355,7 +362,8 @@ export class ODCommandResponderInstanceOptions {
         if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
                 return this.interaction.options.getMentionable(name,required)
-            }catch{
+            }catch(err){
+                process.emit("uncaughtException",err)
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getGuildMember() slash command option not found!")
             }
 
@@ -372,7 +380,8 @@ export class ODCommandResponderInstanceOptions {
         if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
                 return this.interaction.options.getSubcommandGroup(true)
-            }catch{
+            }catch(err){
+                process.emit("uncaughtException",err)
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getSubGroup() slash command option not found!")
             }
 
@@ -389,7 +398,8 @@ export class ODCommandResponderInstanceOptions {
         if (this.interaction instanceof discord.ChatInputCommandInteraction){
             try {
                 return this.interaction.options.getSubcommand(true)
-            }catch{
+            }catch(err){
+                process.emit("uncaughtException",err)
                 throw new ODSystemError("ODCommandResponderInstanceOptions:getSubCommand() slash command option not found!")
             }
 
@@ -486,7 +496,8 @@ export class ODCommandResponderInstance extends ODBaseResponderInstance {
                 this.ignoreResponderTimeout = true
                 return {success:true,message:sent,ephemeral:false}
             }else return {success:false}
-        }catch{
+        }catch(err){
+            process.emit("uncaughtException",err)
             return {success:false}
         }
     }
@@ -669,7 +680,8 @@ export class ODButtonResponderInstance extends ODBaseResponderInstance {
                 this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }
-        }catch{
+        }catch(err){
+            process.emit("uncaughtException",err)
             return {success:false}
         }
     }
@@ -686,7 +698,8 @@ export class ODButtonResponderInstance extends ODBaseResponderInstance {
                 this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }
-        }catch{
+        }catch(err){
+            process.emit("uncaughtException",err)
             return {success:false}
         }
     }
@@ -856,7 +869,8 @@ export class ODDropdownResponderInstanceValues {
     getStringValues(): string[] {
         try {
             return this.interaction.values
-        }catch{
+        }catch(err){
+            process.emit("uncaughtException",err)
             throw new ODSystemError("ODDropdownResponderInstanceValues:getStringValues() invalid values!")
         }
     }
@@ -871,7 +885,8 @@ export class ODDropdownResponderInstanceValues {
                 if (role) result.push(role)
             }
             return result
-        }catch{
+        }catch(err){
+            process.emit("uncaughtException",err)
             throw new ODSystemError("ODDropdownResponderInstanceValues:getRoleValues() invalid values!")
         }
     }
@@ -885,7 +900,8 @@ export class ODDropdownResponderInstanceValues {
                 if (user) result.push(user)
             }
             return result
-        }catch{
+        }catch(err){
+            process.emit("uncaughtException",err)
             throw new ODSystemError("ODDropdownResponderInstanceValues:getUserValues() invalid values!")
         }
     }
@@ -900,7 +916,8 @@ export class ODDropdownResponderInstanceValues {
                 if (guild) result.push(guild)
             }
             return result
-        }catch{
+        }catch(err){
+            process.emit("uncaughtException",err)
             throw new ODSystemError("ODDropdownResponderInstanceValues:getChannelValues() invalid values!")
         }
     }
@@ -984,7 +1001,8 @@ export class ODDropdownResponderInstance extends ODBaseResponderInstance {
                 this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }
-        }catch{
+        }catch(err){
+            process.emit("uncaughtException",err)
             return {success:false}
         }
     }
@@ -1001,7 +1019,8 @@ export class ODDropdownResponderInstance extends ODBaseResponderInstance {
                 this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }
-        }catch{
+        }catch(err){
+            process.emit("uncaughtException",err)
             return {success:false}
         }
     }
@@ -1168,7 +1187,8 @@ export class ODModalResponderInstanceValues {
             const data = this.interaction.fields.getField(name,discord.ComponentType.TextInput)
             if (!data && required) throw new ODSystemError("ODModalResponderInstanceValues:getTextField() field not found!")
             return (data) ? data.value : null
-        }catch{
+        }catch(err){
+            process.emit("uncaughtException",err)
             throw new ODSystemError("ODModalResponderInstanceValues:getTextField() field not found!")
         }
     }
@@ -1225,10 +1245,11 @@ export class ODModalResponderInstance extends ODBaseResponderInstance {
     async reply(build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<boolean>> {
         try {
             const finalMessage = this.getMessageFromBuildResult(build,"interaction")
-            const sent = await this.interaction.followUp(finalMessage)
+            const sent = await this.interaction.reply(finalMessage)
             this.ignoreResponderTimeout = true
-            return {success:true,message:sent,ephemeral:build.ephemeral}
-        }catch{
+            return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
+        }catch(err){
+            process.emit("uncaughtException",err)
             return {success:false}
         }
     }
@@ -1245,7 +1266,8 @@ export class ODModalResponderInstance extends ODBaseResponderInstance {
                 this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }
-        }catch{
+        }catch(err){
+            process.emit("uncaughtException",err)
             return {success:false}
         }
     }
@@ -1413,7 +1435,8 @@ export class ODContextMenuResponderInstance extends ODBaseResponderInstance {
                 this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }
-        }catch{
+        }catch(err){
+            process.emit("uncaughtException",err)
             return {success:false}
         }
     }
@@ -1426,7 +1449,8 @@ export class ODContextMenuResponderInstance extends ODBaseResponderInstance {
                 this.ignoreResponderTimeout = true
                 return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
             }else throw new ODSystemError("Unable to update context menu interaction!")
-        }catch{
+        }catch(err){
+            process.emit("uncaughtException",err)
             return {success:false}
         }
     }

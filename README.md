@@ -31,6 +31,8 @@ We do currently <b>NOT</b> provide support for <b>3rd party implementations</b> 
 
 - **Builders** - Advanced template-based message, embed, modal & component builders for extensible layouts.
 
+- **Components** - Advanced template-based message, modal & component v2 factories for extensible & repeatable layouts.
+
 - **Responders** - Respond to slash & text-based commands in one go with the same code!
 
 - **Config** - Register JSON config files, use an advanced checker for validation or save/reload files in real-time.
@@ -51,7 +53,9 @@ We do currently <b>NOT</b> provide support for <b>3rd party implementations</b> 
 
 - **Console** - Interact with the console using a startscreen, progress bars & interactive menu's.
 
-- **Large Ecosystem** - The same plugin is able to work in all projects using Open discord (e.g. Open Ticket / Moderation)
+- **Large Ecosystem** - The same plugins work in all projects using Open discord (e.g. Open Ticket / Moderation)
+
+- **Message States** - Store additional metadata linked to messages. The garbage collector auto-deletes expired metadata. 
 
 ## 🛠️ Contributors
 ### ❤️ Sponsors
