@@ -2,3 +2,5 @@ node_modules/
 package-lock.json
 src/
 tools/
+.gitattributes
+tsconfig.json
