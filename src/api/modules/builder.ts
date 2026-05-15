@@ -1076,24 +1076,16 @@ export class ODEmbedInstance {
     }
     /**Set the fields of this embed */
     setFields(fields:ODEmbedData["fields"]){
-        //TEMP CHECKS
-        fields.forEach((field,index) => {
-            if (field.value.length >= 1024) throw new ODSystemError("ODEmbed:setFields() => field "+index+" reached 1024 character limit!")
-            if (field.name.length >= 256) throw new ODSystemError("ODEmbed:setFields() => field "+index+" reached 256 name character limit!")
-        })
-
-        this.data.fields = fields
+        //remap fields
+        const correctedFields = fields.map((field) => ({name:field.name.slice(0,256),value:field.value.slice(0,1024),inline:field.inline}))
+        this.data.fields = correctedFields
         return this
     }
     /**Add fields to this embed */
     addFields(...fields:ODEmbedData["fields"]){
-        //TEMP CHECKS
-        fields.forEach((field,index) => {
-            if (field.value.length >= 1024) throw new ODSystemError("ODEmbed:addFields() => field "+index+" reached 1024 character limit!")
-            if (field.name.length >= 256) throw new ODSystemError("ODEmbed:addFields() => field "+index+" reached 256 name character limit!")
-        })
-
-        this.data.fields.push(...fields)
+        //remap fields
+        const correctedFields = fields.map((field) => ({name:field.name.slice(0,256),value:field.value.slice(0,1024),inline:field.inline}))
+        this.data.fields.push(...correctedFields)
         return this
     }
     /**Clear all fields from this embed */
@@ -1734,18 +1726,18 @@ export class ODModal<Origin extends string,Params,WorkerIds extends string = str
             const input = new discord.TextInputBuilder()
                 .setStyle(question.style == "paragraph" ? discord.TextInputStyle.Paragraph : discord.TextInputStyle.Short)
                 .setCustomId(question.customId)
-                .setLabel(question.label ? question.label : question.customId)
                 .setRequired(question.required ? true : false)
             
             if (question.minLength) input.setMinLength(question.minLength)
             if (question.maxLength) input.setMaxLength(question.maxLength)
             if (question.value) input.setValue(question.value)
             if (question.placeholder) input.setPlaceholder(question.placeholder)
-
-            modal.addComponents(
-                new discord.ActionRowBuilder<discord.ModalActionRowComponentBuilder>()
-                    .addComponents(input)
-            )
+            
+            const label = new discord.LabelBuilder({
+                label:(question.label ? question.label : question.customId),
+                component:input.toJSON()
+            })
+            modal.addLabelComponents(label)
         })
 
         this.cache = {id:this.id,modal}

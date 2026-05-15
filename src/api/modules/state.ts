@@ -238,8 +238,8 @@ export class ODState<StateData extends any,WithGuildKey extends boolean,WithUser
     }
     /**Delete all message states from this ODState. */
     async clearAllMsgStates(): Promise<void> {
-        for (const state of await this.database.getAll()){
-            await this.database.delete(state.category,state.key)
+        for (const state of await this.listMsgStates()){
+            await this.database.delete(this.id.value,state.key)
         }
     }
     /**Delete a message state using the raw key. Returns `true` when deleted. */
