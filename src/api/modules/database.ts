@@ -315,7 +315,7 @@ export class ODFormattedJsonDatabase<IdList extends ODDatabaseIdConstraint = ODD
         },
         /**Write parsed data to the json file */
         setData: (data:ODJsonDatabaseStructure) => {
-            fs.writeFileSync(this.path,this.formatter.stringify(data))
+            fs.writeFileSync(this.path,this.formatter.stringify(data,this.path))
         }
     }
 }
