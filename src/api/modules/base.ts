@@ -566,6 +566,15 @@ export class ODVersion extends ODManagerData {
     }
 }
 
+export interface ODVersionMigrationFunctions {
+    /**The migration to run before any part of the bot is started (pure node.js). */
+    beforeStartupMigrate?:() => void|Promise<void>,
+    /**The migration to run in the Open Discord migration context (incl. flags, configs, database). */
+    contextMigrate?:() => void|Promise<void>,
+    /**The migration to run when the bot starts like normal (incl. plugins) */
+    afterStartupMigrate?:() => void|Promise<void>
+}
+
 /**## ODVersionMigration `class`
  * This class is used to manage data migration between Open Ticket versions.
  * 
@@ -574,30 +583,37 @@ export class ODVersion extends ODManagerData {
 export class ODVersionMigration {
     /**The version to migrate data to */
     version: ODVersion
-    /**The migration function */
-    private migrateFunc: () => void|Promise<void>
-    /**The migration function */
-    private migrateAfterInitFunc: () => void|Promise<void>
-
-    constructor(version:ODVersion,migrateFunc:() => void|Promise<void>,migrateAfterInitFunc:() => void|Promise<void>){
+    /**The migration functions */
+    private functions: ODVersionMigrationFunctions
+    
+    constructor(version:ODVersion,functions:ODVersionMigrationFunctions){
         this.version = version
-        this.migrateFunc = migrateFunc
-        this.migrateAfterInitFunc = migrateAfterInitFunc
+        this.functions = functions
     }
-    /**Run this version migration as a plugin. Returns `false` when something goes wrong. */
-    async migrate(): Promise<boolean> {
+    /**Run this migration before any other part of the bot is started (pure node.js). */
+    async migrateBeforeStartup(): Promise<boolean> {
         try{
-            await this.migrateFunc()
+            if (this.functions.beforeStartupMigrate) await this.functions.beforeStartupMigrate()
             return true
         }catch(err){
             process.emit("uncaughtException",err)
             return false
         }
     }
-    /**Run this version migration as a plugin (after other plugins have loaded). Returns `false` when something goes wrong. */
-    async migrateAfterInit(): Promise<boolean> {
+    /**Run this migration in the Open Discord migration context (incl. flags, configs, database). */
+    async migrateInContext(): Promise<boolean> {
         try{
-            await this.migrateAfterInitFunc()
+            if (this.functions.contextMigrate) await this.functions.contextMigrate()
+            return true
+        }catch(err){
+            process.emit("uncaughtException",err)
+            return false
+        }
+    }
+    /**Run this migration when the bot starts like normal (incl. plugins) */
+    async migrateAfterStartup(): Promise<boolean> {
+        try{
+            if (this.functions.afterStartupMigrate) await this.functions.afterStartupMigrate()
             return true
         }catch(err){
             process.emit("uncaughtException",err)
