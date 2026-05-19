@@ -1,8 +1,10 @@
 import * as api from "../api/index.js"
 import * as utilities from "../utilities/index.js"
-import {Terminal, terminal} from "terminal-kit"
+import terminalKit from "terminal-kit"
 import ansis from "ansis"
 import {ODCliHeaderOpts, renderHeader} from "./index.js"
+
+const terminal = terminalKit.terminal
 
 export class ODCliEditConfigInstance {
     private readonly opts: ODCliHeaderOpts
@@ -359,7 +361,7 @@ export class ODCliEditConfigInstance {
         const customExtraOptions = (structure instanceof api.ODCheckerCustomStructure_DiscordId) ? structure.extraOptions : undefined
         const customAutocompleteFunc = structure.options.cliAutocompleteFunc ? await structure.options.cliAutocompleteFunc() : null
         const autocompleteList = ((customAutocompleteFunc ?? structure.options.cliAutocompleteList) ?? customExtraOptions) ?? structure.options.choices
-        const autoCompleteMenuOpts: Terminal.SingleLineMenuOptions = {
+        const autoCompleteMenuOpts: terminalKit.Terminal.SingleLineMenuOptions = {
             style:terminal.white,
             selectedStyle:terminal.bgBlue.white
         }
@@ -371,7 +373,7 @@ export class ODCliEditConfigInstance {
             cancelable:false,
             autoComplete:autocompleteList,
             autoCompleteHint:(!!autocompleteList),
-            autoCompleteMenu:(autocompleteList) ? autoCompleteMenuOpts as Terminal.Autocompletion : false
+            autoCompleteMenu:(autocompleteList) ? autoCompleteMenuOpts as terminalKit.Terminal.Autocompletion : false
         })
 
         terminal.on("key",async (name:string,matches:string[],data:object) => {
@@ -638,7 +640,14 @@ export class ODCliEditConfigInstance {
             else{
                 localData[enabledProperty] = data
                 //copy old object checker to new object checker => all options get de-referenced (this is needed for the new object skip keys are temporary)
-                const newStructure = new api.ODCheckerObjectStructure(subStructure.id,structuredClone(subStructure.options))
+                const newStructure = new api.ODCheckerObjectStructure(subStructure.id,{children:[]})
+                
+                //copy all options over to the new checker. This can't be done using structuredClone() because of the custom() function
+                newStructure.options.children = [...subStructure.options.children]
+                newStructure.options.cliInitSkipKeys = [...(subStructure.options.cliInitSkipKeys ?? [])]
+                for (const key of Object.keys(subStructure.options) as (keyof api.ODCheckerObjectStructureOptions)[]){
+                    if (key != "children" && key != "cliInitSkipKeys") newStructure.options[key] = subStructure.options[key] as any
+                }
                 
                 //continues to next function
                 await this.renderAdditionConfigObjectStructure(checker,async () => {await this.renderAdditionConfigEnabledObjectStructure(checker,backFn,nextFn,structure,parent,parentIndex,path,localPath)},nextFn,newStructure,parent,parentIndex,path,localPath,localData)
@@ -665,7 +674,14 @@ export class ODCliEditConfigInstance {
 
         //copy old object checker to new object checker => all options get de-referenced (this is needed for the new object switch properties which are temporary)
         const oldStructure = objectTemplate.checker
-        const newStructure = new api.ODCheckerObjectStructure(oldStructure.id,structuredClone(oldStructure.options))
+        const newStructure = new api.ODCheckerObjectStructure(oldStructure.id,{children:[]})
+        
+        //copy all options over to the new checker. This can't be done using structuredClone() because of the custom() function
+        newStructure.options.children = [...oldStructure.options.children]
+        newStructure.options.cliInitSkipKeys = [...(oldStructure.options.cliInitSkipKeys ?? [])]
+        for (const key of Object.keys(oldStructure.options) as (keyof api.ODCheckerObjectStructureOptions)[]){
+            if (key != "children" && key != "cliInitSkipKeys") newStructure.options[key] = oldStructure.options[key] as any
+        }
 
         //add the keys of the object switch properties to the 'cliInitSkipKeys' because they need to be skipped.
         objectTemplate.properties.map((p) => p.key).forEach((p) => {
@@ -768,7 +784,7 @@ export class ODCliEditConfigInstance {
         const customExtraOptions = (structure instanceof api.ODCheckerCustomStructure_DiscordId) ? structure.extraOptions : undefined
         const customAutocompleteFunc = structure.options.cliAutocompleteFunc ? await structure.options.cliAutocompleteFunc() : null
         const autocompleteList = ((customAutocompleteFunc ?? structure.options.cliAutocompleteList) ?? customExtraOptions) ?? structure.options.choices
-        const autoCompleteMenuOpts: Terminal.SingleLineMenuOptions = {
+        const autoCompleteMenuOpts: terminalKit.Terminal.SingleLineMenuOptions = {
             style:terminal.white,
             selectedStyle:terminal.bgBlue.white
         }
@@ -780,7 +796,7 @@ export class ODCliEditConfigInstance {
             cancelable:false,
             autoComplete:autocompleteList,
             autoCompleteHint:(!!autocompleteList),
-            autoCompleteMenu:(autocompleteList) ? autoCompleteMenuOpts as Terminal.Autocompletion : false
+            autoCompleteMenu:(autocompleteList) ? autoCompleteMenuOpts as terminalKit.Terminal.Autocompletion : false
         })
 
         terminal.on("key",async (name:string,matches:string[],data:object) => {

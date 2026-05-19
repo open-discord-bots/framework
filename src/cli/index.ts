@@ -1,9 +1,11 @@
 import * as api from "../api/index.js"
 import * as utilities from "../utilities/index.js"
-import {Terminal, terminal} from "terminal-kit"
+import terminalKit from "terminal-kit"
 import * as discord from "discord.js"
 import ansis from "ansis"
 import crypto from "crypto"
+
+const terminal = terminalKit.terminal
 
 export * from "./editConfig.js"
 
@@ -102,7 +104,7 @@ export async function execute(opts:ODCliHeaderOpts,renderEditConfig:ODCliStartFu
 }
 
 /**A basic style template for select menu's in the interactive setup CLI. */
-export const autoCompleteMenuOpts: Terminal.SingleLineMenuOptions = {
+export const autoCompleteMenuOpts: terminalKit.Terminal.SingleLineMenuOptions = {
     style:terminal.white,
     selectedStyle:terminal.bgBlue.white
 }
