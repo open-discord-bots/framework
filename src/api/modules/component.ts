@@ -5,7 +5,7 @@ import { ODId, ODValidId, ODSystemError, ODManagerData, ODNoGeneric, ODManager, 
 import * as discord from "discord.js"
 import { ODWorkerManager, ODWorkerCallback, ODWorker } from "./worker.js"
 import { ODDebugger } from "./console.js"
-import { ODMessage, ODMessageInstance } from "./builder.js"
+import { ODMessage, ODMessageInstance, ODModalBuildResult } from "./builder.js"
 
 /**## ODComponentFactoryInstance `class`
  * An Open Discord component factory instance.
@@ -22,8 +22,9 @@ export class ODComponentFactoryInstance<Component extends ODComponent<object,any
         return this.rootComponent
     }
     /**Set the root component of this factory. */
-    setComponent(c:Component|null){
+    setComponent<SetComponent extends Component|null>(c:SetComponent): SetComponent {
         this.rootComponent = c
+        return c
     }
 }
 
@@ -288,10 +289,10 @@ export abstract class ODGroupComponent<Data extends object,ChildComponent extend
      * - `after`: insert after an existing component `referenceId` (`end` if `referenceId` is invalid)
      * - `index`: insert at a certain index `referenceIndex` (`end` if `referenceIndex` is invalid)
      */
-    addComponent(c:ChildComponent,mode:"start"|"end"): void
-    addComponent(c:ChildComponent,mode:"before"|"after",referenceId:ODValidId): void
-    addComponent(c:ChildComponent,mode:"index",referenceIndex:number): void
-    addComponent(c:ChildComponent,mode:"start"|"end"|"before"|"after"|"index" = "start",reference?:ODValidId|number){
+    addComponent(c:ChildComponent,mode:"start"|"end"): ChildComponent
+    addComponent(c:ChildComponent,mode:"before"|"after",referenceId:ODValidId): ChildComponent
+    addComponent(c:ChildComponent,mode:"index",referenceIndex:number): ChildComponent
+    addComponent(c:ChildComponent,mode:"start"|"end"|"before"|"after"|"index" = "start",reference?:ODValidId|number): ChildComponent {
         if (mode == "start") this.children.unshift(c)
         else if (mode == "end") this.children.push(c)
         else if (mode == "before"){
@@ -312,6 +313,7 @@ export abstract class ODGroupComponent<Data extends object,ChildComponent extend
                 this.children.splice(reference,0,c) //insert at position 'reference'
             }
         }
+        return c
     }
     /**Get a component with a certain ID in this group. Returns `null` if non-existent. Also able to search for components recursively. */
     getComponent(id:ODValidId): ChildComponent|null
@@ -417,6 +419,7 @@ export abstract class ODParentComponent<Data extends object,ChildComponent exten
     /**Set the child component of this parent. */
     setComponent(c:ChildComponent|null){
         this.rawChild = c
+        return this.rawChild
     }
 }
 
@@ -556,19 +559,23 @@ export class ODMessageComponent extends ODGroupComponent<ODMessageComponentData,
     /**Enable/disable ephemeral mode. */
     setEphemeral(value:boolean){
         this.data.ephemeral = value
+        return this
     }
     /**Enable supress (hide) embeds mode. */
     setSupressEmbeds(value:boolean){
         this.data.supressEmbeds = value
+        return this
     }
     /**Enable supress (hide) notifications mode. */
     setSupressNotifications(value:boolean){
         this.data.supressNotifications = value
+        return this
     }
     /**Add an additional attachment which can be used in components as `attachment://...` */
     addAdditionalAttachments(...attachments:discord.AttachmentBuilder[]){
         if (!this.data.additionalAttachments) this.data.additionalAttachments = []
         this.data.additionalAttachments.push(...attachments)
+        return this
     }
 }
 
@@ -656,19 +663,23 @@ export class ODSimpleMessageComponent extends ODGroupComponent<ODSimpleMessageCo
     /**Enable/disable ephemeral mode. */
     setEphemeral(value:boolean){
         this.data.ephemeral = value
+        return this
     }
     /**Enable supress (hide) embeds mode. */
     setSupressEmbeds(value:boolean){
         this.data.supressEmbeds = value
+        return this
     }
     /**Enable supress (hide) notifications mode. */
     setSupressNotifications(value:boolean){
         this.data.supressNotifications = value
+        return this
     }
     /**Add an additional attachment which can be used in components as `attachment://...` */
     addAdditionalAttachments(...attachments:discord.AttachmentBuilder[]){
         if (!this.data.additionalAttachments) this.data.additionalAttachments = []
         this.data.additionalAttachments.push(...attachments)
+        return this
     }
 }
 
@@ -692,7 +703,7 @@ export type ODValidModalComponents = ODLabelComponent|ODTextComponent
  * A modal builder with **components v2** support.
  * Add questions, select menu's & labels to this modal using `addComponent()`.
  */
-export class ODModalComponent extends ODGroupComponent<ODModalComponentData,ODValidModalComponents,discord.ModalBuilder> {
+export class ODModalComponent extends ODGroupComponent<ODModalComponentData,ODValidModalComponents,ODModalBuildResult> {
     constructor(id:ODValidId,data?:Partial<ODModalComponentData>){
         const initData: ODModalComponentData = {title:"<empty>",...data}
         super(id,"modal",initData)
@@ -717,16 +728,20 @@ export class ODModalComponent extends ODGroupComponent<ODModalComponentData,ODVa
             }
         }
         
-        return new discord.ModalBuilder({
-            components,
-            title:this.data.title,
-            customId:this.data.customId
-        })
+        return {
+            id:new ODId(this.id),
+            modal:new discord.ModalBuilder({
+                components,
+                title:this.data.title,
+                customId:this.data.customId
+            })
+        }
     }
 
     /**Set the title of the modal. */
     setTitle(title:string){
         this.data.title = title
+        return this
     }
     /**Set the custom id of this modal. */
     setCustomId(id:string|null){
@@ -839,10 +854,12 @@ export class ODContainerComponent extends ODGroupComponent<ODContainerComponentD
     /**Set the accent color of this embed-like container. */
     setColor(color:discord.ColorResolvable|null){
         this.data.color = color ?? undefined
+        return this
     }
     /**Mark the contents of this container as spoiler. */
     setSpoiler(spoiler:boolean){
         this.data.spoiler = spoiler
+        return this
     }
 }
 
@@ -891,6 +908,7 @@ export class ODSectionComponent extends ODGroupComponent<ODSectionComponentData,
     /**Set the accessory component shown on the right side of the section. */
     setAccessory(accessory:ODButtonComponent|ODThumbnailComponent|null){
         this.data.accessory = accessory ?? undefined
+        return this
     }
 }
 
@@ -935,10 +953,12 @@ export class ODLabelComponent extends ODParentComponent<ODLabelComponentData,ODV
     /**Set the title of the child component in the modal. */
     setTitle(title:string){
         this.data.title = title
+        return this
     }
     /**Set the description of the child component in the modal. */
     setDescription(description:string|null){
         this.data.description = description ?? undefined
+        return this
     }
 }
 
@@ -972,10 +992,12 @@ export class ODSeparatorComponent extends ODComponent<ODSeparatorComponentData,d
     /**Set whether a visual divider should be displayed in the component. (Default: `true`). */
     setDivider(divider:boolean){
         this.data.divider = divider
+        return this
     }
     /**Set the size of separator padding (Default `small`). */
     setSpacing(spacing:"small"|"large"){
         this.data.spacing = spacing
+        return this
     }
 }
 
@@ -1010,6 +1032,7 @@ export class ODTextComponent extends ODComponent<ODTextComponentData,discord.Tex
     /**Set the text to display. */
     setContent(value:string){
         this.data.content = value
+        return this
     }
 }
 
@@ -1060,22 +1083,27 @@ export class ODFileComponent extends ODComponent<ODFileComponentData,{file:disco
     /**Set the filename + extension. */
     setName(value:string){
         this.data.name = value
+        return this
     }
     /**Set the file description. */
     setDescription(value:string|null){
         this.data.description = value ?? undefined
+        return this
     }
     /**Set the text/binary contents of the file. */
     setContent(value:discord.BufferResolvable|null){
         this.data.content = value ?? undefined
+        return this
     }
     /**Set a URL to an external file or image. When used, `setContent()` will be ignored! */
     setExternalUrl(value:string|null){
         this.data.externalUrl = value ?? undefined
+        return this
     }
     /**Mark the file as spoiler. */
     setSpoiler(value:boolean){
         this.data.spoiler = value
+        return this
     }
 }
 
@@ -1156,14 +1184,17 @@ export class ODThumbnailComponent extends ODComponent<ODThumbnailComponentData,d
     /**Set the URL of the thumbnail image. */
     setUrl(value:string){
         this.data.url = value
+        return this
     }
     /**Set the alt text/description of the thumbnail image. */
     setDescription(value:string|null){
         this.data.description = value ?? undefined
+        return this
     }
     /**Mark the thumbnail as a spoiler. */
     setSpoiler(value:boolean){
         this.data.spoiler = value
+        return this
     }
 }
 
@@ -1194,6 +1225,7 @@ export class ODContentComponent extends ODComponent<ODContentComponentData,{cont
     /**Set the text to display. */
     setContent(value:string){
         this.data.content = value
+        return this
     }
 }
 
@@ -1387,22 +1419,27 @@ export class ODPollComponent extends ODComponent<ODPollComponentData,discord.Pol
     /**Set the poll question. */
     setQuestion(question:string){
         this.data.question = question
+        return this
     }
     /**Set the poll duration in hours. */
     setDurationHours(duration:number){
         this.data.durationHours = duration
+        return this
     }
     /**Allow selecting multiple answers. */
     setMultiSelect(multi:boolean){
         this.data.allowMultiSelect = multi
+        return this
     }
     /**Set the poll answers. */
     setAnswers(answers:discord.PollAnswerData[]){
         this.data.answers = answers
+        return this
     }
     /**Add additional poll answers. */
     addAnswers(...answers:discord.PollAnswerData[]){
         this.data.answers.push(...answers)
+        return this
     }
 }
 
@@ -1656,6 +1693,8 @@ export interface ODDropdownComponentData {
     maxValues?:number,
     /**Is this dropdown disabled? */
     disabled?:boolean,
+    /**Is this dropdown required? (MODAL ONLY) */
+    required?:boolean,
 
     /**Allowed channel types when the type is "channel" */
     channelTypes?:discord.ChannelType[]
@@ -1695,32 +1734,32 @@ export class ODDropdownComponent extends ODComponent<ODDropdownComponentData,dis
             return new discord.StringSelectMenuBuilder({
                 ...genericOpts,
                 options:this.data.options
-            })
+            }).setRequired(this.data.required ?? false)
         }else if (this.data.type == "user"){
             if (!this.data.users || this.data.users.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one user option using setUsers().")
             return new discord.UserSelectMenuBuilder({
                 ...genericOpts,
                 defaultValues:this.data.users.map((u) => ({id:u.id,type:discord.SelectMenuDefaultValueType.User}))
-            })
+            }).setRequired(this.data.required ?? false)
         }else if (this.data.type == "role"){
             if (!this.data.roles || this.data.roles.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one role option using setRoles().")
             return new discord.RoleSelectMenuBuilder({
                 ...genericOpts,
                 defaultValues:this.data.roles.map((r) => ({id:r.id,type:discord.SelectMenuDefaultValueType.Role}))
-            })
+            }).setRequired(this.data.required ?? false)
         }else if (this.data.type == "channel"){
             if (!this.data.channels || this.data.channels.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one channel option using setChannels().")
             return new discord.ChannelSelectMenuBuilder({
                 ...genericOpts,
                 channelTypes:this.data.channelTypes,
                 defaultValues:this.data.channels.map((c) => ({id:c.id,type:discord.SelectMenuDefaultValueType.Channel}))
-            })
+            }).setRequired(this.data.required ?? false)
         }else if (this.data.type == "mentionable"){
             if (!this.data.mentionables || this.data.mentionables.length < 1) throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please provide at least one role/user option using setMentionables().")
             return new discord.MentionableSelectMenuBuilder({
                 ...genericOpts,
                 defaultValues:this.data.mentionables.map((m) => (m instanceof discord.User ? {id:m.id,type:discord.SelectMenuDefaultValueType.User} : {id:m.id,type:discord.SelectMenuDefaultValueType.Role}))
-            })
+            }).setRequired(this.data.required ?? false)
         }else throw new ODSystemError("ODDropdownComponent:build('"+this.id.value+"') => Please set the dropdown type to one of the following: string, user, role, channel, mentionable.") 
     }
 
@@ -1752,6 +1791,11 @@ export class ODDropdownComponent extends ODComponent<ODDropdownComponentData,dis
     /**Disable this dropdown. */
     setDisabled(disabled:boolean){
         this.data.disabled = disabled
+        return this
+    }
+    /**Mark this dropdown as required in modals. */
+    setRequired(required:boolean){
+        this.data.required = required
         return this
     }
     /**Set the available channel types of this dropdown. */

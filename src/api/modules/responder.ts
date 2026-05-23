@@ -867,6 +867,7 @@ export class ODDropdownResponderInstanceValues {
 
     /**Get the selected values. */
     getStringValues(): string[] {
+        if (this.type != "string" || !this.interaction.isStringSelectMenu()) throw new ODSystemError("ODDropdownResponderInstanceValues:getStringValues() dropdown type isn't 'role'!")
         try {
             return this.interaction.values
         }catch(err){
@@ -876,13 +877,16 @@ export class ODDropdownResponderInstanceValues {
     }
     /**Get the selected roles. */
     async getRoleValues(): Promise<discord.Role[]> {
-        if (this.type != "role") throw new ODSystemError("ODDropdownResponderInstanceValues:getRoleValues() dropdown type isn't role!")
+        if (this.type != "role" || !this.interaction.isRoleSelectMenu()) throw new ODSystemError("ODDropdownResponderInstanceValues:getRoleValues() dropdown type isn't 'role'!")
         try {
             const result: discord.Role[] = []
-            for (const id of this.interaction.values){
-                if (!this.interaction.guild) break
-                const role = await this.interaction.guild.roles.fetch(id)
-                if (role) result.push(role)
+            if (!this.interaction.guild) return result
+            for (const role of this.interaction.roles.toJSON()){
+                if (role instanceof discord.Role) result.push(role)
+                else{
+                    const fetchedRole = await this.interaction.guild.roles.fetch(role.id)
+                    if (fetchedRole) result.push(fetchedRole)
+                }
             }
             return result
         }catch(err){
@@ -892,33 +896,52 @@ export class ODDropdownResponderInstanceValues {
     }
     /**Get the selected users. */
     async getUserValues(): Promise<discord.User[]> {
-        if (this.type != "role") throw new ODSystemError("ODDropdownResponderInstanceValues:getUserValues() dropdown type isn't user!")
+        if (this.type != "user" || !this.interaction.isUserSelectMenu()) throw new ODSystemError("ODDropdownResponderInstanceValues:getUserValues() dropdown type isn't 'user'!")
         try {
-            const result: discord.User[] = []
-            for (const id of this.interaction.values){
-                const user = await this.interaction.client.users.fetch(id)
-                if (user) result.push(user)
-            }
-            return result
+            return this.interaction.users.toJSON()
         }catch(err){
             process.emit("uncaughtException",err)
             throw new ODSystemError("ODDropdownResponderInstanceValues:getUserValues() invalid values!")
         }
     }
     /**Get the selected channels. */
-    async getChannelValues(): Promise<discord.GuildBasedChannel[]> {
-        if (this.type != "role") throw new ODSystemError("ODDropdownResponderInstanceValues:getChannelValues() dropdown type isn't channel!")
+    async getChannelValues(): Promise<discord.Channel[]> {
+        if (this.type != "channel" || !this.interaction.isChannelSelectMenu()) throw new ODSystemError("ODDropdownResponderInstanceValues:getChannelValues() dropdown type isn't 'channel'!")
         try {
-            const result: discord.GuildBasedChannel[] = []
-            for (const id of this.interaction.values){
-                if (!this.interaction.guild) break
-                const guild = await this.interaction.guild.channels.fetch(id)
-                if (guild) result.push(guild)
+            const result: discord.Channel[] = []
+            for (const channel of this.interaction.channels.toJSON()){
+                if (channel instanceof discord.BaseChannel) result.push(channel)
+                else{
+                    const fetchedChannel = await this.interaction.client.channels.fetch(channel.id)
+                    if (fetchedChannel) result.push(fetchedChannel)
+                }
             }
             return result
         }catch(err){
             process.emit("uncaughtException",err)
             throw new ODSystemError("ODDropdownResponderInstanceValues:getChannelValues() invalid values!")
+        }
+    }
+    /**Get the selected mentionables. */
+    async getMentionableValues(): Promise<(discord.User|discord.Role)[]> {
+        if (this.type != "mentionable" || !this.interaction.isMentionableSelectMenu()) throw new ODSystemError("ODDropdownResponderInstanceValues:getMentionableValues() dropdown type isn't 'mentionable'!")
+        try {
+            const result: (discord.User|discord.Role)[] = []
+            
+            result.push(...this.interaction.users.toJSON())
+            if (!this.interaction.guild) return result
+            for (const role of this.interaction.roles.toJSON()){
+                if (role instanceof discord.Role) result.push(role)
+                else{
+                    const fetchedRole = await this.interaction.guild.roles.fetch(role.id)
+                    if (fetchedRole) result.push(fetchedRole)
+                }
+            }
+
+            return result
+        }catch(err){
+            process.emit("uncaughtException",err)
+            throw new ODSystemError("ODDropdownResponderInstanceValues:getMentionableValues() invalid values!")
         }
     }
 }
@@ -1182,14 +1205,135 @@ export class ODModalResponderInstanceValues {
     /**Get the value of a text field. */
     getTextField(name:string,required:true): string
     getTextField(name:string,required:false): string|null
-    getTextField(name:string,required:boolean){
+    getTextField(name:string,required:boolean): string|null {
         try {
-            const data = this.interaction.fields.getField(name,discord.ComponentType.TextInput)
-            if (!data && required) throw new ODSystemError("ODModalResponderInstanceValues:getTextField() field not found!")
-            return (data) ? data.value : null
+            
+            const data = this.interaction.fields.getTextInputValue(name)
+            if (data.length < 1 && required) throw new ODSystemError("ODModalResponderInstanceValues:getTextField() field required, found empty!")
+            return (data.length > 0) ? data : null
         }catch(err){
             process.emit("uncaughtException",err)
             throw new ODSystemError("ODModalResponderInstanceValues:getTextField() field not found!")
+        }
+    }
+
+    /**Get the state of a single checkbox field. */
+    getSingleCheckbox(name:string): boolean {
+        try {
+            return this.interaction.fields.getCheckbox(name)
+        }catch(err){
+            process.emit("uncaughtException",err)
+            throw new ODSystemError("ODModalResponderInstanceValues:getSingleCheckbox() field not found!")
+        }
+    }
+
+    /**Get the selected checkboxes of a checkbox group. */
+    getCheckboxGroup(name:string): string[] {
+        try {
+            return [...this.interaction.fields.getCheckboxGroup(name)]
+        }catch(err){
+            process.emit("uncaughtException",err)
+            throw new ODSystemError("ODModalResponderInstanceValues:getCheckboxGroup() field not found!")
+        }
+    }
+
+    /**Get the selected value of a radio group. */
+    getRadioGroup(name:string,required:true): string
+    getRadioGroup(name:string,required:false): string|null
+    getRadioGroup(name:string,required:boolean): string|null {
+        try {
+            const data = this.interaction.fields.getRadioGroup(name)
+            if (typeof data !== "string" && required) throw new ODSystemError("ODModalResponderInstanceValues:getRadioGroup() field required, found empty!")
+            return data
+        }catch(err){
+            process.emit("uncaughtException",err)
+            throw new ODSystemError("ODModalResponderInstanceValues:getRadioGroup() field not found!")
+        }
+    }
+
+    /**Get the selected values of a string/text dropdown. */
+    getStringDropdownValues(name:string): string[] {
+        try {
+            return [...this.interaction.fields.getStringSelectValues(name)]
+        }catch(err){
+            process.emit("uncaughtException",err)
+            throw new ODSystemError("ODModalResponderInstanceValues:getStringDropdownValues() field not found!")
+        }
+    }
+    /**Get the selected values of a role dropdown. */
+    async getRoleDropdownValues(name:string): Promise<discord.Role[]> {
+        try {
+            const result: discord.Role[] = []
+            if (!this.interaction.guild) return result
+            for (const role of (this.interaction.fields.getSelectedRoles(name)?.toJSON() ?? [])){
+                if (!role) continue
+                else if (role instanceof discord.Role) result.push(role)
+                else{
+                    const fetchedRole = await this.interaction.guild.roles.fetch(role.id)
+                    if (fetchedRole) result.push(fetchedRole)
+                }
+            }
+            return result
+        }catch(err){
+            process.emit("uncaughtException",err)
+            throw new ODSystemError("ODModalResponderInstanceValues:getRoleDropdownValues() field not found!")
+        }
+    }
+    /**Get the selected values of a user dropdown. */
+    async getUserDropdownValues(name:string): Promise<discord.User[]> {
+        try {
+            const result: discord.User[] = (this.interaction.fields.getSelectedUsers(name)?.toJSON() ?? [])
+            return result
+        }catch(err){
+            process.emit("uncaughtException",err)
+            throw new ODSystemError("ODModalResponderInstanceValues:getUserDropdownValues() field not found!")
+        }
+    }
+    /**Get selected values of a channel dropdown. */
+    async getChannelDropdownValues(name:string): Promise<discord.Channel[]> {
+        try {
+            const result: discord.Channel[] = []
+            for (const channel of (this.interaction.fields.getSelectedChannels(name)?.toJSON() ?? [])){
+                if (channel instanceof discord.BaseChannel) result.push(channel)
+                else{
+                    const fetchedChannel = await this.interaction.client.channels.fetch(channel.id)
+                    if (fetchedChannel) result.push(fetchedChannel)
+                }
+            }
+            return result
+        }catch(err){
+            process.emit("uncaughtException",err)
+            throw new ODSystemError("ODModalResponderInstanceValues:getChannelDropdownValues() field not found!")
+        }
+    }
+    /**Get the selected values of a mentionable dropdown. */
+    async getMentionableDropdownValues(name:string): Promise<(discord.User|discord.Role)[]> {
+        try {
+            const result: (discord.User|discord.Role)[] = []
+            result.push(...(this.interaction.fields.getSelectedUsers(name)?.toJSON() ?? []))
+            if (!this.interaction.guild) return result
+            for (const role of (this.interaction.fields.getSelectedRoles(name)?.toJSON() ?? [])){
+                if (!role) continue
+                else if (role instanceof discord.Role) result.push(role)
+                else{
+                    const fetchedRole = await this.interaction.guild.roles.fetch(role.id)
+                    if (fetchedRole) result.push(fetchedRole)
+                }
+            }
+            return result
+        }catch(err){
+            process.emit("uncaughtException",err)
+            throw new ODSystemError("ODModalResponderInstanceValues:getMentionableDropdownValues() field not found!")
+        }
+    }
+    /**Get the uploaded files of a modal file upload component. */
+    getUploadedFiles(name:string): discord.Attachment[] {
+        try {
+            const result: discord.Attachment[] = (this.interaction.fields.getUploadedFiles(name)?.toJSON() ?? [])
+            return result
+        }catch(err){
+            process.emit("uncaughtException",err)
+            throw new ODSystemError("ODModalResponderInstanceValues:getUploadedFiles() field not found!")
         }
     }
 }
