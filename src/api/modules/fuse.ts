@@ -230,10 +230,10 @@ export interface ODSharedFuseList {
     /**Initiate the default Open Discord statistics. */
     statisticInitiating:boolean,
 
-    /**Load the default Open Discord code/functions. */
-    codeLoading:boolean,
-    /**Execute the default Open Discord code/functions. */
-    codeExecution:boolean,
+    /**Load the default Open Discord task/functions. */
+    taskLoading:boolean,
+    /**Execute the default Open Discord task/functions. */
+    taskExecution:boolean,
 
     /**Load the default Open Discord livestatus. */
     liveStatusLoading:boolean,
@@ -350,8 +350,8 @@ export class ODSharedFuseManager extends ODFuseManager<ODSharedFuseList> {
             statisticLoading:true,
             statisticInitiating:true,
 
-            codeLoading:true,
-            codeExecution:true,
+            taskLoading:true,
+            taskExecution:true,
 
             liveStatusLoading:true,
             startScreenLoading:true,

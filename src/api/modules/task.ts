@@ -1,26 +1,26 @@
 ///////////////////////////////////////
-//CODE MODULE
+//TASK MODULE
 ///////////////////////////////////////
 import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base.js"
 import { ODDebugger } from "./console.js"
 
 
-/**## ODCode `class`
- * This is an Open Discord code runner.
+/**## ODTask `class`
+ * This is an Open Discord task runner.
  * 
- * Using this, you're able to execute a function just before the startup screen. (90% of the code is already loaded)
+ * Use this to execute a function just before the startup screen. (with more than 90% of the code already loaded)
  * You can also specify a priority to change the execution order.
- * In Open Discord, this is used for the following processes:
+ * In Open Ticket, this is used for the following processes:
  * - Autoclose/delete
  * - Database syncronisation (with tickets, statistics & used options)
  * - Panel auto-update
  * - Database Garbage Collection (removing tickets that don't exist anymore)
  * - And more!
  */
-export class ODCode extends ODManagerData {
-    /**The priority of this code */
+export class ODTask extends ODManagerData {
+    /**The priority of this task */
     priority: number
-    /**The main function of this code */
+    /**The main function of this task */
     func: () => void|Promise<void>
 
     constructor(id:ODValidId, priority:number, func:() => void|Promise<void>){
@@ -30,24 +30,24 @@ export class ODCode extends ODManagerData {
     }
 }
 
-/**## ODCodeManagerIdConstraint `type`
- * The constraint/layout for id mappings/interfaces of the `ODCodeManager` class.
+/**## ODTaskManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODTaskManager` class.
  */
-export type ODCodeManagerIdConstraint = Record<string,ODCode>
+export type ODTaskManagerIdConstraint = Record<string,ODTask>
 
-/**## ODCodeManager `class`
- * This is an Open Discord code manager.
+/**## ODTaskManager `class`
+ * This is an Open Discord task manager.
  * 
- * It manages & executes `ODCode`'s in the correct order.
+ * It manages & executes `ODTask`'s in the correct order.
  * 
- * Use this to register a function/code which executes just before the startup screen. (90% is already loaded)
+ * Register functions/tasks that execute just before the startup screen. (with more than 90% of the code already loaded)
  */
-export class ODCodeManager<IdList extends ODCodeManagerIdConstraint = ODCodeManagerIdConstraint> extends ODManager<ODCode> {
+export class ODTaskManager<IdList extends ODTaskManagerIdConstraint = ODTaskManagerIdConstraint> extends ODManager<ODTask> {
     constructor(debug:ODDebugger){
-        super(debug,"code")
+        super(debug,"task")
     }
     
-    /**Execute all `ODCode` functions in order of their priority (high to low). */
+    /**Execute all `ODTask` functions in order of their priority (high to low). */
     async execute(){
         const derefArray = [...this.getAll()]
         const workers = derefArray.sort((a,b) => b.priority-a.priority)
@@ -61,17 +61,17 @@ export class ODCodeManager<IdList extends ODCodeManagerIdConstraint = ODCodeMana
         }
     }
 
-    get<CodeId extends keyof ODNoGeneric<IdList>>(id:CodeId): IdList[CodeId]
-    get(id:ODValidId): ODCode|null
+    get<TaskId extends keyof ODNoGeneric<IdList>>(id:TaskId): IdList[TaskId]
+    get(id:ODValidId): ODTask|null
     
-    get(id:ODValidId): ODCode|null {
+    get(id:ODValidId): ODTask|null {
         return super.get(id)
     }
 
-    remove<CodeId extends keyof ODNoGeneric<IdList>>(id:CodeId): IdList[CodeId]
-    remove(id:ODValidId): ODCode|null
+    remove<TaskId extends keyof ODNoGeneric<IdList>>(id:TaskId): IdList[TaskId]
+    remove(id:ODValidId): ODTask|null
     
-    remove(id:ODValidId): ODCode|null {
+    remove(id:ODValidId): ODTask|null {
         return super.remove(id)
     }
 

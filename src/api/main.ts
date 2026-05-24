@@ -18,7 +18,7 @@ import { ODPermissionManager } from "./modules/permission.js"
 import { ODCooldownManager } from "./modules/cooldown.js"
 import { ODHelpMenuManager } from "./modules/helpmenu.js"
 import { ODStatisticManager } from "./modules/statistic.js"
-import { ODCodeManager } from "./modules/code.js"
+import { ODTaskManager } from "./modules/task.js"
 import { ODPostManager } from "./modules/post.js"
 import { ODClientManager } from "./modules/client.js"
 import { ODSharedFuseManager } from "./modules/fuse.js"
@@ -86,8 +86,8 @@ export interface ODMainManagers {
     helpmenu: ODHelpMenuManager
     /**The manager that registers, saves & updates statistics in the database. */
     statistics: ODStatisticManager
-    /**A place where you can put general-purpose code which will start on startup of the bot. (Perfect for background tasks) */
-    code: ODCodeManager
+    /**A place to put general-purpose code and background tasks which will execute on startup. */
+    tasks: ODTaskManager
     /**A collection of static Discord post channels. It allows the bot to find back log, transcript or configured channels based on a linked ID. */
     posts: ODPostManager
     /**A system for tracking messages or linking metadata, states or progress to Discord messages (ID-based). Features automatic garbage collection. */
@@ -141,7 +141,7 @@ export abstract class ODMain implements ODMainManagers {
     readonly cooldowns: ODCooldownManager
     readonly helpmenu: ODHelpMenuManager
     readonly statistics: ODStatisticManager
-    readonly code: ODCodeManager
+    readonly tasks: ODTaskManager
     readonly posts: ODPostManager
     readonly states: ODStateManager
     
@@ -154,7 +154,7 @@ export abstract class ODMain implements ODMainManagers {
     constructor(managers:ODMainManagers,project:ODProjectType){
         this.project = project
         this.versions = managers.versions
-        this.versions.add(ODVersion.fromString("opendiscord:api","v0.5.2"))
+        this.versions.add(ODVersion.fromString("opendiscord:api","v0.5.3"))
         this.versions.add(ODVersion.fromString("opendiscord:livestatus","v2.0.0"))
 
         this.debugfile = managers.debugfile
@@ -181,7 +181,7 @@ export abstract class ODMain implements ODMainManagers {
         this.cooldowns = managers.cooldowns
         this.helpmenu = managers.helpmenu
         this.statistics = managers.statistics
-        this.code = managers.code
+        this.tasks = managers.tasks
         this.posts = managers.posts
         this.states = managers.states
         
