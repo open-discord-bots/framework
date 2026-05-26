@@ -136,6 +136,8 @@ export class ODJsonDatabase<IdList extends ODDatabaseIdConstraint = ODDatabaseId
      * const didOverwrite = database.setData("category","key","value") //value can be any of the valid types
      * //You need an ODJsonDatabase class named "database" for this example to work!
      */
+    set<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string, value:IdList[CategoryId]): ODOptionalPromise<boolean>
+    set(category:string, key:string, value:ODValidJsonType): ODOptionalPromise<boolean>
     set(category:string, key:string, value:ODValidJsonType): ODOptionalPromise<boolean> {
         const currentList = this.#system.getData()
         const currentData = currentList.find((d) => (d.category === category) && (d.key === key))
@@ -155,7 +157,7 @@ export class ODJsonDatabase<IdList extends ODDatabaseIdConstraint = ODDatabaseId
      * const data = database.getData("category","key") //data will be the value
      * //You need an ODJsonDatabase class named "database" for this example to work!
      */
-    get<CategoryId extends keyof ODNoGeneric<IdList>>(category: CategoryId, key: string): ODOptionalPromise<IdList[CategoryId] | undefined>
+    get<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string): ODOptionalPromise<IdList[CategoryId]|undefined>
     get(category:string, key:string): ODOptionalPromise<ODValidJsonType|undefined>
     get(category:string, key:string): ODOptionalPromise<ODValidJsonType|undefined> {
         const currentList = this.#system.getData()
@@ -167,6 +169,8 @@ export class ODJsonDatabase<IdList extends ODDatabaseIdConstraint = ODDatabaseId
      * const didExist = database.deleteData("category","key") //delete this value
      * //You need an ODJsonDatabase class named "database" for this example to work!
      */
+    delete<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string): ODOptionalPromise<boolean>
+    delete(category:string, key:string): ODOptionalPromise<boolean>
     delete(category:string, key:string): ODOptionalPromise<boolean> {
         const currentList = this.#system.getData()
         const currentData = currentList.find((d) => (d.category === category) && (d.key === key))
@@ -176,6 +180,8 @@ export class ODJsonDatabase<IdList extends ODDatabaseIdConstraint = ODDatabaseId
         return currentData ? true : false
     }
     /**Check if a value of `category` & `key` exists. Returns `false` when non-existent! */
+    exists(category:keyof ODNoGeneric<IdList>, key:string): ODOptionalPromise<boolean>
+    exists(category:string, key:string): ODOptionalPromise<boolean>
     exists(category:string, key:string): ODOptionalPromise<boolean> {
         const currentList = this.#system.getData()
         const tempresult = currentList.find((d) => (d.category === category) && (d.key === key))
@@ -245,6 +251,8 @@ export class ODFormattedJsonDatabase<IdList extends ODDatabaseIdConstraint = ODD
      * const didOverwrite = database.setData("category","key","value") //value can be any of the valid types
      * //You need an ODFormattedJsonDatabase class named "database" for this example to work!
      */
+    set<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string, value:IdList[CategoryId]): ODOptionalPromise<boolean>
+    set(category:string, key:string, value:ODValidJsonType): ODOptionalPromise<boolean>
     set(category:string, key:string, value:ODValidJsonType): ODOptionalPromise<boolean> {
         const currentList = this.#system.getData()
         const currentData = currentList.find((d) => (d.category === category) && (d.key === key))
@@ -276,6 +284,8 @@ export class ODFormattedJsonDatabase<IdList extends ODDatabaseIdConstraint = ODD
      * const didExist = database.deleteData("category","key") //delete this value
      * //You need an ODFormattedJsonDatabase class named "database" for this example to work!
      */
+    delete<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string): ODOptionalPromise<boolean>
+    delete(category:string, key:string): ODOptionalPromise<boolean>
     delete(category:string, key:string): ODOptionalPromise<boolean> {
         const currentList = this.#system.getData()
         const currentData = currentList.find((d) => (d.category === category) && (d.key === key))
@@ -285,6 +295,8 @@ export class ODFormattedJsonDatabase<IdList extends ODDatabaseIdConstraint = ODD
         return currentData ? true : false
     }
     /**Check if a value of `category` & `key` exists. Returns `false` when non-existent! */
+    exists(category:keyof ODNoGeneric<IdList>, key:string): ODOptionalPromise<boolean>
+    exists(category:string, key:string): ODOptionalPromise<boolean>
     exists(category:string, key:string): ODOptionalPromise<boolean> {
         const currentList = this.#system.getData()
         const tempresult = currentList.find((d) => (d.category === category) && (d.key === key))
