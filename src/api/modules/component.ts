@@ -138,13 +138,39 @@ export class ODComponentModifierManager<IdList extends ODComponentModifierManage
     }
 }
 
+/**## ODSharedComponentManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODComponentManager` class.
+ */
+export type ODSharedComponentManagerIdConstraint = Record<string,{component:ODComponent<object,any>,origin:string,params:object,workers:string}>
+
 /**## ODSharedComponentManager `class
  * A special class with types for shared message/modal `ODComponent`'s.  
  * Create button, dropdown or any other layout component template to use them in messages & modals.
  */
-export class ODSharedComponentManager<IdList extends ODComponentManagerIdConstraint = ODComponentManagerIdConstraint> extends ODBaseComponentManager<IdList,ODComponent<object,any>> {
+export class ODSharedComponentManager<IdList extends ODSharedComponentManagerIdConstraint = ODSharedComponentManagerIdConstraint> extends ODBaseComponentManager<IdList,ODComponent<object,any>> {
     constructor(debug:ODDebugger){
         super(debug,"shared component")
+    }
+
+    get<FactoryId extends keyof ODNoGeneric<IdList>>(id:FactoryId): ODComponentFactory<IdList[FactoryId]["component"],IdList[FactoryId]["origin"],IdList[FactoryId]["params"],IdList[FactoryId]["workers"]>
+    get(id:ODValidId): ODComponentFactory<ODComponent<object,any>,string,{},string>|null
+    
+    get(id:ODValidId): ODComponentFactory<ODComponent<object,any>,string,{},string>|null {
+        return super.get(id)
+    }
+
+    remove<FactoryId extends keyof ODNoGeneric<IdList>>(id:FactoryId): ODComponentFactory<IdList[FactoryId]["component"],IdList[FactoryId]["origin"],IdList[FactoryId]["params"],IdList[FactoryId]["workers"]>
+    remove(id:ODValidId): ODComponentFactory<ODComponent<object,any>,string,{},string>|null
+    
+    remove(id:ODValidId): ODComponentFactory<ODComponent<object,any>,string,{},string>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof ODNoGeneric<IdList>): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -183,7 +209,7 @@ export class ODModalComponentManager<IdList extends ODComponentManagerIdConstrai
  * - And so much more!
  */
 export class ODComponentManager<
-    SharedIdList extends ODComponentManagerIdConstraint = ODComponentManagerIdConstraint,
+    SharedIdList extends ODSharedComponentManagerIdConstraint = ODSharedComponentManagerIdConstraint,
     MessageIdList extends ODComponentManagerIdConstraint = ODComponentManagerIdConstraint,
     ModalIdList extends ODComponentManagerIdConstraint = ODComponentManagerIdConstraint,
     ModifierIdList extends ODComponentModifierManagerIdConstraint = ODComponentModifierManagerIdConstraint
