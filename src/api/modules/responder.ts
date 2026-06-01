@@ -1389,9 +1389,15 @@ export class ODModalResponderInstance extends ODBaseResponderInstance {
     async reply(build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<boolean>> {
         try {
             const finalMessage = this.getMessageFromBuildResult(build,"interaction")
-            const sent = await this.interaction.reply(finalMessage)
-            this.ignoreResponderTimeout = true
-            return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
+            if (this.interaction.replied || this.interaction.deferred){
+                const sent = await this.interaction.editReply(finalMessage)
+                this.ignoreResponderTimeout = true
+                return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
+            }else{
+                const sent = await this.interaction.reply(finalMessage)
+                this.ignoreResponderTimeout = true
+                return {success:true,message:await sent.fetch(),ephemeral:build.ephemeral}
+            }
         }catch(err){
             process.emit("uncaughtException",err)
             return {success:false}

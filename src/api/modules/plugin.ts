@@ -181,7 +181,8 @@ export class ODPlugin extends ODManagerData {
             try{
                 //import relative plugin directory path (works on windows & unix based systems)
                 const pluginPath = nodepath.join(process.cwd(),"./dist/plugins/",this.getStartFile()).replaceAll("\\","/")
-                await import(pluginPath)
+                const finalPathForWindows = (process.platform == "win32") ? "file://"+pluginPath : pluginPath
+                await import(finalPathForWindows)
                 debug.console.log("Plugin \""+this.id.value+"\" loaded successfully!","plugin")
                 this.executed = true
                 return true

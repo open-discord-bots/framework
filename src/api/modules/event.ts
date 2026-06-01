@@ -69,7 +69,7 @@ export class ODEvent<Callback extends ODEventCallback = ODEventCallback> extends
             try{
                 await listener(...params)
             }catch(err:any){
-                process.emit("uncaughtException",new ODSystemError(err))
+                process.emit("uncaughtException",err)
             }
         }
     }
