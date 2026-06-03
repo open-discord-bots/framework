@@ -506,6 +506,17 @@ export class ODCheckerFunctionManager<IdList extends ODCheckerFunctionManagerIdC
         super(debug,"config checker function")
     }
 
+    /**Get a human-readable number string. */
+    protected ordinalNumber(num:number){
+        const i = Math.abs(Math.round(num))
+        const cent = i % 100
+        if (cent >= 10 && cent <= 20) return i+'th'
+        const dec = i % 10
+        if (dec === 1) return i+'st'
+        if (dec === 2) return i+'nd'
+        if (dec === 3) return i+'rd'
+        return i+'th'
+    }
     /**A shortcut to create a warning, info or error message */
     createMessage(checkerId:ODValidId, id:ODValidId, filepath:string, type:"info"|"warning"|"error", message:string, locationTrace:ODCheckerLocationTrace, docs:string|null, translationParams:string[], locationId:ODId, locationDocs:string|null): ODCheckerMessage {
         return {
@@ -527,7 +538,7 @@ export class ODCheckerFunctionManager<IdList extends ODCheckerFunctionManagerIdC
         const final: ODCheckerLocationTrace = []
         trace.forEach((t) => {
             if (typeof t == "number"){
-                final.push(`:${t}`)
+                final.push(`:(${this.ordinalNumber(t+1)})`)
             }else{
                 final.push(`."${t}"`)
             }
