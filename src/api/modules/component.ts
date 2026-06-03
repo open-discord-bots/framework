@@ -43,13 +43,21 @@ export class ODComponentFactory<Component extends ODComponent<object,any>,Origin
         this.workers = new ODWorkerManager("ascending")
         if (callback) this.workers.add(new ODWorker(callbackId ? callbackId : id,priority ?? 0,callback))
     }
-    /**Run all workers and return the resulting component. */
+    /**Run all workers and return the resulting discord.js builder. */
     async build(origin:Origin, params:Params): Promise<ODComponentInferBuildResult<Component>> {
         const instance = new ODComponentFactoryInstance<Component>()
         await this.workers.executeWorkers(instance,origin,params)
         const rootComponent = instance.getComponent()
         if (!rootComponent) throw new ODSystemError("ODComponentFactory.build() --> Failed to build component! (id: "+this.id.value+")")
         return rootComponent.build()
+    }
+    /**Run all workers and return the resulting Open Discord `ODComponent`. */
+    async buildComponent(origin:Origin, params:Params): Promise<Component> {
+        const instance = new ODComponentFactoryInstance<Component>()
+        await this.workers.executeWorkers(instance,origin,params)
+        const rootComponent = instance.getComponent()
+        if (!rootComponent) throw new ODSystemError("ODComponentFactory.component() --> Failed to build component! (id: "+this.id.value+")")
+        return rootComponent
     }
     /**Duplicate this component factory. Warning: If workers access external variables (outside parameters), the clone will still use those variables. This might result in unexpected behaviour! */
     duplicate(newId?:ODValidId): ODComponentFactory<Component,Origin,Params,WorkerIds> {

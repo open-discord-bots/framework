@@ -1772,7 +1772,7 @@ export class ODAutocompleteResponderInstance extends ODBaseResponderInstance {
             else return raw
         })
 
-        const filteredChoices = newChoices.filter((choice) => choice.name.startsWith(this.target.value) || choice.value.toString().startsWith(this.target.value)).slice(0,25)
+        const filteredChoices = newChoices.filter((choice) => choice.name.toLowerCase().includes(this.target.value.toLowerCase()) || choice.value.toString().toLowerCase().includes(this.target.value.toLowerCase())).slice(0,25)
         return await this.autocomplete(filteredChoices)
     }
 }
