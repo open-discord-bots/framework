@@ -42,6 +42,7 @@ export function initialStartupLogs(opendiscord:api.ODMain,project:api.ODProjectT
     const title = (project == "openticket") ? "OPEN TICKET" : "OPEN MODERATION"
     console.log("\n--------------------------- "+title+" STARTUP ---------------------------")
     opendiscord.log("Logging system activated!","system")
+    opendiscord.debug.debug("Open Discord Framework Version: "+opendiscord.versions.get("opendiscord:api")?.toString())
     opendiscord.debug.debug("Using Node.js "+process.version+"!")
 
     try{

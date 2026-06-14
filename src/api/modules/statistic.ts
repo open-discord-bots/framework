@@ -244,7 +244,7 @@ export class ODStatisticScope<IdList extends ODStatisticScopeIdConstraint = ODSt
                 }
                 
             }catch(err){
-                process.emit("uncaughtException",err)
+                process.emit("uncaughtException",new ODSystemError("Failed to render statistic '"+stat.id.value+"'!",{cause:err}))
             }
         }
 

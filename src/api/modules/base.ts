@@ -124,7 +124,7 @@ export class ODId {
                 this.changeListener(oldId,newId)
             }catch(err){
                 process.emit("uncaughtException",err)
-                throw new ODSystemError("Failed to execute _change() callback!")
+                throw new ODSystemError("Failed to execute _change() callback!",{cause:err})
             }
         }
     }
@@ -150,7 +150,7 @@ export abstract class ODManagerChangeHelper {
                 this.changeListener()
             }catch(err){
                 process.emit("uncaughtException",err)
-                throw new ODSystemError("Failed to execute _change() callback!")
+                throw new ODSystemError("Failed to execute _change() callback!",{cause:err})
             }
         }
     }
@@ -255,7 +255,7 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
                 try{
                     cb(data)
                 }catch(err){
-                    throw new ODSystemError("Failed to run manager onChange() listener.\n"+err)
+                    throw new ODSystemError("Failed to run manager onChange() listener.",{cause:err})
                 }
             })
         })
@@ -265,7 +265,7 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
             try{
                 cb(data,didOverwrite)
             }catch(err){
-                throw new ODSystemError("Failed to run manager onAdd() listener.\n"+err)
+                throw new ODSystemError("Failed to run manager onAdd() listener.",{cause:err})
             }
         })
 
@@ -303,7 +303,7 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
             try{
                 cb(data)
             }catch(err){
-                throw new ODSystemError("Failed to run manager onRemove() listener.\n"+err)
+                throw new ODSystemError("Failed to run manager onRemove() listener.",{cause:err})
             }
         })
 
@@ -596,7 +596,7 @@ export class ODVersionMigration {
             if (this.functions.beforeStartupMigrate) await this.functions.beforeStartupMigrate()
             return true
         }catch(err){
-            process.emit("uncaughtException",err)
+            process.emit("uncaughtException",new ODSystemError("Failed migration before startup!",{cause:err}))
             return false
         }
     }
@@ -606,7 +606,7 @@ export class ODVersionMigration {
             if (this.functions.contextMigrate) await this.functions.contextMigrate()
             return true
         }catch(err){
-            process.emit("uncaughtException",err)
+            process.emit("uncaughtException",new ODSystemError("Failed migration in secure context!",{cause:err}))
             return false
         }
     }
@@ -616,7 +616,7 @@ export class ODVersionMigration {
             if (this.functions.afterStartupMigrate) await this.functions.afterStartupMigrate()
             return true
         }catch(err){
-            process.emit("uncaughtException",err)
+            process.emit("uncaughtException",new ODSystemError("Failed migration after startup!",{cause:err}))
             return false
         }
     }
@@ -825,12 +825,12 @@ export class ODEnvHelper {
  */
 export class ODSystemError extends Error {
     /**This variable gets detected by the error handling system to know how to render it */
-    _ODErrorType = "system"
+    readonly _ODErrorType = "system"
 
     /**Create an `ODSystemError` directly from an `Error` class */
     static fromError(err:Error){
         const modifiedErr: ODSystemError = Object.assign(err,{
-            _ODErrorType:"system"
+            _ODErrorType:"system" as "system"
         })
         return modifiedErr as ODSystemError
     }
@@ -843,12 +843,12 @@ export class ODSystemError extends Error {
  */
 export class ODPluginError extends Error {
     /**This variable gets detected by the error handling system to know how to render it */
-    _ODErrorType = "plugin"
+    readonly _ODErrorType = "plugin"
 
     /**Create an `ODPluginError` directly from an `Error` class */
     static fromError(err:Error){
         const modifiedErr: ODPluginError = Object.assign(err,{
-            _ODErrorType:"plugin"
+            _ODErrorType:"plugin" as "plugin"
         })
         return modifiedErr as ODPluginError
     }

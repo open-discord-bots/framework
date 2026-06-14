@@ -161,8 +161,7 @@ export class ODPermissionManager<IdList extends ODPermissionManagerIdConstraint 
             if (!this.calculation) throw new ODSystemError("ODPermissionManager:getPermissions() => missing perms calculation")
             return this.calculation(user,channel,guild,settings)
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODPermissionManager:getPermissions() => failed perms calculation")
+            throw new ODSystemError("ODPermissionManager:getPermissions() => Failed permissions calculation.",{cause:err})
         }
     }
     /**Simplifies the `ODPermissionResult` returned from `getPermissions()` and returns a boolean to check if the user matches the required permissions. */

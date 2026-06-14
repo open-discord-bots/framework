@@ -150,8 +150,7 @@ export class ODJsonConfig<Data extends any> extends ODConfig<Data> {
             this.data = JSON.parse(fs.readFileSync(this.path).toString())
             super.init()
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("Unable to parse config \""+nodepath.join("./",this.path)+"\"!")
+            throw new ODSystemError("Unable to parse config \""+nodepath.join("./",this.path)+"\"!",{cause:err})
         }
     }
     /**Reload the config. Be aware that this doesn't update the config data everywhere in the bot! */
@@ -165,12 +164,11 @@ export class ODJsonConfig<Data extends any> extends ODConfig<Data> {
                 try{
                     cb()
                 }catch(err){
-                    process.emit("uncaughtException",err)
+                    process.emit("uncaughtException",new Error("Failed to run config reload listener!",{cause:err}))
                 }
             })
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("Unable to reload config \""+nodepath.join("./",this.path)+"\"!")
+            throw new ODSystemError("Unable to reload config \""+nodepath.join("./",this.path)+"\"!",{cause:err})
         }
     }
     /**Save the edited config to the filesystem. This is used by the Interactive Setup CLI. It's not recommended to use this while the bot is running. */
@@ -181,8 +179,7 @@ export class ODJsonConfig<Data extends any> extends ODConfig<Data> {
             fs.writeFileSync(this.path,contents)
             super.save()
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("Unable to save config \""+nodepath.join("./",this.path)+"\"!")
+            throw new ODSystemError("Unable to save config \""+nodepath.join("./",this.path)+"\"!",{cause:err})
         }
     }
 }
@@ -214,8 +211,7 @@ export class ODJsonCommentsConfig<Data extends any> extends ODConfig<Data> {
             this.data = jsonc.parse(fs.readFileSync(this.path).toString())
             super.init()
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("Unable to parse JSONC config \""+nodepath.join("./",this.path)+"\"!")
+            throw new ODSystemError("Unable to parse JSONC config \""+nodepath.join("./",this.path)+"\"!",{cause:err})
         }
     }
     /**Reload the config. Be aware that this doesn't update the config data everywhere in the bot! */
@@ -229,12 +225,11 @@ export class ODJsonCommentsConfig<Data extends any> extends ODConfig<Data> {
                 try{
                     cb()
                 }catch(err){
-                    process.emit("uncaughtException",err)
+                    process.emit("uncaughtException",new Error("Failed to run config reload listener!",{cause:err}))
                 }
             })
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("Unable to reload JSONC config \""+nodepath.join("./",this.path)+"\"!")
+            throw new ODSystemError("Unable to reload JSONC config \""+nodepath.join("./",this.path)+"\"!",{cause:err})
         }
     }
     /**Save the edited config to the filesystem. This is used by the Interactive Setup CLI. It's not recommended to use this while the bot is running. */
@@ -245,8 +240,7 @@ export class ODJsonCommentsConfig<Data extends any> extends ODConfig<Data> {
             fs.writeFileSync(this.path,contents)
             super.save()
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("Unable to save JSONC config \""+nodepath.join("./",this.path)+"\"!")
+            throw new ODSystemError("Unable to save JSONC config \""+nodepath.join("./",this.path)+"\"!",{cause:err})
         }
     }
 }

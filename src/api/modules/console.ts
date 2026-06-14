@@ -189,13 +189,23 @@ export class ODErrorConsoleMessage extends ODConsoleMessage {
  */
 export class ODError {
     /**The original error that this class wraps around */
-    error: any
+    error: Error & {"_ODErrorType"?:"system"|"plugin"}
     /**The origin of the original error */
     origin: NodeJS.UncaughtExceptionOrigin
 
     constructor(error:any, origin:NodeJS.UncaughtExceptionOrigin){
-        this.error = error
+        this.error = (error instanceof Error) ? error : new Error(error)
         this.origin = origin
+    }
+
+    protected recursiveStack(error:(Error & {"_ODErrorType"?:"system"|"plugin"}),level:number=0): string {
+        if (!(error instanceof Error)) return "<OPENDISCORD:invalid-error>"
+        if (level > 10) return "<OPENDISCORD:cause-stack-recursion-limit-reached>"
+        let fullStack = error.stack ?? "<OPENDISCORD:no-stack>"
+        if (error.cause){
+            fullStack += "\n========== ERROR CAUSE ===========\n"+this.recursiveStack(error.cause as any,level+1).split("\n").map((l) => ">>> "+l).join("\n")
+        }
+        return fullStack
     }
 
     /**Render this error to the console using `console.log`! Returns `false` when something went wrong. */
@@ -205,7 +215,7 @@ export class ODError {
             //title
             console.log(ansis.red("["+prefix+"]: ")+this.error.message+" | origin: "+this.origin)
             //stack trace
-            if (this.error.stack) console.log(ansis.gray(this.error.stack))
+            console.log(ansis.gray(this.recursiveStack(this.error)))
             //additional message
             if (this.error["_ODErrorType"] == "plugin") console.log(ansis.red.bold("\nPlease report this error to the plugin developer and help us create a more stable plugin!"))
             else console.log(ansis.red.bold("\nPlease report this error to our discord server and help us create a more stable bot!"))
@@ -219,7 +229,7 @@ export class ODError {
     toDebugString(){
         const date = new Date()
         const dstring = `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
-        return "["+dstring+" UNKNOWN OPENDISCORD ERROR]: "+this.error.message+" | Error Origin: "+this.origin+" | Stacktrace:\n"+this.error.stack
+        return "["+dstring+" UNKNOWN OPENDISCORD ERROR]: "+this.error.message+" | Error Origin: "+this.origin+" | Stacktrace:\n"+this.recursiveStack(this.error)
     }
 }
 

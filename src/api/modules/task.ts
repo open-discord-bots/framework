@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 //TASK MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base.js"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODSystemError, ODValidId } from "./base.js"
 import { ODDebugger } from "./console.js"
 
 
@@ -56,7 +56,7 @@ export class ODTaskManager<IdList extends ODTaskManagerIdConstraint = ODTaskMana
             try {
                 await worker.func()
             }catch(err){
-                process.emit("uncaughtException",err)
+                process.emit("uncaughtException",new ODSystemError("Open Discord background task failed!",{cause:err}))
             }
         }
     }

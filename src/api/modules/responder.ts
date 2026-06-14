@@ -228,8 +228,7 @@ export class ODCommandResponderInstanceOptions {
             try {
                 return this.interaction.options.getString(name,required)
             }catch(err){
-                process.emit("uncaughtException",err)
-                throw new ODSystemError("ODCommandResponderInstanceOptions:getString() slash command option not found!")
+                throw new ODSystemError("ODCommandResponderInstanceOptions:getString() slash command option not found!",{cause:err})
             }
 
         }else if (this.interaction instanceof discord.Message){
@@ -247,8 +246,7 @@ export class ODCommandResponderInstanceOptions {
             try {
                 return this.interaction.options.getBoolean(name,required)
             }catch(err){
-                process.emit("uncaughtException",err)
-                throw new ODSystemError("ODCommandResponderInstanceOptions:getBoolean() slash command option not found!")
+                throw new ODSystemError("ODCommandResponderInstanceOptions:getBoolean() slash command option not found!",{cause:err})
             }
 
         }else if (this.interaction instanceof discord.Message){
@@ -266,8 +264,7 @@ export class ODCommandResponderInstanceOptions {
             try {
                 return this.interaction.options.getNumber(name,required)
             }catch(err){
-                process.emit("uncaughtException",err)
-                throw new ODSystemError("ODCommandResponderInstanceOptions:getNumber() slash command option not found!")
+                throw new ODSystemError("ODCommandResponderInstanceOptions:getNumber() slash command option not found!",{cause:err})
             }
 
         }else if (this.interaction instanceof discord.Message){
@@ -285,8 +282,7 @@ export class ODCommandResponderInstanceOptions {
             try {
                 return this.interaction.options.getChannel(name,required)
             }catch(err){
-                process.emit("uncaughtException",err)
-                throw new ODSystemError("ODCommandResponderInstanceOptions:getChannel() slash command option not found!")
+                throw new ODSystemError("ODCommandResponderInstanceOptions:getChannel() slash command option not found!",{cause:err})
             }
 
         }else if (this.interaction instanceof discord.Message){
@@ -304,8 +300,7 @@ export class ODCommandResponderInstanceOptions {
             try {
                 return this.interaction.options.getRole(name,required)
             }catch(err){
-                process.emit("uncaughtException",err)
-                throw new ODSystemError("ODCommandResponderInstanceOptions:getRole() slash command option not found!")
+                throw new ODSystemError("ODCommandResponderInstanceOptions:getRole() slash command option not found!",{cause:err})
             }
 
         }else if (this.interaction instanceof discord.Message){
@@ -323,8 +318,7 @@ export class ODCommandResponderInstanceOptions {
             try {
                 return this.interaction.options.getUser(name,required)
             }catch(err){
-                process.emit("uncaughtException",err)
-                throw new ODSystemError("ODCommandResponderInstanceOptions:getUser() slash command option not found!")
+                throw new ODSystemError("ODCommandResponderInstanceOptions:getUser() slash command option not found!",{cause:err})
             }
 
         }else if (this.interaction instanceof discord.Message){
@@ -344,8 +338,7 @@ export class ODCommandResponderInstanceOptions {
                 if (!member && required) throw new ODSystemError("ODCommandResponderInstanceOptions:getGuildMember() slash command option not found!")
                 return member
             }catch(err){
-                process.emit("uncaughtException",err)
-                throw new ODSystemError("ODCommandResponderInstanceOptions:getGuildMember() slash command option not found!")
+                throw new ODSystemError("ODCommandResponderInstanceOptions:getGuildMember() slash command option not found!",{cause:err})
             }
 
         }else if (this.interaction instanceof discord.Message){
@@ -363,8 +356,7 @@ export class ODCommandResponderInstanceOptions {
             try {
                 return this.interaction.options.getMentionable(name,required)
             }catch(err){
-                process.emit("uncaughtException",err)
-                throw new ODSystemError("ODCommandResponderInstanceOptions:getGuildMember() slash command option not found!")
+                throw new ODSystemError("ODCommandResponderInstanceOptions:getGuildMember() slash command option not found!",{cause:err})
             }
 
         }else if (this.interaction instanceof discord.Message){
@@ -381,8 +373,7 @@ export class ODCommandResponderInstanceOptions {
             try {
                 return this.interaction.options.getSubcommandGroup(true)
             }catch(err){
-                process.emit("uncaughtException",err)
-                throw new ODSystemError("ODCommandResponderInstanceOptions:getSubGroup() slash command option not found!")
+                throw new ODSystemError("ODCommandResponderInstanceOptions:getSubGroup() slash command option not found!",{cause:err})
             }
 
         }else if (this.interaction instanceof discord.Message && this.cmd instanceof ODTextCommand){
@@ -399,8 +390,7 @@ export class ODCommandResponderInstanceOptions {
             try {
                 return this.interaction.options.getSubcommand(true)
             }catch(err){
-                process.emit("uncaughtException",err)
-                throw new ODSystemError("ODCommandResponderInstanceOptions:getSubCommand() slash command option not found!")
+                throw new ODSystemError("ODCommandResponderInstanceOptions:getSubCommand() slash command option not found!",{cause:err})
             }
 
         }else if (this.interaction instanceof discord.Message && this.cmd instanceof ODTextCommand){
@@ -871,8 +861,7 @@ export class ODDropdownResponderInstanceValues {
         try {
             return this.interaction.values
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODDropdownResponderInstanceValues:getStringValues() invalid values!")
+            throw new ODSystemError("ODDropdownResponderInstanceValues:getStringValues() invalid values!",{cause:err})
         }
     }
     /**Get the selected roles. */
@@ -890,8 +879,7 @@ export class ODDropdownResponderInstanceValues {
             }
             return result
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODDropdownResponderInstanceValues:getRoleValues() invalid values!")
+            throw new ODSystemError("ODDropdownResponderInstanceValues:getRoleValues() invalid values!",{cause:err})
         }
     }
     /**Get the selected users. */
@@ -900,8 +888,7 @@ export class ODDropdownResponderInstanceValues {
         try {
             return this.interaction.users.toJSON()
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODDropdownResponderInstanceValues:getUserValues() invalid values!")
+            throw new ODSystemError("ODDropdownResponderInstanceValues:getUserValues() invalid values!",{cause:err})
         }
     }
     /**Get the selected channels. */
@@ -918,8 +905,7 @@ export class ODDropdownResponderInstanceValues {
             }
             return result
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODDropdownResponderInstanceValues:getChannelValues() invalid values!")
+            throw new ODSystemError("ODDropdownResponderInstanceValues:getChannelValues() invalid values!",{cause:err})
         }
     }
     /**Get the selected mentionables. */
@@ -940,8 +926,7 @@ export class ODDropdownResponderInstanceValues {
 
             return result
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODDropdownResponderInstanceValues:getMentionableValues() invalid values!")
+            throw new ODSystemError("ODDropdownResponderInstanceValues:getMentionableValues() invalid values!",{cause:err})
         }
     }
 }
@@ -1212,8 +1197,7 @@ export class ODModalResponderInstanceValues {
             if (data.length < 1 && required) throw new ODSystemError("ODModalResponderInstanceValues:getTextField() field required, found empty!")
             return (data.length > 0) ? data : null
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODModalResponderInstanceValues:getTextField() field not found!")
+            throw new ODSystemError("ODModalResponderInstanceValues:getTextField() field not found!",{cause:err})
         }
     }
 
@@ -1222,8 +1206,7 @@ export class ODModalResponderInstanceValues {
         try {
             return this.interaction.fields.getCheckbox(name)
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODModalResponderInstanceValues:getSingleCheckbox() field not found!")
+            throw new ODSystemError("ODModalResponderInstanceValues:getSingleCheckbox() field not found!",{cause:err})
         }
     }
 
@@ -1232,8 +1215,7 @@ export class ODModalResponderInstanceValues {
         try {
             return [...this.interaction.fields.getCheckboxGroup(name)]
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODModalResponderInstanceValues:getCheckboxGroup() field not found!")
+            throw new ODSystemError("ODModalResponderInstanceValues:getCheckboxGroup() field not found!",{cause:err})
         }
     }
 
@@ -1246,8 +1228,7 @@ export class ODModalResponderInstanceValues {
             if (typeof data !== "string" && required) throw new ODSystemError("ODModalResponderInstanceValues:getRadioGroup() field required, found empty!")
             return data
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODModalResponderInstanceValues:getRadioGroup() field not found!")
+            throw new ODSystemError("ODModalResponderInstanceValues:getRadioGroup() field not found!",{cause:err})
         }
     }
 
@@ -1256,8 +1237,7 @@ export class ODModalResponderInstanceValues {
         try {
             return [...this.interaction.fields.getStringSelectValues(name)]
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODModalResponderInstanceValues:getStringDropdownValues() field not found!")
+            throw new ODSystemError("ODModalResponderInstanceValues:getStringDropdownValues() field not found!",{cause:err})
         }
     }
     /**Get the selected values of a role dropdown. */
@@ -1275,8 +1255,7 @@ export class ODModalResponderInstanceValues {
             }
             return result
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODModalResponderInstanceValues:getRoleDropdownValues() field not found!")
+            throw new ODSystemError("ODModalResponderInstanceValues:getRoleDropdownValues() field not found!",{cause:err})
         }
     }
     /**Get the selected values of a user dropdown. */
@@ -1285,8 +1264,7 @@ export class ODModalResponderInstanceValues {
             const result: discord.User[] = (this.interaction.fields.getSelectedUsers(name)?.toJSON() ?? [])
             return result
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODModalResponderInstanceValues:getUserDropdownValues() field not found!")
+            throw new ODSystemError("ODModalResponderInstanceValues:getUserDropdownValues() field not found!",{cause:err})
         }
     }
     /**Get selected values of a channel dropdown. */
@@ -1302,8 +1280,7 @@ export class ODModalResponderInstanceValues {
             }
             return result
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODModalResponderInstanceValues:getChannelDropdownValues() field not found!")
+            throw new ODSystemError("ODModalResponderInstanceValues:getChannelDropdownValues() field not found!",{cause:err})
         }
     }
     /**Get the selected values of a mentionable dropdown. */
@@ -1322,8 +1299,7 @@ export class ODModalResponderInstanceValues {
             }
             return result
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODModalResponderInstanceValues:getMentionableDropdownValues() field not found!")
+            throw new ODSystemError("ODModalResponderInstanceValues:getMentionableDropdownValues() field not found!",{cause:err})
         }
     }
     /**Get the uploaded files of a modal file upload component. */
@@ -1332,8 +1308,7 @@ export class ODModalResponderInstanceValues {
             const result: discord.Attachment[] = (this.interaction.fields.getUploadedFiles(name)?.toJSON() ?? [])
             return result
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("ODModalResponderInstanceValues:getUploadedFiles() field not found!")
+            throw new ODSystemError("ODModalResponderInstanceValues:getUploadedFiles() field not found!",{cause:err})
         }
     }
 }

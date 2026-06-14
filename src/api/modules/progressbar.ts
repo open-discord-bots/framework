@@ -115,7 +115,7 @@ export class ODProgressBarRenderer<Settings extends {}> extends ODManagerData {
         try {
             return this.renderFunction(this.settings,min,max,value,prefix,suffix)
         }catch(err){
-            process.emit("uncaughtException",err)
+            process.emit("uncaughtException",new ODSystemError("Failed to render progress bar!",{cause:err}))
             return "<PROGRESS-BAR-ERROR>"
         }
     }

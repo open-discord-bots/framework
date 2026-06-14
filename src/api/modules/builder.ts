@@ -276,8 +276,7 @@ export class ODButton<Origin extends string,Params,WorkerIds extends string = st
             this.didCache = true
             return {id:this.id,component:button}
         }catch(err){
-            process.emit("uncaughtException",new ODSystemError("ODButton:build(\""+this.id.value+"\") => Major Error (see next error)"))
-            process.emit("uncaughtException",err)
+            process.emit("uncaughtException",new ODSystemError("ODButton:build(\""+this.id.value+"\") => Failed to build button!",{cause:err}))
             return {id:this.id,component:null}
         }
     }
@@ -322,8 +321,7 @@ export class ODQuickButton {
 
             return {id:this.id,component:button}
         }catch(err){
-            process.emit("uncaughtException",new ODSystemError("ODQuickButton:build(\""+this.id.value+"\") => Major Error (see next error)"))
-            process.emit("uncaughtException",err)
+            process.emit("uncaughtException",new ODSystemError("ODQuickButton:build(\""+this.id.value+"\") => Failed to build button!",{cause:err}))
             return {id:this.id,component:null}
         }
     }
@@ -609,8 +607,7 @@ export class ODDropdown<Origin extends string,Params,WorkerIds extends string = 
                 throw new Error("Tried to build an ODDropdown with unknown type!")
             }
         }catch(err){
-            process.emit("uncaughtException",new ODSystemError("ODDropdown:build(\""+this.id.value+"\") => Major Error (see next error)"))
-            process.emit("uncaughtException",err)
+            process.emit("uncaughtException",new ODSystemError("ODDropdown:build(\""+this.id.value+"\") => Failed to build dropdown!",{cause:err}))
             return {id:this.id,component:null}
         }
     }
@@ -712,8 +709,7 @@ export class ODQuickDropdown {
                 throw new Error("Tried to build an ODQuickDropdown with unknown type!")
             }
         }catch(err){
-            process.emit("uncaughtException",new ODSystemError("ODQuickDropdown:build(\""+this.id.value+"\") => Major Error (see next error)"))
-            process.emit("uncaughtException",err)
+            process.emit("uncaughtException",new ODSystemError("ODQuickDropdown:build(\""+this.id.value+"\") => Failed to build dropdown!",{cause:err}))
             return {id:this.id,component:null}
         }
     }
@@ -868,8 +864,7 @@ export class ODFile<Origin extends string,Params,WorkerIds extends string = stri
             this.didCache = true
             return {id:this.id,file}
         }catch(err){
-            process.emit("uncaughtException",new ODSystemError("ODFile:build(\""+this.id.value+"\") => Major Error (see next error)"))
-            process.emit("uncaughtException",err)
+            process.emit("uncaughtException",new ODSystemError("ODFile:build(\""+this.id.value+"\") => Failed to build file!",{cause:err}))
             return {id:this.id,file:null}
         }
     }
@@ -905,8 +900,7 @@ export class ODQuickFile {
             
             return {id:this.id,file}
         }catch(err){
-            process.emit("uncaughtException",new ODSystemError("ODQuickFile:build(\""+this.id.value+"\") => Major Error (see next error)"))
-            process.emit("uncaughtException",err)
+            process.emit("uncaughtException",new ODSystemError("ODQuickFile:build(\""+this.id.value+"\") => Failed to build file!",{cause:err}))
             return {id:this.id,file:null}
         }
     }
@@ -1144,8 +1138,7 @@ export class ODEmbed<Origin extends string,Params,WorkerIds extends string = str
             this.didCache = true
             return {id:this.id,embed}
         }catch(err){
-            process.emit("uncaughtException",new ODSystemError("ODEmbed:build(\""+this.id.value+"\") => Major Error (see next error)"))
-            process.emit("uncaughtException",err)
+            process.emit("uncaughtException",new ODSystemError("ODEmbed:build(\""+this.id.value+"\") => Failed to build embed!",{cause:err}))
             return {id:this.id,embed:null}
         }
     }
@@ -1195,8 +1188,7 @@ export class ODQuickEmbed {
             
             return {id:this.id,embed}
         }catch(err){
-            process.emit("uncaughtException",new ODSystemError("ODQuickEmbed:build(\""+this.id.value+"\") => Major Error (see next error)"))
-            process.emit("uncaughtException",err)
+            process.emit("uncaughtException",new ODSystemError("ODQuickEmbed:build(\""+this.id.value+"\") => Failed to build embed!",{cause:err}))
             return {id:this.id,embed:null}
         }
     }

@@ -918,8 +918,7 @@ export class ODSlashCommandManager<IdList extends ODSlashCommandManagerIdConstra
                     await cmd.delete()
                     this.debug?.debug("Removed existing slash command",[{key:"name",value:cmd.name},{key:"guildId",value:guildId ?? "/"}])
                 }catch(err){
-                    process.emit("uncaughtException",err)
-                    throw new ODSystemError("Failed to delete slash command '/"+cmd.name+"'!")
+                    throw new ODSystemError("Failed to delete slash command '/"+cmd.name+"'!",{cause:err})
                 }
             }
             if (progress) progress.increase(1)
@@ -931,8 +930,7 @@ export class ODSlashCommandManager<IdList extends ODSlashCommandManagerIdConstra
         try {
             await this.commandManager.create(cmd.builder,(cmd.guildId ?? undefined))
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("Failed to register slash command '/"+cmd.name+"'!")
+            throw new ODSystemError("Failed to register slash command '/"+cmd.name+"'!",{cause:err})
         }
     }
     /**Start listening to the discord.js client `interactionCreate` event. */
@@ -2166,8 +2164,7 @@ export class ODContextMenuManager<IdList extends ODContextMenuManagerIdConstrain
                         {key:"type",value:(instance.type == discord.ApplicationCommandType.Message) ? "message-context" : "user-context"}
                     ])
                 }catch(err){
-                    process.emit("uncaughtException",err)
-                    throw new ODSystemError("Failed to delete context menu '"+menu.name+"'!")
+                    throw new ODSystemError("Failed to delete context menu '"+menu.name+"'!",{cause:err})
                 }
             }
             if (progress) progress.increase(1)
@@ -2179,8 +2176,7 @@ export class ODContextMenuManager<IdList extends ODContextMenuManagerIdConstrain
         try {
             await this.commandManager.create(menu.builder,(menu.guildId ?? undefined))
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("Failed to register context menu '"+menu.name+"'!")
+            throw new ODSystemError("Failed to register context menu '"+menu.name+"'!",{cause:err})
         }
     }
     /**Start listening to the discord.js client `interactionCreate` event. */

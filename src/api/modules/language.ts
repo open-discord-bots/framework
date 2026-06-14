@@ -222,8 +222,7 @@ export class ODJsonLanguage extends ODLanguage {
         try{
             this.data = JSON.parse(fs.readFileSync(this.path).toString())
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("Unable to parse language \""+nodepath.join("./",this.path)+"\"!")
+            throw new ODSystemError("Unable to parse language \""+nodepath.join("./",this.path)+"\"!",{cause:err})
         }
         if (this.data["_TRANSLATION"]) this.metadata = this.data["_TRANSLATION"]
     }

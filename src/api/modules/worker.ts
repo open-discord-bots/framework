@@ -77,7 +77,7 @@ export class ODWorkerManager<Instance, Origin extends string, Params,WorkerIds e
                     didCancel = true
                 })
             }catch(err:any){
-                process.emit("uncaughtException",new ODSystemError(err))
+                process.emit("uncaughtException",new ODSystemError(err,{cause:err}))
                 didCrash = true
             }
         }
@@ -85,13 +85,13 @@ export class ODWorkerManager<Instance, Origin extends string, Params,WorkerIds e
             try{
                 await this.backupWorker.callback({reason:"cancel"},derefParams,origin,() => {})
             }catch(err:any){
-                process.emit("uncaughtException",new ODSystemError(err))
+                process.emit("uncaughtException",new ODSystemError(err,{cause:err}))
             }
         }else if (didCrash && this.backupWorker){
             try{
                 await this.backupWorker.callback({reason:"error"},derefParams,origin,() => {})
             }catch(err:any){
-                process.emit("uncaughtException",new ODSystemError(err))
+                process.emit("uncaughtException",new ODSystemError(err,{cause:err}))
             }
         }
     }

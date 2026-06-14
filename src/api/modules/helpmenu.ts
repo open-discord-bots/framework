@@ -240,7 +240,7 @@ export class ODHelpMenuManager<IdList extends ODHelpMenuManagerIdConstraint = OD
                     }
                 }
             }catch(err){
-                process.emit("uncaughtException",err)
+                process.emit("uncaughtException",new ODSystemError("Failed to render help menu category '"+category.id.value+"'!",{cause:err}))
             }
         }
 
