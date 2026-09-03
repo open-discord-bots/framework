@@ -1,10 +1,11 @@
 ///////////////////////////////////////
 //CONFIG CHECKER MODULE
 ///////////////////////////////////////
-import { ODDiscordIdType, ODId, ODManager, ODManagerData, ODValidId, ODValidJsonType } from "./base"
-import { ODConfig } from "./config"
-import { ODLanguageManager } from "./language"
-import { ODDebugger } from "./console"
+import { ODDiscordIdType, ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId, ODValidJsonType } from "./base.js"
+import { ODConfig, ODMemoryConfig } from "./config.js"
+import { ODLanguageManager } from "./language.js"
+import { ODDebugger } from "./console.js"
+import ansis from "ansis"
 
 /**## ODCheckerResult `interface`
  * This interface is the result from a config checker check() function.
@@ -14,6 +15,11 @@ export interface ODCheckerResult {
     messages:ODCheckerMessage[]
 }
 
+/**## ODCheckerManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODCheckerManager` class.
+ */
+export type ODCheckerManagerIdConstraint = Record<string,ODChecker>
+
 /**## ODCheckerManager `class`
  * This is an Open Discord checker manager.
  * 
@@ -21,19 +27,25 @@ export interface ODCheckerResult {
  * 
  * You can use this class to get/add a config checker (`ODChecker`) in your plugin!
  */
-export class ODCheckerManager extends ODManager<ODChecker> {
+export class ODCheckerManager<
+    IdList extends ODCheckerManagerIdConstraint = ODCheckerManagerIdConstraint,
+    FunctionIdList extends ODCheckerFunctionManagerIdConstraint = ODCheckerFunctionManagerIdConstraint,
+    Renderer extends ODCheckerRenderer = ODCheckerRenderer,
+    TranslationMessageIds extends string = string,
+    TranslationOtherIds extends string = string
+> extends ODManager<ODChecker> {
     /**The global temporary storage shared between all config checkers. */
     storage: ODCheckerStorage
     /**The class responsible for rendering the config checker report. */
-    renderer: ODCheckerRenderer
+    renderer: Renderer
     /**The class responsible for translating the config checker report. */
-    translation: ODCheckerTranslationRegister
+    translation: ODCheckerTranslationRegister<TranslationMessageIds,TranslationOtherIds>
     /**Final functions are global functions executed just before the report is created. */
-    functions: ODCheckerFunctionManager
+    functions: ODCheckerFunctionManager<FunctionIdList>
     /**A variable containing the last result returned from `checkAll()` */
     lastResult: ODCheckerResult|null = null
 
-    constructor(debug:ODDebugger, storage:ODCheckerStorage, renderer:ODCheckerRenderer, translation:ODCheckerTranslationRegister, functions:ODCheckerFunctionManager){
+    constructor(debug:ODDebugger, storage:ODCheckerStorage, renderer:Renderer, translation:ODCheckerTranslationRegister<TranslationMessageIds,TranslationOtherIds>, functions:ODCheckerFunctionManager<FunctionIdList>){
         super(debug,"config checker")
         this.storage = storage
         this.renderer = renderer
@@ -84,7 +96,28 @@ export class ODCheckerManager extends ODManager<ODChecker> {
     }
     /**Create temporary and unlisted `ODConfig`, `ODChecker` & `ODCheckerStorage` classes. This will help you use a `ODCheckerStructure` validator without officially registering it in `opendiscord.checkers`. */
     createTemporaryCheckerEnvironment(){
-        return new ODChecker("opendiscord:temporary-environment",new ODCheckerStorage(),0,new ODConfig("opendiscord:temporary-environment",{}),new ODCheckerStructure("opendiscord:temporary-environment",{}))
+        return new ODChecker("opendiscord:temporary-environment",new ODCheckerStorage(),0,new ODMemoryConfig("opendiscord:temporary-environment",{}),new ODCheckerStructure("opendiscord:temporary-environment",{}))
+    }
+
+    get<CheckerId extends keyof ODNoGeneric<IdList>>(id:CheckerId): IdList[CheckerId]
+    get(id:ODValidId): ODChecker|null
+    
+    get(id:ODValidId): ODChecker|null {
+        return super.get(id)
+    }
+
+    remove<CheckerId extends keyof ODNoGeneric<IdList>>(id:CheckerId): IdList[CheckerId]
+    remove(id:ODValidId): ODChecker|null
+    
+    remove(id:ODValidId): ODChecker|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof ODNoGeneric<IdList>): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -144,16 +177,15 @@ export class ODCheckerStorage {
  * This is an Open Discord checker renderer. 
  * 
  * It's responsible for rendering the config checker result in the console.
- * This class doesn't provide any components! You need to create them by extending this class
+ * This class doesn't provide any components! Create new ones by extending this class.
  * 
- * You can use this class if you want to change how the config checker looks!
+ * Use this class to change the config checker looks!
  */
-export class ODCheckerRenderer {
-    /**Get all components */
-    getComponents(compact:boolean, renderEmpty:boolean, translation:ODCheckerTranslationRegister, data:ODCheckerResult): string[] {
-        return []
-    }
-    /**Render all components */
+export abstract class ODCheckerRenderer {
+    /**Get all config checker render components. These can be combined and rendered to the console. */
+    abstract getComponents(compact:boolean, renderEmpty:boolean, translation:ODCheckerTranslationRegister<string,string>, data:ODCheckerResult): string[] 
+    
+    /**Render all config checker render components to the console. */
     render(components:string[]){
         if (components.length < 1) return
         console.log("\n")
@@ -161,6 +193,213 @@ export class ODCheckerRenderer {
             console.log(c)
         })
         console.log("\n")
+    }
+}
+
+/**## ODDefaultCheckerRendererTranslations `interface`
+ * The required translation sentences for the default checker renderer.
+ */
+export interface ODDefaultCheckerRendererTranslations {
+    /**Example: `OPEN DISCORD`*/
+    headerProjectName:string,
+    /**Example: `CONFIG CHECKER`*/
+    headerConfigchecker:string,
+    /**Example: `check for errors in your config files!`*/
+    headerDescription:string,
+    /**Example: `the bot won't start until all {0}'s are fixed!`*/
+    footerError:string,
+    /**Example: `it's recommended to fix all {0}'s before starting!`*/
+    footerWarning:string,
+    /**Example: `SUPPORT: {0} - DOCS: {1}`*/
+    footerSupport:string,
+    /**Example: `[ERROR]`*/
+    error:string,
+    /**Example: `[WARNING]`*/
+    warning:string,
+    /**Example: `[INFO]`*/
+    info:string,
+    /**Example: `use {0} for more information!`*/
+    compactInfo:string,
+    /**Example: `path`*/
+    dataPath:string,
+    /**Example: `docs`*/
+    dataDocs:string,
+    /**Example: `message`*/
+    dataMessage:string
+}
+
+/**## ODDefaultCheckerRenderer `class`
+ * This is the default render class which renders the config checkers in the console for most Open Discord projects.
+ * 
+ * This class can be found in the global variable `opendiscord.checkers.renderer`!
+ */
+export class ODDefaultCheckerRenderer extends ODCheckerRenderer {
+    /**The main color used when rendering the config checker. */
+    mainColor: `#${string}`
+    /**The url to the discord support server. */
+    supportUrl: string
+    /**The url to the bot documentation. */
+    docsUrl: string
+
+    /**Add additional header text. */
+    extraHeaderText: string[] = []
+    /**Add additional footer text. */
+    extraFooterText: string[] = []
+    /**Add additional top text. */
+    extraTopText: string[] = []
+    /**Add additional bottom text. */
+    extraBottomText: string[] = []
+
+    /**Set the character used for horizontal lines. */
+    horizontalFiller: string = "="
+    /**Set the character used for vertical lines. */
+    verticalFiller: string = "|"
+    /**Set the prefix used for the description. */
+    descriptionSeparator: string = " => "
+    /**Set the prefix used for the header.. */
+    headerSeparator: string = " => "
+    /**Set the prefix used for the footer. */
+    footerTipPrefix: string = "=> "
+
+    /**Disable rendering the header. */
+    disableHeader: boolean = false
+    /**Disable rendering the footer. */
+    disableFooter: boolean = false
+
+    constructor(mainColor:`#${string}`,supportUrl:string,docsUrl:string){
+        super()
+        this.mainColor = mainColor
+        this.supportUrl = supportUrl
+        this.docsUrl = docsUrl
+    }
+
+    getComponents(compact:boolean, renderEmpty:boolean, translation:ODCheckerTranslationRegister<string,string>, data:ODCheckerResult): string[] {
+        const tm = translation
+        const t: ODDefaultCheckerRendererTranslations = {
+            headerProjectName:tm.get("other","opendiscord:header-projectname") ?? "OPEN DISCORD",
+            headerConfigchecker:tm.get("other","opendiscord:header-configchecker") ?? "CONFIG CHECKER",
+            headerDescription:tm.get("other","opendiscord:header-description") ?? "check for errors in your config files!",
+            footerError:tm.get("other","opendiscord:footer-error") ?? "the bot won't start until all {0}'s are fixed!",
+            footerWarning:tm.get("other","opendiscord:footer-warning") ?? "it's recommended to fix all {0}'s before starting!",
+            footerSupport:tm.get("other","opendiscord:footer-support") ?? "SUPPORT: {0} - DOCS: {1}",
+            error:tm.get("other","opendiscord:type-error") ?? "[ERROR]",
+            warning:tm.get("other","opendiscord:type-warning") ?? "[WARNING]",
+            info:tm.get("other","opendiscord:type-info") ?? "[INFO]",
+            compactInfo:tm.get("other","opendiscord:compact-information") ?? "use {0} for more information!",
+            dataPath:tm.get("other","opendiscord:data-path") ?? "path",
+            dataDocs:tm.get("other","opendiscord:data-docs") ?? "docs",
+            dataMessage:tm.get("other","opendiscord:data-message") ?? "message"
+        }
+        const hasErrors = data.messages.filter((m) => m.type == "error").length > 0
+        const hasWarnings = data.messages.filter((m) => m.type == "warning").length > 0
+        const hasInfo = data.messages.filter((m) => m.type == "info").length > 0
+
+        if (!renderEmpty && !hasErrors && !hasWarnings && (!hasInfo || compact)) return []
+
+        const headerText = ansis.bold.hex(this.mainColor)(t.headerProjectName)+" "+t.headerConfigchecker+this.headerSeparator+ansis.hex(this.mainColor)(t.headerDescription)
+        const footerErrorText = (hasErrors) ? this.footerTipPrefix+ansis.gray(tm.insertTranslationParams(t.footerError,[ansis.bold.red(t.error)])) : ""
+        const footerWarningText = (hasWarnings) ? this.footerTipPrefix+ansis.gray(tm.insertTranslationParams(t.footerWarning,[ansis.bold.yellow(t.warning)])) : ""
+        const footerSupportText = tm.insertTranslationParams(t.footerSupport,[ansis.green(this.supportUrl),ansis.green(this.docsUrl)])
+        const bottomCompactInfo = (compact) ? ansis.gray(tm.insertTranslationParams(t.compactInfo,[ansis.bold.green("npm start -- --checker")])) : ""
+
+        const finalHeader = [headerText,...this.extraHeaderText]
+        const finalFooter = [footerErrorText,footerWarningText,footerSupportText,...this.extraFooterText]
+        const finalTop = [...this.extraTopText]
+        const finalBottom = [bottomCompactInfo,...this.extraBottomText]
+        const borderLength = this.getLongestLength([...finalHeader,...finalFooter])
+
+        const finalComponents: string[] = []
+
+        //header
+        if (!this.disableHeader){
+            finalHeader.forEach((text) => {
+                if (text.length < 1) return
+                finalComponents.push(this.createBlockFromText(text,borderLength))
+            })
+        }
+        finalComponents.push(this.getHorizontalDivider(borderLength+4))
+
+        //top
+        finalTop.forEach((text) => {
+            if (text.length < 1) return
+            finalComponents.push(this.verticalFiller+" "+text)
+        })
+        finalComponents.push(this.verticalFiller)
+
+        //messages
+        if (compact){
+            //use compact messages
+            data.messages.forEach((msg,index) => {
+                //compact mode doesn't render info
+                if (msg.type == "info") return
+
+                //check if translation available & use it if possible
+                const rawTranslation = tm.get("message",msg.messageId.value)
+                const translatedMessage = (rawTranslation) ? tm.insertTranslationParams(rawTranslation,msg.translationParams) : msg.message
+                
+                if (msg.type == "error") finalComponents.push(this.verticalFiller+" "+ansis.bold.red(`${t.error} ${translatedMessage}`))
+                else if (msg.type == "warning") finalComponents.push(this.verticalFiller+" "+ansis.bold.yellow(`${t.warning} ${translatedMessage}`))
+                
+                const pathSplitter = msg.path ? ":" : ""
+                finalComponents.push(this.verticalFiller+ansis.bold(this.descriptionSeparator)+ansis.cyan(`${ansis.magenta(msg.filepath+pathSplitter)} ${msg.path}`))
+                if (index != data.messages.length-1) finalComponents.push(this.verticalFiller)
+            })
+        }else{
+            //use full messages
+            data.messages.forEach((msg,index) => {
+                //check if translation available & use it if possible
+                const rawTranslation = tm.get("message",msg.messageId.value)
+                const translatedMessage = (rawTranslation) ? tm.insertTranslationParams(rawTranslation,msg.translationParams) : msg.message
+                
+                if (msg.type == "error") finalComponents.push(this.verticalFiller+" "+ansis.bold.red(`${t.error} ${translatedMessage}`))
+                else if (msg.type == "warning") finalComponents.push(this.verticalFiller+" "+ansis.bold.yellow(`${t.warning} ${translatedMessage}`))
+                else if (msg.type == "info") finalComponents.push(this.verticalFiller+" "+ansis.bold.blue(`${t.info} ${translatedMessage}`))
+                
+                const pathSplitter = msg.path ? ":" : ""
+                finalComponents.push(this.verticalFiller+" "+ansis.bold((t.dataPath)+this.descriptionSeparator)+ansis.cyan(`${ansis.magenta(msg.filepath+pathSplitter)} ${msg.path}`))
+                if (msg.locationDocs) finalComponents.push(this.verticalFiller+" "+ansis.bold(t.dataDocs+this.descriptionSeparator)+ansis.italic.gray(msg.locationDocs))
+                if (msg.messageDocs) finalComponents.push(this.verticalFiller+" "+ansis.bold(t.dataMessage+this.descriptionSeparator)+ansis.italic.gray(msg.messageDocs))
+                    if (index != data.messages.length-1) finalComponents.push(this.verticalFiller)
+            })
+        }
+
+        //bottom
+        finalComponents.push(this.verticalFiller)
+        finalBottom.forEach((text) => {
+            if (text.length < 1) return
+            finalComponents.push(this.verticalFiller+" "+text)
+        })
+
+        //footer
+        finalComponents.push(this.getHorizontalDivider(borderLength+4))
+        if (!this.disableFooter){
+            finalFooter.forEach((text) => {
+                if (text.length < 1) return
+                finalComponents.push(this.createBlockFromText(text,borderLength))
+            })
+            finalComponents.push(this.getHorizontalDivider(borderLength+4))
+        }
+
+        //return all components
+        return finalComponents
+    }
+    /**Get the length of the longest string in the array. */
+    private getLongestLength(texts:string[]): number {
+        return Math.max(...texts.map((t) => ansis.strip(t).length))
+    }
+    /**Get a horizontal divider used between different parts of the config checker result. */
+    private getHorizontalDivider(width:number): string {
+        if (width > 2) width = width-2
+        else return this.verticalFiller+this.verticalFiller
+        let divider = this.verticalFiller + this.horizontalFiller.repeat(width) + this.verticalFiller
+        return divider
+    }
+    /**Create a block of text with a vertical divider on the left & right side. */
+    private createBlockFromText(text:string,width:number): string {
+        if (width < 3) return this.verticalFiller+this.verticalFiller
+        let newWidth = width-ansis.strip(text).length+1
+        let final = this.verticalFiller+" "+text+" ".repeat(newWidth)+this.verticalFiller
+        return final
     }
 }
 
@@ -172,42 +411,49 @@ export class ODCheckerRenderer {
  * 
  * You can use this class if you want to translate your config checker messages! **This is optional & isn't required for the checker to work!**
  */
-export class ODCheckerTranslationRegister {
+export class ODCheckerTranslationRegister<MessageIds extends string = string, OtherIds extends string = string> {
     /**This is the array that stores all the data. ❌ **(don't edit unless really needed!)***/
-    #translations: {type:"message"|"other", id:string, translation:string}[] = []
+    protected translations: {type:"message"|"other", id:string, translation:string}[] = []
 
     /**Get the translation from a config checker message/sentence */
+    get(type:"other", id:OtherIds): string
+    get(type:"message", id:MessageIds): string
+    get(type:"message"|"other", id:string): string|null
     get(type:"message"|"other", id:string): string|null {
-        const result = this.#translations.find(d => (d.id == id) && (d.type == type))
+        const result = this.translations.find(d => (d.id == id) && (d.type == type))
         return (result) ? result.translation : null
     }
     /**Set the translation for a config checker message/sentence. This function also overwrites existing translations!*/
+    set(type:"other", id:OtherIds, translation:string): boolean
+    set(type:"message", id:MessageIds, translation:string): boolean
+    set(type:"message"|"other", id:string, translation:string): boolean
     set(type:"message"|"other", id:string, translation:string){
-        const index = this.#translations.findIndex(d => (d.id == id) && (d.type == type))
+        const index = this.translations.findIndex(d => (d.id == id) && (d.type == type))
         if (index > -1){
             //overwrite
-            this.#translations[index] = {type,id,translation}
+            this.translations[index] = {type,id,translation}
             return true
         }else{
-            this.#translations.push({type,id,translation})
+            this.translations.push({type,id,translation})
             return false
         }
     }
     /**Delete the translation for a config checker message/sentence. */
+    delete(type:"other", id:OtherIds): boolean
+    delete(type:"message", id:MessageIds): boolean
+    delete(type:"message"|"other", id:string): boolean
     delete(type:"message"|"other", id:string){
-        const index = this.#translations.findIndex(d => (d.id == id) && (d.type == type))
+        const index = this.translations.findIndex(d => (d.id == id) && (d.type == type))
         if (index > -1){
             //delete
-            this.#translations.splice(index,1)
+            this.translations.splice(index,1)
             return true
         }else return false
     }
-
     /**Get all translations */
     getAll(){
-        return this.#translations
+        return this.translations
     }
-
     /**Insert the translation params into the text. */
     insertTranslationParams(text:string, translationParams:string[]){
         translationParams.forEach((value,index) => {
@@ -216,6 +462,8 @@ export class ODCheckerTranslationRegister {
         return text
     }
     /**A shortcut to copy translations from the `ODLanguageManager` to `ODCheckerTranslationRegister` */
+    quickTranslate(manager:ODLanguageManager, translationId:string, type:"other"|"message", id:OtherIds|MessageIds): void
+    quickTranslate(manager:ODLanguageManager, translationId:string, type:"other"|"message", id:string): void
     quickTranslate(manager:ODLanguageManager, translationId:string, type:"other"|"message", id:string){
         const translation = manager.getTranslation(translationId)
         if (translation) this.set(type,id,translation)
@@ -225,7 +473,7 @@ export class ODCheckerTranslationRegister {
 /**## ODCheckerFunctionCallback `type`
  * This is the function used in the `ODCheckerFunction` class.
  */
-export type ODCheckerFunctionCallback = (manager:ODCheckerManager, functions:ODCheckerFunctionManager) => ODCheckerResult
+export type ODCheckerFunctionCallback = (manager:ODCheckerManager<ODCheckerManagerIdConstraint,ODCheckerFunctionManagerIdConstraint,ODCheckerRenderer,string,string>, functions:ODCheckerFunctionManager<ODCheckerFunctionManagerIdConstraint>) => ODCheckerResult
 
 /**## ODCheckerFunction `class`
  * This is an Open Discord config checker function.
@@ -243,16 +491,32 @@ export class ODCheckerFunction extends ODManagerData {
     }
 }
 
+/**## ODCheckerFunctionManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODCheckerFunctionManager` class.
+ */
+export type ODCheckerFunctionManagerIdConstraint = Record<string,ODCheckerFunction>
+
 /**## ODCheckerFunctionManager `class`
  * This is an Open Discord config checker function manager.
  * 
  * It manages all `ODCheckerFunction`'s and it has some extra shortcuts for frequently used methods.
  */
-export class ODCheckerFunctionManager extends ODManager<ODCheckerFunction> {
+export class ODCheckerFunctionManager<IdList extends ODCheckerFunctionManagerIdConstraint = ODCheckerFunctionManagerIdConstraint> extends ODManager<ODCheckerFunction> {
     constructor(debug:ODDebugger){
         super(debug,"config checker function")
     }
 
+    /**Get a human-readable number string. */
+    protected ordinalNumber(num:number){
+        const i = Math.abs(Math.round(num))
+        const cent = i % 100
+        if (cent >= 10 && cent <= 20) return i+'th'
+        const dec = i % 10
+        if (dec === 1) return i+'st'
+        if (dec === 2) return i+'nd'
+        if (dec === 3) return i+'rd'
+        return i+'th'
+    }
     /**A shortcut to create a warning, info or error message */
     createMessage(checkerId:ODValidId, id:ODValidId, filepath:string, type:"info"|"warning"|"error", message:string, locationTrace:ODCheckerLocationTrace, docs:string|null, translationParams:string[], locationId:ODId, locationDocs:string|null): ODCheckerMessage {
         return {
@@ -274,7 +538,7 @@ export class ODCheckerFunctionManager extends ODManager<ODCheckerFunction> {
         const final: ODCheckerLocationTrace = []
         trace.forEach((t) => {
             if (typeof t == "number"){
-                final.push(`:${t}`)
+                final.push(`:(${this.ordinalNumber(t+1)})`)
             }else{
                 final.push(`."${t}"`)
             }
@@ -284,6 +548,27 @@ export class ODCheckerFunctionManager extends ODManager<ODCheckerFunction> {
     /**De-reference the locationTrace array. Use this before adding a value to the array*/
     locationTraceDeref(trace:ODCheckerLocationTrace): ODCheckerLocationTrace {
         return JSON.parse(JSON.stringify(trace))
+    }
+
+    get<CheckerFunctionId extends keyof ODNoGeneric<IdList>>(id:CheckerFunctionId): IdList[CheckerFunctionId]
+    get(id:ODValidId): ODCheckerFunction|null
+    
+    get(id:ODValidId): ODCheckerFunction|null {
+        return super.get(id)
+    }
+
+    remove<CheckerFunctionId extends keyof ODNoGeneric<IdList>>(id:CheckerFunctionId): IdList[CheckerFunctionId]
+    remove(id:ODValidId): ODCheckerFunction|null
+    
+    remove(id:ODValidId): ODCheckerFunction|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof ODNoGeneric<IdList>): boolean
+    exists(id:ODValidId): boolean
+
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -317,7 +602,7 @@ export class ODChecker extends ODManagerData {
     /**The higher the priority, the faster it gets checked! */
     priority: number
     /**The config file that needs to be checked */
-    config: ODConfig
+    config: ODConfig<any>
     /**The structure of the config file */
     structure: ODCheckerStructure
     /**Temporary storage for all error messages from the check() method (not recommended to use) */
@@ -327,7 +612,7 @@ export class ODChecker extends ODManagerData {
     /**All additional properties of this config checker. */
     options: ODCheckerOptions
 
-    constructor(id:ODValidId, storage: ODCheckerStorage, priority:number, config:ODConfig, structure:ODCheckerStructure, options?:ODCheckerOptions){
+    constructor(id:ODValidId, storage: ODCheckerStorage, priority:number, config:ODConfig<any>, structure:ODCheckerStructure, options?:ODCheckerOptions){
         super(id)
         this.storage = storage
         this.priority = priority
@@ -337,7 +622,7 @@ export class ODChecker extends ODManagerData {
     }
 
     /**Get a human-readable number string. */
-    #ordinalNumber(num:number){
+    protected ordinalNumber(num:number){
         const i = Math.abs(Math.round(num))
         const cent = i % 100
         if (cent >= 10 && cent <= 20) return i+'th'
@@ -363,7 +648,7 @@ export class ODChecker extends ODManagerData {
         const final: ODCheckerLocationTrace = []
         trace.forEach((t) => {
             if (typeof t == "number"){
-                final.push(`:(${this.#ordinalNumber(t+1)})`)
+                final.push(`:(${this.ordinalNumber(t+1)})`)
             }else{
                 final.push(`."${t}"`)
             }
@@ -484,7 +769,7 @@ export class ODCheckerObjectStructure extends ODCheckerStructure {
         super(id,options)
     }
 
-    check(checker:ODChecker, value:object, locationTrace:ODCheckerLocationTrace): boolean {
+    check(checker:ODChecker, value:Record<string,any>, locationTrace:ODCheckerLocationTrace): boolean {
         const lt = checker.locationTraceDeref(locationTrace)
 
         //check type & options
@@ -848,10 +1133,10 @@ export class ODCheckerArrayStructure extends ODCheckerStructure {
         }else if (typeof this.options.length != "undefined" && value.length == this.options.length){
             checker.createMessage("opendiscord:array-length-invalid","error",`This array needs to have a length of ${this.options.length}!`,lt,null,[this.options.length.toString()],this.id,(this.options.docs ?? null))
             return false
-        }else if (typeof this.options.allowedTypes != "undefined" && !this.#arrayAllowedTypesCheck(value,this.options.allowedTypes)){
+        }else if (typeof this.options.allowedTypes != "undefined" && !this.arrayAllowedTypesCheck(value,this.options.allowedTypes)){
             checker.createMessage("opendiscord:array-invalid-types","error",`This array can only contain the following types: ${this.options.allowedTypes.join(", ")}!`,lt,null,[this.options.allowedTypes.join(", ").toString()],this.id,(this.options.docs ?? null))
             return false
-        }else if (typeof this.options.allowDoubles != "undefined" && !this.options.allowDoubles && this.#arrayHasDoubles(value)){
+        }else if (typeof this.options.allowDoubles != "undefined" && !this.options.allowDoubles && this.arrayHasDoubles(value)){
             checker.createMessage("opendiscord:array-double","error","This array doesn't allow the same value twice!",lt,null,[],this.id,(this.options.docs ?? null))
             return false
         }else{
@@ -875,7 +1160,7 @@ export class ODCheckerArrayStructure extends ODCheckerStructure {
     }
 
     /**Check this array for the allowed types */
-    #arrayAllowedTypesCheck(array:any[],allowedTypes:("string"|"number"|"boolean"|"null"|"array"|"object"|"other")[]): boolean {
+    protected arrayAllowedTypesCheck(array:any[],allowedTypes:("string"|"number"|"boolean"|"null"|"array"|"object"|"other")[]): boolean {
         //return TRUE if ALL values are valid
         return !array.some((value) => {
             if (allowedTypes.includes("string") && typeof value == "string"){
@@ -898,7 +1183,7 @@ export class ODCheckerArrayStructure extends ODCheckerStructure {
         })
     }
     /**Check this array for doubles */
-    #arrayHasDoubles(array:any[]): boolean {
+    protected arrayHasDoubles(array:any[]): boolean {
         const alreadyFound: string[] = []
         let hasDoubles = false
         array.forEach((value) => {
@@ -1043,7 +1328,7 @@ export class ODCheckerObjectSwitchStructure extends ODCheckerStructure {
         super(id,options)
     }
 
-    check(checker:ODChecker, value:object, locationTrace:ODCheckerLocationTrace): boolean {
+    check(checker:ODChecker, value:Record<string,any>, locationTrace:ODCheckerLocationTrace): boolean {
         const lt = checker.locationTraceDeref(locationTrace)
         
         if (this.options.objects){
@@ -1091,7 +1376,9 @@ export interface ODCheckerEnabledObjectStructureOptions extends ODCheckerStructu
     /**The value of the property to be enabled. (e.g. `true`) */
     enabledValue:boolean|string|number,
     /**The object checker to use once the property has been matched. */
-    checker:ODCheckerObjectStructure
+    checker:ODCheckerObjectStructure,
+    /**Ignore the `checker` if the object is disabled (`property` doesn't match `enabledValue`) */
+    ignoreCheckIfDisabled?:boolean
 }
 
 /**## ODCheckerEnabledObjectStructure `class`
@@ -1106,7 +1393,7 @@ export class ODCheckerEnabledObjectStructure extends ODCheckerStructure {
         super(id,options)
     }
 
-    check(checker:ODChecker, value:object, locationTrace:ODCheckerLocationTrace): boolean {
+    check(checker:ODChecker, value:Record<string,any>, locationTrace:ODCheckerLocationTrace): boolean {
         const lt = checker.locationTraceDeref(locationTrace)
         
         if (typeof value != "object"){
@@ -1127,7 +1414,8 @@ export class ODCheckerEnabledObjectStructure extends ODCheckerStructure {
         }else{
             //this object is disabled
             if (this.options.property) checker.createMessage("opendiscord:object-disabled","info",`This object is disabled, enable it using "${this.options.property}"!`,lt,null,[`"${this.options.property}"`],this.id,(this.options.docs ?? null))
-            return super.check(checker,value,locationTrace)
+            if (this.options.checker && !this.options.ignoreCheckIfDisabled) return this.options.checker.check(checker,value,lt)
+            else return super.check(checker,value,locationTrace)
         }
     }
 }
@@ -1345,7 +1633,7 @@ export class ODCheckerCustomStructure_UrlString extends ODCheckerStringStructure
             if (typeof value != "string") return false
             else if (emptyAllowed && value.length == 0){
                 return true
-            }else if (!this.#urlIsValid(value)){
+            }else if (!this.urlIsValid(value)){
                 checker.createMessage("opendiscord:url-invalid","error","This url is invalid!",lt,null,[],this.id,(this.options.docs ?? null))
                 return false
             }else if (typeof this.urlSettings.allowHttp != "undefined" && !this.urlSettings.allowHttp && !/^(https:\/\/)/.test(value)){
@@ -1354,13 +1642,13 @@ export class ODCheckerCustomStructure_UrlString extends ODCheckerStringStructure
             }else if (!/^(http(s)?:\/\/)/.test(value)){
                 checker.createMessage("opendiscord:url-invalid-protocol","error","This url can only use the http:// & https:// protocols!",lt,null,[],this.id,(this.options.docs ?? null))
                 return false
-            }else if (typeof this.urlSettings.allowedHostnames != "undefined" && !this.#urlHasValidHostname(value,this.urlSettings.allowedHostnames)){
+            }else if (typeof this.urlSettings.allowedHostnames != "undefined" && !this.urlHasValidHostname(value,this.urlSettings.allowedHostnames)){
                 checker.createMessage("opendiscord:url-invalid-hostname","error","This url has a disallowed hostname!",lt,null,[],this.id,(this.options.docs ?? null))
                 return false
-            }else if (typeof this.urlSettings.allowedExtensions != "undefined" && !this.#urlHasValidExtension(value,this.urlSettings.allowedExtensions)){
+            }else if (typeof this.urlSettings.allowedExtensions != "undefined" && !this.urlHasValidExtension(value,this.urlSettings.allowedExtensions)){
                 checker.createMessage("opendiscord:url-invalid-extension","error",`This url has an invalid extension! Choose between: ${this.urlSettings.allowedExtensions.join(", ")}!"`,lt,null,[this.urlSettings.allowedExtensions.join(", ")],this.id,(this.options.docs ?? null))
                 return false
-            }else if (typeof this.urlSettings.allowedPaths != "undefined" && !this.#urlHasValidPath(value,this.urlSettings.allowedPaths)){
+            }else if (typeof this.urlSettings.allowedPaths != "undefined" && !this.urlHasValidPath(value,this.urlSettings.allowedPaths)){
                 checker.createMessage("opendiscord:url-invalid-path","error","This url has an invalid path!",lt,null,[],this.id,(this.options.docs ?? null))
                 return false
             }else if (typeof this.urlSettings.regex != "undefined" && !this.urlSettings.regex.test(value)){
@@ -1374,7 +1662,7 @@ export class ODCheckerCustomStructure_UrlString extends ODCheckerStringStructure
     }
 
     /**Check for the hostname */
-    #urlHasValidHostname(url:string,hostnames:(string|RegExp)[]): boolean {
+    protected urlHasValidHostname(url:string,hostnames:(string|RegExp)[]): boolean {
         try {
             const hostname = new URL(url).hostname
             return hostnames.some((rule) => {
@@ -1390,7 +1678,7 @@ export class ODCheckerCustomStructure_UrlString extends ODCheckerStringStructure
         }
     }
     /**Check for the extension */
-    #urlHasValidExtension(url:string,extensions:string[]): boolean {
+    protected urlHasValidExtension(url:string,extensions:string[]): boolean {
         try {
             const path = new URL(url).pathname
             return extensions.some((rule) => {
@@ -1401,7 +1689,7 @@ export class ODCheckerCustomStructure_UrlString extends ODCheckerStringStructure
         }
     }
     /**Check for the path */
-    #urlHasValidPath(url:string,paths:(string|RegExp)[]): boolean {
+    protected urlHasValidPath(url:string,paths:(string|RegExp)[]): boolean {
         try {
             const path = new URL(url).pathname
             return paths.some((rule) => {
@@ -1416,7 +1704,7 @@ export class ODCheckerCustomStructure_UrlString extends ODCheckerStringStructure
         }
     }
     /**Do general syntax check on url */
-    #urlIsValid(url:string){
+    protected urlIsValid(url:string){
         try {
             new URL(url)
             return true

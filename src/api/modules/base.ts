@@ -2,8 +2,8 @@
 //BASE MODULE
 ///////////////////////////////////////
 import * as fs from "fs"
-import { ODConsoleWarningMessage, ODDebugger } from "./console"
-import type { ODMain } from "../main"
+import { ODDebugger } from "./console.js"
+import type { ODMain } from "../main.js"
 
 /**## ODPromiseVoid `type`
  * This is a simple type to represent a callback return value that could be a promise or not.
@@ -14,7 +14,6 @@ export type ODPromiseVoid = void|Promise<void>
  * This is a simple type to represent a type as normal value or a promise value.
  */
 export type ODOptionalPromise<T> = T|Promise<T>
-
 
 /**## ODValidButtonColor `type`
  * This is a collection of all the possible button colors.
@@ -27,22 +26,21 @@ export type ODValidButtonColor = "gray"|"red"|"green"|"blue"
 export type ODProjectType = "openticket"|"openmoderation"
 
 /**## ODValidId `type`
- * This is a valid Open Discord identifier. It can be an `ODId` or `string`!
+ * A valid Open Discord identifier. It can be an `ODId` or `string`!
  * 
  * You will see this type in many functions from Open Discord.
  */
-export type ODValidId = string|ODId
+export type ODValidId = string|number|symbol|ODId
 
 /**## ODValidJsonType `type`
- * This is a collection of all types that can be stored in a JSON file!
+ * A collection of all types that can be stored in a JSON file!
  * 
  * list: `string`, `number`, `boolean`, `array`, `object`, `null`
  */
-export type ODValidJsonType = string|number|boolean|object|ODValidJsonType[]|null
-
+export type ODValidJsonType = string|number|boolean|{[key:string]:ODValidJsonType}|ODValidJsonType[]|null|object
 
 /**## ODInterfaceWithPartialProperty `type`
- * This is a utility type to create an interface where some properties are optional!
+ * A utility type to create an interface where some properties are optional!
  */
 export type ODInterfaceWithPartialProperty<Interface,Key extends keyof Interface> = Omit<Interface,Key> & Partial<Pick<Interface,Key>>
 
@@ -50,6 +48,13 @@ export type ODInterfaceWithPartialProperty<Interface,Key extends keyof Interface
  * A list of all available discord ID types. Used in the config checker.
  */
 export type ODDiscordIdType = "role"|"server"|"channel"|"category"|"user"|"member"|"interaction"|"message"
+
+/**## ODNoGeneric `type`
+ * A utility type to remove generic index signatures from interfaces. This is required for providing autocomplete in all `IdList`'s of the `ODManagers`.
+ */
+export type ODNoGeneric<T extends Record<string|number|symbol,any>> = {  
+    [K in keyof T as string extends K ? never : number extends K ? never : symbol extends K ? never : K]: T[K]
+}
 
 /**## ODId `class`
  * This is an Open Discord identifier.
@@ -59,18 +64,10 @@ export type ODDiscordIdType = "role"|"server"|"channel"|"category"|"user"|"membe
  * You can use this class to assign a unique id when creating configs, databases, languages & more!
  */
 export class ODId {
-    /**The full value of this `ODId` as a `string`. */
-    #value: string
-    /**The full value of this `ODId` as a `string`. */
-    set value(id:string){
-        this._change(this.#value,id)
-        this.#value = id
-    }
-    get value(){
-        return this.#value
-    }
+    /**The raw value of this `ODId` as a `string`. */
+    private rawValue: string
     /**The change listener for the parent `ODManager` of this `ODId`. */
-    #change: ((oldId:string,newId:string) => void)|null = null
+    private changeListener: ((oldId:string,newId:string) => void)|null = null
 
     constructor(id:ODValidId){
         if (typeof id != "string" && !(id instanceof ODId)) throw new ODSystemError("Invalid constructor parameter => id:ODValidId")
@@ -86,46 +83,54 @@ export class ODId {
                 }
             })
 
-            if (result.length > 0) this.#value = result.join("")
+            if (result.length > 0) this.rawValue = result.join("")
             else throw new ODSystemError("invalid ID at 'new ODID(id: "+id+")'")
         }else{
             //id is ODId
-            this.#value = id.#value
+            this.rawValue = id.rawValue
         }
     }
 
+    /**The full value of this `ODId` as a `string`. */
+    set value(id:string){
+        this._change(this.rawValue,id)
+        this.rawValue = id
+    }
+    get value(){
+        return this.rawValue
+    }
     /**Returns a string representation of this id. (same as `this.value`) */
     toString(){
-        return this.#value
+        return this.rawValue
     }
     /**The namespace of the id before `:`. (e.g. `opendiscord` for `opendiscord:autoclose-enabled`) */
     getNamespace(){
-        const splitted = this.#value.split(":")
+        const splitted = this.rawValue.split(":")
         if (splitted.length > 1) return splitted[0]
         else return ""
     }
     /**The identifier of the id after `:`. (e.g. `autoclose-enabled` for `opendiscord:autoclose-enabled`) */
     getIdentifier(){
-        const splitted = this.#value.split(":")
+        const splitted = this.rawValue.split(":")
         if (splitted.length > 1){
             splitted.shift()
             return splitted.join(":")
-        }else return this.#value
+        }else return this.rawValue
     }
     /**Trigger an `onChange()` event in the parent `ODManager` of this class. */
     protected _change(oldId:string,newId:string){
-        if (this.#change){
+        if (this.changeListener){
             try{
-                this.#change(oldId,newId)
+                this.changeListener(oldId,newId)
             }catch(err){
                 process.emit("uncaughtException",err)
-                throw new ODSystemError("Failed to execute _change() callback!")
+                throw new ODSystemError("Failed to execute _change() callback!",{cause:err})
             }
         }
     }
     /****(❌ SYSTEM ONLY!!)** Set the callback executed when a value inside this class changes. */
     changed(callback:((oldId:string,newId:string) => void)|null){
-        this.#change = callback
+        this.changeListener = callback
     }
 }
 
@@ -135,23 +140,23 @@ export class ODId {
  * It is used to let the "onChange" event in the `ODManager` class work.
  * You can use this class when extending your own `ODManager`
  */
-export class ODManagerChangeHelper {
-    #change: (() => void)|null = null
+export abstract class ODManagerChangeHelper {
+    private changeListener: (() => void)|null = null
 
     /**Trigger an `onChange()` event in the parent `ODManager` of this class. */
     protected _change(){
-        if (this.#change){
+        if (this.changeListener){
             try{
-                this.#change()
+                this.changeListener()
             }catch(err){
                 process.emit("uncaughtException",err)
-                throw new ODSystemError("Failed to execute _change() callback!")
+                throw new ODSystemError("Failed to execute _change() callback!",{cause:err})
             }
         }
     }
     /****(❌ SYSTEM ONLY!!)** Set the callback executed when a value inside this class changes. */
     changed(callback:(() => void)|null){
-        this.#change = callback
+        this.changeListener = callback
     }
 }
 
@@ -162,7 +167,7 @@ export class ODManagerChangeHelper {
  * 
  * There is an `id:ODId` property & also some events used in the manager.
  */
-export class ODManagerData extends ODManagerChangeHelper {
+export abstract class ODManagerData extends ODManagerChangeHelper {
     /**The id of this data. */
     id: ODId
 
@@ -193,24 +198,24 @@ export type ODManagerAddCallback<DataType extends ODManagerData> = (data:DataTyp
  */
 export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHelper {
     /**Alias to Open Discord debugger. */
-    #debug?: ODDebugger
+    protected debug?: ODDebugger
     /**The message to send when debugging this manager. */
-    #debugname?: string
+    protected debugname?: string
     /**The map storing all data classes in this manager. */
-    #data: Map<string,DataType> = new Map()
+    private data: Map<string,DataType> = new Map()
     /**An array storing all listeners when data is added. */
-    #addListeners: ODManagerAddCallback<DataType>[] = []
+    private addListeners: ODManagerAddCallback<DataType>[] = []
     /**An array storing all listeners when data has changed. */
-    #changeListeners: ODManagerCallback<DataType>[] = []
+    private changeListeners: ODManagerCallback<DataType>[] = []
     /**An array storing all listeners when data is removed. */
-    #removeListeners: ODManagerCallback<DataType>[] = []
+    private removeListeners: ODManagerCallback<DataType>[] = []
     
     constructor(debug?:ODDebugger, debugname?:string){
-         super()
-        this.#debug = debug
-        this.#debugname = debugname
+        super()
+        this.debug = debug
+        this.debugname = debugname
     }
-    
+
     /**Add data to the manager. The `ODId` in the data class will be used as identifier! You can optionally select to overwrite existing data!*/
     add(data:DataType|DataType[], overwrite?:boolean): boolean {
         //repeat same command when data is an array
@@ -223,22 +228,22 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
 
         //add listener for data id change => transfer data within manager
         data.id.changed((oldId,newId) => {
-            this.#data.delete(oldId)
-            this.#data.set(newId,data)
+            this.data.delete(oldId)
+            this.data.set(newId,data)
         })
 
         //add data
         let didOverwrite: boolean
-        if (this.#data.has(data.id.value)){
-            if (!overwrite) throw new ODSystemError("Id '"+data.id.value+"' already exists in "+this.#debugname+" manager. Use 'overwrite:true' to allow overwriting!")
-            this.#data.set(data.id.value,data)
+        if (this.data.has(data.id.value)){
+            if (!overwrite) throw new ODSystemError("Id '"+data.id.value+"' already exists in "+this.debugname+" manager. Use 'overwrite:true' to allow overwriting!")
+            this.data.set(data.id.value,data)
             didOverwrite = true
-            if (this.#debug) this.#debug.debug("Added new "+this.#debugname+" to manager",[{key:"id",value:data.id.value},{key:"overwrite",value:"true"}])
+            if (this.debug) this.debug.debug("Added new "+this.debugname+" to manager",[{key:"id",value:data.id.value},{key:"overwrite",value:"true"}])
             
         }else{
-            this.#data.set(data.id.value,data)
+            this.data.set(data.id.value,data)
             didOverwrite = false
-            if (this.#debug) this.#debug.debug("Added new "+this.#debugname+" to manager",[{key:"id",value:data.id.value},{key:"overwrite",value:"false"}])
+            if (this.debug) this.debug.debug("Added new "+this.debugname+" to manager",[{key:"id",value:data.id.value},{key:"overwrite",value:"false"}])
             
         }
 
@@ -246,21 +251,21 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
         data.changed(() => {
             //notify change in upper-manager (because data in this manager changed)
             this._change()
-            this.#changeListeners.forEach((cb) => {
+            this.changeListeners.forEach((cb) => {
                 try{
                     cb(data)
                 }catch(err){
-                    throw new ODSystemError("Failed to run manager onChange() listener.\n"+err)
+                    throw new ODSystemError("Failed to run manager onChange() listener.",{cause:err})
                 }
             })
         })
 
         //emit add listeners
-        this.#addListeners.forEach((cb) => {
+        this.addListeners.forEach((cb) => {
             try{
                 cb(data,didOverwrite)
             }catch(err){
-                throw new ODSystemError("Failed to run manager onAdd() listener.\n"+err)
+                throw new ODSystemError("Failed to run manager onAdd() listener.",{cause:err})
             }
         })
 
@@ -272,21 +277,21 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
     /**Get data that matches the `ODId`. Returns the found data.*/
     get(id:ODValidId): DataType|null {
         const newId = new ODId(id)
-        const data = this.#data.get(newId.value)
+        const data = this.data.get(newId.value)
         if (data) return data
         else return null
     }
     /**Remove data that matches the `ODId`. Returns the removed data. */
     remove(id:ODValidId): DataType|null {
         const newId = new ODId(id)
-        const data = this.#data.get(newId.value)
+        const data = this.data.get(newId.value)
         
         if (!data){
-            if (this.#debug) this.#debug.debug("Removed "+this.#debugname+" from manager",[{key:"id",value:newId.value},{key:"found",value:"false"}])
+            if (this.debug) this.debug.debug("Removed "+this.debugname+" from manager",[{key:"id",value:newId.value},{key:"found",value:"false"}])
             return null
         }else{
-            this.#data.delete(newId.value)
-            if (this.#debug) this.#debug.debug("Removed "+this.#debugname+" from manager",[{key:"id",value:newId.value},{key:"found",value:"true"}])
+            this.data.delete(newId.value)
+            if (this.debug) this.debug.debug("Removed "+this.debugname+" from manager",[{key:"id",value:newId.value},{key:"found",value:"true"}])
         }
                 
         //remove all listeners
@@ -294,11 +299,11 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
         data.changed(null)
 
         //emit remove listeners
-        this.#removeListeners.forEach((cb) => {
+        this.removeListeners.forEach((cb) => {
             try{
                 cb(data)
             }catch(err){
-                throw new ODSystemError("Failed to run manager onRemove() listener.\n"+err)
+                throw new ODSystemError("Failed to run manager onRemove() listener.",{cause:err})
             }
         })
 
@@ -310,28 +315,28 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
     /**Check if data that matches the `ODId` exists. Returns a boolean. */
     exists(id:ODValidId): boolean {
         const newId = new ODId(id)
-        if (this.#data.has(newId.value)) return true
+        if (this.data.has(newId.value)) return true
         else return false
     }
     /**Get all data inside this manager*/
     getAll(): DataType[] {
-        return Array.from(this.#data.values())
+        return Array.from(this.data.values())
     }
     /**Get all data that matches inside the filter function*/
     getFiltered(predicate:(value:DataType, index:number, array:DataType[]) => unknown): DataType[] {
-        return Array.from(this.#data.values()).filter(predicate)
+        return Array.from(this.data.values()).filter(predicate)
     }
     /**Get all data where the `ODId` matches the provided RegExp. */
     getRegex(regex:RegExp): DataType[] {
-        return Array.from(this.#data.values()).filter((data) => regex.test(data.id.value))
+        return Array.from(this.data.values()).filter((data) => regex.test(data.id.value))
     }
     /**Get the length/size/amount of the data inside this manager. */
     getLength(){
-        return this.#data.size
+        return this.data.size
     }
     /**Get a list of all the ids inside this manager*/
     getIds(): ODId[] {
-        const ids = Array.from(this.#data.keys())
+        const ids = Array.from(this.data.keys())
         return ids.map((id) => new ODId(id))
     }
     /**Run an iterator over all data in this manager. This method also supports async-await behaviour!*/
@@ -342,20 +347,20 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
     }
     /**Use the Open Discord debugger in this manager for logs*/
     useDebug(debug?:ODDebugger, debugname?:string){
-        this.#debug = debug
-        this.#debugname = debugname
+        this.debug = debug
+        this.debugname = debugname
     }
     /**Listen for when data is added to this manager. */
     onAdd(callback:ODManagerAddCallback<DataType>){
-        this.#addListeners.push(callback)
+        this.addListeners.push(callback)
     }
     /**Listen for when data is changed in this manager. */
     onChange(callback:ODManagerCallback<DataType>){
-        this.#changeListeners.push(callback)
+        this.changeListeners.push(callback)
     }
     /**Listen for when data is removed from this manager. */
     onRemove(callback:ODManagerCallback<DataType>){
-        this.#removeListeners.push(callback)
+        this.removeListeners.push(callback)
     }
 }
 
@@ -367,14 +372,11 @@ export class ODManager<DataType extends ODManagerData> extends ODManagerChangeHe
  */
 export class ODManagerWithSafety<DataType extends ODManagerData> extends ODManager<DataType> {
     /**The function that creates backup data returned in `getSafe()` when an id is missing in this manager. */
-    #backupCreator: () => DataType
-    /** Temporary storage for manager debug name. */
-    #debugname: string
+    protected backupGenerator: () => DataType
 
-    constructor(backupCreator:() => DataType, debug?:ODDebugger, debugname?:string){
+    constructor(backupGenerator:() => DataType, debug?:ODDebugger, debugname?:string){
         super(debug,debugname)
-        this.#backupCreator = backupCreator
-        this.#debugname = debugname ?? "unknown"
+        this.backupGenerator = backupGenerator
     }
 
     /**Get data that matches the `ODId`. Returns the backup data when not found.
@@ -382,23 +384,50 @@ export class ODManagerWithSafety<DataType extends ODManagerData> extends ODManag
      * ### ⚠️ This should only be used when the data doesn't need to be written/edited
     */
     getSafe(id:ODValidId): DataType {
+        const newId = new ODId(id)
         const data = super.get(id)
         if (!data){
-            process.emit("uncaughtException",new ODSystemError("ODManagerWithSafety:getSafe(\""+id+"\") => Unknown Id => Used backup data ("+this.#debugname+" manager)"))
-            return this.#backupCreator()
+            process.emit("uncaughtException",new ODSystemError("ODManagerWithSafety:getSafe(\""+newId.value+"\") => Unknown Id => Used backup data ("+this.debugname+" manager)"))
+            return this.backupGenerator()
         }
         else return data
     }
 }
+
+/**## ODVersionManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODVersionManager` class.
+ */
+export type ODVersionManagerIdConstraint = Record<string,ODVersion>
 
 /**## ODVersionManager `class`
  * A Open Discord version manager.
  * 
  * It is used to manage different `ODVersion`'s from the bot. You will use it to check which version of the bot is used.
  */
-export class ODVersionManager extends ODManager<ODVersion> {
+export class ODVersionManager<IdList extends ODVersionManagerIdConstraint = ODVersionManagerIdConstraint> extends ODManager<ODVersion> {
     constructor(){
         super()
+    }
+
+    get<VersionId extends keyof ODNoGeneric<IdList>>(id:VersionId): IdList[VersionId]
+    get(id:ODValidId): ODVersion|null
+    
+    get(id:ODValidId): ODVersion|null {
+        return super.get(id)
+    }
+
+    remove<VersionId extends keyof ODNoGeneric<IdList>>(id:VersionId): IdList[VersionId]
+    remove(id:ODValidId): ODVersion|null
+    
+    remove(id:ODValidId): ODVersion|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof ODNoGeneric<IdList>): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -537,6 +566,15 @@ export class ODVersion extends ODManagerData {
     }
 }
 
+export interface ODVersionMigrationFunctions {
+    /**The migration to run before any part of the bot is started (pure node.js). */
+    beforeStartupMigrate?:() => void|Promise<void>,
+    /**The migration to run in the Open Discord migration context (incl. flags, configs, database). */
+    contextMigrate?:() => void|Promise<void>,
+    /**The migration to run when the bot starts like normal (incl. plugins) */
+    afterStartupMigrate?:() => void|Promise<void>
+}
+
 /**## ODVersionMigration `class`
  * This class is used to manage data migration between Open Ticket versions.
  * 
@@ -545,33 +583,40 @@ export class ODVersion extends ODManagerData {
 export class ODVersionMigration {
     /**The version to migrate data to */
     version: ODVersion
-    /**The migration function */
-    #func: () => void|Promise<void>
-    /**The migration function */
-    #afterInitFunc: () => void|Promise<void>
-
-    constructor(version:ODVersion,func:() => void|Promise<void>,afterInitFunc:() => void|Promise<void>){
+    /**The migration functions */
+    private functions: ODVersionMigrationFunctions
+    
+    constructor(version:ODVersion,functions:ODVersionMigrationFunctions){
         this.version = version
-        this.#func = func
-        this.#afterInitFunc = afterInitFunc
+        this.functions = functions
     }
-    /**Run this version migration as a plugin. Returns `false` when something goes wrong. */
-    async migrate(): Promise<boolean> {
+    /**Run this migration before any other part of the bot is started (pure node.js). */
+    async migrateBeforeStartup(): Promise<boolean> {
         try{
-            await this.#func()
+            if (this.functions.beforeStartupMigrate) await this.functions.beforeStartupMigrate()
             return true
         }catch(err){
-            process.emit("uncaughtException",err)
+            process.emit("uncaughtException",new ODSystemError("Failed migration before startup!",{cause:err}))
             return false
         }
     }
-    /**Run this version migration as a plugin (after other plugins have loaded). Returns `false` when something goes wrong. */
-    async migrateAfterInit(): Promise<boolean> {
+    /**Run this migration in the Open Discord migration context (incl. flags, configs, database). */
+    async migrateInContext(): Promise<boolean> {
         try{
-            await this.#afterInitFunc()
+            if (this.functions.contextMigrate) await this.functions.contextMigrate()
             return true
         }catch(err){
-            process.emit("uncaughtException",err)
+            process.emit("uncaughtException",new ODSystemError("Failed migration in secure context!",{cause:err}))
+            return false
+        }
+    }
+    /**Run this migration when the bot starts like normal (incl. plugins) */
+    async migrateAfterStartup(): Promise<boolean> {
+        try{
+            if (this.functions.afterStartupMigrate) await this.functions.afterStartupMigrate()
+            return true
+        }catch(err){
+            process.emit("uncaughtException",new ODSystemError("Failed migration after startup!",{cause:err}))
             return false
         }
     }
@@ -702,15 +747,15 @@ export class ODHTTPPostRequest {
  */
 export class ODEnvHelper {
     /**All variables found in the `.env` file */
-    dotenv: object
+    dotenv: Record<string,any>
     /**All variables found in `process.env` */
-    env: object
+    env: Record<string,any>
 
     constructor(customEnvPath?:string){
         if (typeof customEnvPath != "undefined" && typeof customEnvPath != "string") throw new ODSystemError("Invalid constructor parameter => customEnvPath?:string")
     
         const path = customEnvPath ? customEnvPath : ".env"
-        this.dotenv = fs.existsSync(path) ? this.#readDotEnv(fs.readFileSync(path)) : {}
+        this.dotenv = fs.existsSync(path) ? this.readDotEnv(fs.readFileSync(path)) : {}
         this.env = process.env
     }
 
@@ -733,9 +778,10 @@ export class ODEnvHelper {
     //THIS CODE IS COPIED FROM THE DODENV-LIB
     //Repo: https://github.com/motdotla/dotenv
     //Source: https://github.com/motdotla/dotenv/blob/master/lib/main.js#L12
-    #readDotEnv(src:Buffer){
+    //All rights go to the original authors of the dotenv library. 
+    protected readDotEnv(src:Buffer){
         const LINE = /(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)/mg
-        const obj = {}
+        const obj: Record<string,any> = {}
         
         // Convert buffer to string
         let lines = src.toString()
@@ -779,12 +825,14 @@ export class ODEnvHelper {
  */
 export class ODSystemError extends Error {
     /**This variable gets detected by the error handling system to know how to render it */
-    _ODErrorType = "system"
+    readonly _ODErrorType = "system"
 
     /**Create an `ODSystemError` directly from an `Error` class */
     static fromError(err:Error){
-        err["_ODErrorType"] = "system"
-        return err as ODSystemError
+        const modifiedErr: ODSystemError = Object.assign(err,{
+            _ODErrorType:"system" as "system"
+        })
+        return modifiedErr as ODSystemError
     }
 }
 
@@ -795,12 +843,14 @@ export class ODSystemError extends Error {
  */
 export class ODPluginError extends Error {
     /**This variable gets detected by the error handling system to know how to render it */
-    _ODErrorType = "plugin"
+    readonly _ODErrorType = "plugin"
 
     /**Create an `ODPluginError` directly from an `Error` class */
     static fromError(err:Error){
-        err["_ODErrorType"] = "plugin"
-        return err as ODPluginError
+        const modifiedErr: ODPluginError = Object.assign(err,{
+            _ODErrorType:"plugin" as "plugin"
+        })
+        return modifiedErr as ODPluginError
     }
 }
 

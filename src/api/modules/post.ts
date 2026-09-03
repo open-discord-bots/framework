@@ -1,10 +1,17 @@
 ///////////////////////////////////////
 //POST MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODValidId } from "./base"
-import { ODMessageBuildResult, ODMessageBuildSentResult } from "./builder"
-import { ODDebugger } from "./console"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base.js"
+import { ODMessageBuildResult } from "./builder.js"
+import { ODDebugger } from "./console.js"
 import * as discord from "discord.js"
+import { ODResponderSendResult } from "./responder.js"
+import { ODMessageComponentBuildResult } from "./component.js"
+
+/**## ODPostManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODPostManager` class.
+ */
+export type ODPostManagerIdConstraint = Record<string,ODPost<discord.GuildBasedChannel>|null>
 
 /**## ODPostManager `class`
  * This is an Open Discord post manager.
@@ -13,25 +20,46 @@ import * as discord from "discord.js"
  * 
  * You can use this to get the logs channel of the bot (or some other static channel/category).
  */
-export class ODPostManager extends ODManager<ODPost<discord.GuildBasedChannel>> {
+export class ODPostManager<IdList extends ODPostManagerIdConstraint = ODPostManagerIdConstraint> extends ODManager<ODPost<discord.GuildBasedChannel>> {
     /**A reference to the main server of the bot */
-    #guild: discord.Guild|null = null
+    protected guild: discord.Guild|null = null
 
     constructor(debug:ODDebugger){
         super(debug,"post")
     }
 
     add(data:ODPost<discord.GuildBasedChannel>, overwrite?:boolean): boolean {
-        if (this.#guild) data.useGuild(this.#guild)
+        if (this.guild) data.useGuild(this.guild)
         return super.add(data,overwrite)
     }
     /**Initialize the post manager & all posts. */
     async init(guild:discord.Guild){
-        this.#guild = guild
+        this.guild = guild
         for (const post of this.getAll()){
             post.useGuild(guild)
             await post.init()
         }
+    }
+
+    get<PostId extends keyof ODNoGeneric<IdList>>(id:PostId): IdList[PostId]
+    get(id:ODValidId): ODPost<discord.GuildBasedChannel>|null
+    
+    get(id:ODValidId): ODPost<discord.GuildBasedChannel>|null {
+        return super.get(id)
+    }
+
+    remove<PostId extends keyof ODNoGeneric<IdList>>(id:PostId): IdList[PostId]
+    remove(id:ODValidId): ODPost<discord.GuildBasedChannel>|null
+    
+    remove(id:ODValidId): ODPost<discord.GuildBasedChannel>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof ODNoGeneric<IdList>): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -45,7 +73,7 @@ export class ODPostManager extends ODManager<ODPost<discord.GuildBasedChannel>> 
  */
 export class ODPost<ChannelType extends discord.GuildBasedChannel> extends ODManagerData {
     /**A reference to the main server of the bot */
-    #guild: discord.Guild|null = null
+    protected guild: discord.Guild|null = null
     /**Is this post already initialized? */
     ready: boolean = false
     /**The discord.js channel */
@@ -60,7 +88,7 @@ export class ODPost<ChannelType extends discord.GuildBasedChannel> extends ODMan
 
     /**Use a specific guild in this class for fetching the channel*/
     useGuild(guild:discord.Guild|null){
-        this.#guild = guild
+        this.guild = guild
     }
     /**Change the channel id to another channel! */
     setChannelId(id:string){
@@ -69,22 +97,41 @@ export class ODPost<ChannelType extends discord.GuildBasedChannel> extends ODMan
     /**Initialize the discord.js channel of this post. */
     async init(){
         if (this.ready) return
-        if (!this.#guild) return this.channel = null
+        if (!this.guild) return this.channel = null
         try{
-            this.channel = await this.#guild.channels.fetch(this.channelId) as ChannelType
+            this.channel = await this.guild.channels.fetch(this.channelId) as ChannelType
         }catch{
             this.channel = null
         }
         this.ready = true
     }
     /**Send a message to this channel using the Open Discord builder system */
-    async send(msg:ODMessageBuildResult): Promise<ODMessageBuildSentResult<true>> {
-        if (!this.channel || !this.channel.isTextBased()) return {success:false,message:null}
+    async send(build:ODMessageBuildResult|ODMessageComponentBuildResult): Promise<ODResponderSendResult<true>> {
+        if (!this.channel || !this.channel.isTextBased()) return {success:false}
         try{
-            const sent = await this.channel.send(msg.message)
-            return {success:true,message:sent}
+            const finalMessage = this.getMessageFromBuildResult(build,"message")
+            const sent = await this.channel.send(finalMessage)
+            return {success:true,message:sent,ephemeral:false}
         }catch{
-            return {success:false,message:null}
+            return {success:false}
         }
+    }
+    /**Get the final `messageCreateOptions` from a returned build result from builders/components. */
+    protected getMessageFromBuildResult(build:ODMessageBuildResult|ODMessageComponentBuildResult,type:"interaction"|"message"){
+        const msgFlags: number[] = []
+        let msgData: discord.MessageCreateOptions
+        if ('message' in build){
+            //USING BUILDERS (deprecated)
+            msgData = build.message
+            if (build.ephemeral) msgFlags.push(discord.MessageFlags.Ephemeral)
+        }else{
+            //USING COMPONENTS
+            msgData = build.msg
+            if (type == "interaction" && build.ephemeral) msgFlags.push(discord.MessageFlags.Ephemeral) //disabled with regular messages
+            if (build.componentsV2) msgFlags.push(discord.MessageFlags.IsComponentsV2)
+            if (build.supressEmbeds) msgFlags.push(discord.MessageFlags.SuppressEmbeds)
+            if (build.supressNotifications) msgFlags.push(discord.MessageFlags.SuppressNotifications)
+        }
+        return Object.assign(msgData,{flags:msgFlags})
     }
 }

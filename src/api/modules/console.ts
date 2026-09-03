@@ -1,8 +1,8 @@
 ///////////////////////////////////////
 //CONSOLE MODULE
 ///////////////////////////////////////
-import { ODHTTPGetRequest, ODVersion, ODSystemError, ODPluginError, ODManager, ODManagerData, ODValidId } from "./base"
-import { ODMain } from "../main"
+import { ODHTTPGetRequest, ODVersion, ODSystemError, ODPluginError, ODManager, ODManagerData, ODValidId, ODNoGeneric } from "./base.js"
+import { ODMain } from "../main.js"
 import nodepath from "path"
 import fs from "fs"
 import ansis from "ansis"
@@ -116,67 +116,67 @@ export class ODConsoleMessage {
     }
 }
 
-/**## ODConsoleInfoMessage `class`
+/**## ODInfoConsoleMessage `class`
  * This is an Open Discord console info message.
  * 
  * It is the same as a normal `ODConsoleMessage`, but it has a predefined prefix & color scheme for the "INFO" messages!
  */
-export class ODConsoleInfoMessage extends ODConsoleMessage {
+export class ODInfoConsoleMessage extends ODConsoleMessage {
     constructor(message:string,params?:ODConsoleMessageParam[]){
         super(message,"INFO","blue",params)
     }
 }
 
-/**## ODConsoleSystemMessage `class`
+/**## ODSystemConsoleMessage `class`
  * This is an Open Discord console system message.
  * 
  * It is the same as a normal `ODConsoleMessage`, but it has a predefined prefix & color scheme for the "SYSTEM" messages!
  */
-export class ODConsoleSystemMessage extends ODConsoleMessage {
+export class ODSystemConsoleMessage extends ODConsoleMessage {
     constructor(message:string,params?:ODConsoleMessageParam[]){
         super(message,"SYSTEM","green",params)
     }
 }
 
-/**## ODConsolePluginMessage `class`
+/**## ODPluginConsoleMessage `class`
  * This is an Open Discord console plugin message.
  * 
  * It is the same as a normal `ODConsoleMessage`, but it has a predefined prefix & color scheme for the "PLUGIN" messages!
  */
-export class ODConsolePluginMessage extends ODConsoleMessage {
+export class ODPluginConsoleMessage extends ODConsoleMessage {
     constructor(message:string,params?:ODConsoleMessageParam[]){
         super(message,"PLUGIN","magenta",params)
     }
 }
 
-/**## ODConsoleDebugMessage `class`
+/**## ODDebugConsoleMessage `class`
  * This is an Open Discord console debug message.
  * 
  * It is the same as a normal `ODConsoleMessage`, but it has a predefined prefix & color scheme for the "DEBUG" messages!
  */
-export class ODConsoleDebugMessage extends ODConsoleMessage {
+export class ODDebugConsoleMessage extends ODConsoleMessage {
     constructor(message:string,params?:ODConsoleMessageParam[]){
         super(message,"DEBUG","cyan",params)
     }
 }
 
-/**## ODConsoleWarningMessage `class`
+/**## ODWarningConsoleMessage `class`
  * This is an Open Discord console warning message.
  * 
  * It is the same as a normal `ODConsoleMessage`, but it has a predefined prefix & color scheme for the "WARNING" messages!
  */
-export class ODConsoleWarningMessage extends ODConsoleMessage {
+export class ODWarningConsoleMessage extends ODConsoleMessage {
     constructor(message:string,params?:ODConsoleMessageParam[]){
         super(message,"WARNING","yellow",params)
     }
 }
 
-/**## ODConsoleErrorMessage `class`
+/**## ODErrorConsoleMessage `class`
  * This is an Open Discord console error message.
  * 
  * It is the same as a normal `ODConsoleMessage`, but it has a predefined prefix & color scheme for the "ERROR" messages!
  */
-export class ODConsoleErrorMessage extends ODConsoleMessage {
+export class ODErrorConsoleMessage extends ODConsoleMessage {
     constructor(message:string,params?:ODConsoleMessageParam[]){
         super(message,"ERROR","red",params)
     }
@@ -189,23 +189,33 @@ export class ODConsoleErrorMessage extends ODConsoleMessage {
  */
 export class ODError {
     /**The original error that this class wraps around */
-    error: Error|ODSystemError|ODPluginError
+    error: Error & {"_ODErrorType"?:"system"|"plugin"}
     /**The origin of the original error */
     origin: NodeJS.UncaughtExceptionOrigin
 
-    constructor(error:Error|ODSystemError|ODPluginError, origin:NodeJS.UncaughtExceptionOrigin){
-        this.error = error
+    constructor(error:any, origin:NodeJS.UncaughtExceptionOrigin){
+        this.error = (error instanceof Error) ? error : new Error(error)
         this.origin = origin
+    }
+
+    protected recursiveStack(error:(Error & {"_ODErrorType"?:"system"|"plugin"}),level:number=0): string {
+        if (!(error instanceof Error)) return "<OPENDISCORD:invalid-error>"
+        if (level > 10) return "<OPENDISCORD:cause-stack-recursion-limit-reached>"
+        let fullStack = error.stack ?? "<OPENDISCORD:no-stack>"
+        if (error.cause){
+            fullStack += "\n========== ERROR CAUSE ===========\n"+this.recursiveStack(error.cause as any,level+1).split("\n").map((l) => ">>> "+l).join("\n")
+        }
+        return fullStack
     }
 
     /**Render this error to the console using `console.log`! Returns `false` when something went wrong. */
     render(){
         try {
-            let prefix = (this.error["_ODErrorType"] == "plugin") ? "PLUGIN ERROR" : ((this.error["_ODErrorType"] == "system") ? "OPENTICKET ERROR" : "UNKNOWN ERROR")
+            let prefix = (this.error["_ODErrorType"] && this.error["_ODErrorType"] == "plugin") ? "PLUGIN ERROR" : ((this.error["_ODErrorType"] == "system") ? "OPENTICKET ERROR" : "UNKNOWN ERROR")
             //title
             console.log(ansis.red("["+prefix+"]: ")+this.error.message+" | origin: "+this.origin)
             //stack trace
-            if (this.error.stack) console.log(ansis.gray(this.error.stack))
+            console.log(ansis.gray(this.recursiveStack(this.error)))
             //additional message
             if (this.error["_ODErrorType"] == "plugin") console.log(ansis.red.bold("\nPlease report this error to the plugin developer and help us create a more stable plugin!"))
             else console.log(ansis.red.bold("\nPlease report this error to our discord server and help us create a more stable bot!"))
@@ -217,7 +227,9 @@ export class ODError {
     }
     /**Create a more-detailed, non-colored version of this error to store it in the `debug.txt` file! */
     toDebugString(){
-        return "[UNKNOWN OD ERROR]: "+this.error.message+" | origin: "+this.origin+"\n"+this.error.stack
+        const date = new Date()
+        const dstring = `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
+        return "["+dstring+" UNKNOWN OPENDISCORD ERROR]: "+this.error.message+" | Error Origin: "+this.origin+" | Stacktrace:\n"+this.recursiveStack(this.error)
     }
 }
 
@@ -266,22 +278,22 @@ export class ODConsoleManager {
             
         }else if (["string","number","boolean","object"].includes(typeof message)){
             let newMessage: ODConsoleMessage
-            if (type == "info") newMessage = new ODConsoleInfoMessage(message,params)
-            else if (type == "system") newMessage = new ODConsoleSystemMessage(message,params)
-            else if (type == "plugin") newMessage = new ODConsolePluginMessage(message,params)
-            else if (type == "debug") newMessage = new ODConsoleDebugMessage(message,params)
-            else if (type == "warning") newMessage = new ODConsoleWarningMessage(message,params)
-            else if (type == "error") newMessage = new ODConsoleErrorMessage(message,params)
-            else newMessage = new ODConsoleSystemMessage(message,params)
+            if (type == "info") newMessage = new ODInfoConsoleMessage(message,params)
+            else if (type == "system") newMessage = new ODSystemConsoleMessage(message,params)
+            else if (type == "plugin") newMessage = new ODPluginConsoleMessage(message,params)
+            else if (type == "debug") newMessage = new ODDebugConsoleMessage(message,params)
+            else if (type == "warning") newMessage = new ODWarningConsoleMessage(message,params)
+            else if (type == "error") newMessage = new ODErrorConsoleMessage(message,params)
+            else newMessage = new ODSystemConsoleMessage(message,params)
 
             if (!this.silent) newMessage.render()
             if (this.debugfile) this.debugfile.writeConsoleMessage(newMessage)
             this.history.push(newMessage)
         }
-        this.#purgeHistory()
+        this.purgeHistory()
     }
     /**Shorten the history when it exceeds the max history length! */
-    #purgeHistory(){
+    protected purgeHistory(){
         if (this.history.length > this.historylength) this.history.shift()
     }
 }
@@ -310,16 +322,16 @@ export class ODDebugFileManager {
         this.version = version
         this.maxlines = maxlines
 
-        this.#writeStartupStats()
+        this.writeStartupStats()
     }
 
     /**Check if the debug file exists */
-    #existsDebugFile(){
+    protected existsDebugFile(){
         return fs.existsSync(this.path)
     }
     /**Read from the debug file */
-    #readDebugFile(){
-        if (this.#existsDebugFile()){
+    protected readDebugFile(){
+        if (this.existsDebugFile()){
             try {
                 return fs.readFileSync(this.path).toString()
             }catch{
@@ -330,8 +342,8 @@ export class ODDebugFileManager {
         }
     }
     /**Write to the debug file and shorten it when needed. */
-    #writeDebugFile(text:string){
-        const currenttext = this.#readDebugFile()
+    protected writeDebugFile(text:string){
+        const currenttext = this.readDebugFile()
         if (currenttext){
             const splitted = currenttext.split("\n")
             
@@ -343,12 +355,12 @@ export class ODDebugFileManager {
             fs.writeFileSync(this.path,splitted.join("\n"))
         }else{
             //write new file:
-            const newtext = this.#createStatsText()+text
+            const newtext = this.createStatsText()+text
             fs.writeFileSync(this.path,newtext)
         }
     }
-    /**Generate the stats/header of the debug file (containing the version) */
-    #createStatsText(){
+    /**Generate the statistics/header of the debug file (containing the version) */
+    protected createStatsText(){
         const date = new Date()
         const dstring = `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
         return [
@@ -359,9 +371,9 @@ export class ODDebugFileManager {
             "=========================\n\n"
         ].join("\n")
     }
-    /**Write the stats/header to the debug file on startup */
-    #writeStartupStats(){
-        const currenttext = this.#readDebugFile()
+    /**Write the statistics/header to the debug file on startup */
+    protected writeStartupStats(){
+        const currenttext = this.readDebugFile()
         if (currenttext){
             //edit previous file:
             const splitted = currenttext.split("\n")
@@ -371,31 +383,31 @@ export class ODDebugFileManager {
                 splitted.splice(0,((splitted.length+11) - this.maxlines))
             }
 
-            splitted.unshift(this.#createStatsText())
+            splitted.unshift(this.createStatsText())
             splitted.push("\n---------------------------------------------------------------------\n---------------------------------------------------------------------\n")
             
             fs.writeFileSync(this.path,splitted.join("\n"))
         }else{
             //write new file:
-            const newtext = this.#createStatsText()
+            const newtext = this.createStatsText()
             fs.writeFileSync(this.path,newtext)
         }
     }
     /**Write an `ODConsoleMessage` to the debug file */
     writeConsoleMessage(message:ODConsoleMessage){
-        this.#writeDebugFile(message.toDebugString())
+        this.writeDebugFile(message.toDebugString())
     }
     /**Write an `ODError` to the debug file */
     writeErrorMessage(error:ODError){
-        this.#writeDebugFile(error.toDebugString())
+        this.writeDebugFile(error.toDebugString())
     }
     /**Write custom text to the debug file */
     writeText(text:string){
-        this.#writeDebugFile(text)
+        this.writeDebugFile(text)
     }
     /**Write a custom note to the debug file (starting with `[NOTE]:`) */
     writeNote(text:string){
-        this.#writeDebugFile("[NOTE]: "+text)
+        this.writeDebugFile("[NOTE]: "+text)
     }
 }
 
@@ -422,10 +434,10 @@ export class ODDebugger {
     /**Create a debug message. This will always be logged to `debug.txt` & sometimes to the console (when enabled). Returns `true` when visible */
     debug(message:string, params?:{key:string,value:string}[]): boolean {
         if (this.visible){
-            this.console.log(new ODConsoleDebugMessage(message,params))
+            this.console.log(new ODDebugConsoleMessage(message,params))
             return true
         }else{
-            this.console.debugfile.writeConsoleMessage(new ODConsoleDebugMessage(message,params))
+            this.console.debugfile.writeConsoleMessage(new ODDebugConsoleMessage(message,params))
             return false
         }
     }
@@ -580,6 +592,11 @@ export class ODLiveStatusUrlSource extends ODLiveStatusSource {
     }
 }
 
+/**## ODLiveStatusManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODLiveStatusManager` class.
+ */
+export type ODLiveStatusManagerIdConstraint = Record<string,ODLiveStatusSource>
+
 /**## ODLiveStatusManager `class`
  * This is the Open Discord livestatus manager.
  * 
@@ -588,11 +605,11 @@ export class ODLiveStatusUrlSource extends ODLiveStatusSource {
  * You can use this to customise or add stuff to the LiveStatus system.
  * Access it in the global `opendiscord.startscreen.livestatus` variable!
  */
-export class ODLiveStatusManager extends ODManager<ODLiveStatusSource> {
+export class ODLiveStatusManager<IdList extends ODLiveStatusManagerIdConstraint = ODLiveStatusManagerIdConstraint> extends ODManager<ODLiveStatusSource> {
     /**The class responsible for rendering the livestatus messages. */
     renderer: ODLiveStatusRenderer
     /**A reference to the ODMain or "opendiscord" global variable */
-    #main: ODMain|null = null
+    protected main: ODMain|null = null
 
     constructor(debug:ODDebugger,console:ODConsoleManager){
         super(debug,"livestatus source")
@@ -601,18 +618,39 @@ export class ODLiveStatusManager extends ODManager<ODLiveStatusSource> {
 
     /**Get the messages from all sources combined! */
     async getAllMessages(): Promise<ODLiveStatusSourceData[]> {
-        if (!this.#main) throw new ODSystemError("ODLiveStatusManager:getAllMessages() --> Unable to get messages, 'opendiscord/ODMain' has not been connected!")
+        if (!this.main) throw new ODSystemError("ODLiveStatusManager:getAllMessages() --> Unable to get messages, 'opendiscord/ODMain' has not been connected!")
         const messages: ODLiveStatusSourceData[] = []
         for (const source of this.getAll()){
             try {
-                messages.push(...(await source.getMessages(this.#main)))
+                messages.push(...(await source.getMessages(this.main)))
             }catch{}
         }
         return messages
     }
     /**Set the opendiscord `ODMain` class to use for fetching message filters. */
     useMain(main:ODMain){
-        this.#main = main
+        this.main = main
+    }
+
+    get<LiveStatusId extends keyof ODNoGeneric<IdList>>(id:LiveStatusId): IdList[LiveStatusId]
+    get(id:ODValidId): ODLiveStatusSource|null
+    
+    get(id:ODValidId): ODLiveStatusSource|null {
+        return super.get(id)
+    }
+
+    remove<LiveStatusId extends keyof ODNoGeneric<IdList>>(id:LiveStatusId): IdList[LiveStatusId]
+    remove(id:ODValidId): ODLiveStatusSource|null
+    
+    remove(id:ODValidId): ODLiveStatusSource|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof ODNoGeneric<IdList>): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -623,10 +661,10 @@ export class ODLiveStatusManager extends ODManager<ODLiveStatusSource> {
  */
 export class ODLiveStatusRenderer {
     /**A reference to the ODConsoleManager or "opendiscord.console" global variable */
-    #console: ODConsoleManager
+    protected console: ODConsoleManager
 
     constructor(console:ODConsoleManager){
-        this.#console = console
+        this.console = console
     }
 
     /**Render all messages */
@@ -652,9 +690,9 @@ export class ODLiveStatusRenderer {
 
 
                 if (!["red","yellow","green","blue","gray","magenta","cyan"].includes(titleColor)) var finalTitle = ansis.white(title)
-                else var finalTitle = ansis[titleColor](title)
+                else var finalTitle = ansis[(titleColor == "normal" ? "white" : titleColor)](title)
                 if (!["red","yellow","green","blue","gray","magenta","cyan"].includes(descriptionColor)) var finalDescription = ansis.white(description)
-                else var finalDescription = ansis[descriptionColor](description)
+                else var finalDescription = ansis[(descriptionColor == "normal" ? "white" : descriptionColor)](description)
 
                 final.push(finalTitle+finalDescription)
             })
@@ -662,7 +700,7 @@ export class ODLiveStatusRenderer {
             //return all messages
             return final.join("\n")
         }catch{
-            this.#console.log("Failed to render LiveStatus messages!","error")
+            this.console.log("Failed to render LiveStatus messages!","error")
             return ""
         }
     }

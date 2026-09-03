@@ -1,7 +1,10 @@
-import * as api from "../api/index"
-import * as utilities from "../utilities/index"
+import * as api from "../api/index.js"
+import * as utilities from "../utilities/index.js"
 
 export function loadErrorHandling(opendiscord:api.ODMain,project:api.ODProjectType){
+    //increase error stack trace
+    Error.stackTraceLimit = 50
+
     process.on("uncaughtException",async (error,origin) => {
         try{
             const beforeEvent = opendiscord.events.get("onErrorHandling")
@@ -33,7 +36,7 @@ export function loadErrorHandling(opendiscord:api.ODMain,project:api.ODProjectTy
             }
             
         }catch(err){
-            console.log("[ERROR HANDLER ERROR]:",err)
+            console.error("[ERROR HANDLER ERROR]:",err)
         }
     })
 }

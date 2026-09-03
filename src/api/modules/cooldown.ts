@@ -1,8 +1,13 @@
 ///////////////////////////////////////
 //COOLDOWN MODULE
 ///////////////////////////////////////
-import { ODId, ODValidId, ODManager, ODSystemError, ODManagerData } from "./base"
-import { ODDebugger } from "./console"
+import { ODId, ODValidId, ODManager, ODSystemError, ODManagerData, ODNoGeneric } from "./base.js"
+import { ODDebugger } from "./console.js"
+
+/**## ODCooldownManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODCooldownManager` class.
+ */
+export type ODCooldownManagerIdConstraint = Record<string,ODCooldown<object>>
 
 /**## ODCooldownManager `class`
  * This is an Open Discord cooldown manager.
@@ -11,7 +16,7 @@ import { ODDebugger } from "./console"
  * 
  * There are many types of cooldowns available, but you can also create your own!
  */
-export class ODCooldownManager extends ODManager<ODCooldown<object>> {
+export class ODCooldownManager<IdList extends ODCooldownManagerIdConstraint = ODCooldownManagerIdConstraint> extends ODManager<ODCooldown<object>> {
     constructor(debug:ODDebugger){
         super(debug,"cooldown")
     }
@@ -20,6 +25,27 @@ export class ODCooldownManager extends ODManager<ODCooldown<object>> {
         for (const cooldown of this.getAll()){
             await cooldown.init()
         }
+    }
+
+    get<CooldownId extends keyof ODNoGeneric<IdList>>(id:CooldownId): IdList[CooldownId]
+    get(id:ODValidId): ODCooldown<object>|null
+    
+    get(id:ODValidId): ODCooldown<object>|null {
+        return super.get(id)
+    }
+
+    remove<CooldownId extends keyof ODNoGeneric<IdList>>(id:CooldownId): IdList[CooldownId]
+    remove(id:ODValidId): ODCooldown<object>|null
+    
+    remove(id:ODValidId): ODCooldown<object>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof ODNoGeneric<IdList>): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -49,7 +75,7 @@ export class ODCooldownData<Data extends object> extends ODManagerData {
  * 
  * There are also premade cooldowns available in the bot!
  */
-export class ODCooldown<Data extends object> extends ODManagerData {
+export abstract class ODCooldown<Data extends object> extends ODManagerData {
     data: ODManager<ODCooldownData<Data>> = new ODManager()
     /**Is this cooldown already initialized? */
     ready: boolean = false
@@ -59,21 +85,16 @@ export class ODCooldown<Data extends object> extends ODManagerData {
     }
 
     /**Check this id and start cooldown when it exeeds the limit! Returns `true` when on cooldown! */
-    use(id:string): boolean {
-        throw new ODSystemError("Tried to use an unimplemented ODCooldown!")
-    }
+    abstract use(id:string): boolean
+    
     /**Check this id without starting or updating the cooldown. Returns `true` when on cooldown! */
-    check(id:string): boolean {
-        throw new ODSystemError("Tried to use an unimplemented ODCooldown!")
-    }
+    abstract check(id:string): boolean
+    
     /**Remove the cooldown for an id when available.*/
-    delete(id:string){
-        throw new ODSystemError("Tried to use an unimplemented ODCooldown!")
-    }
+    abstract delete(id:string): void
+    
     /**Initialize the internal systems of this cooldown. */
-    async init(){
-        throw new ODSystemError("Tried to use an unimplemented ODCooldown!")
-    }
+    abstract init(): Promise<void>|void
 }
 
 /**## ODCounterCooldown `class`

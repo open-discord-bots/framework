@@ -1,9 +1,14 @@
 ///////////////////////////////////////
 //SESSION MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODValidId } from "./base"
-import { ODDebugger } from "./console"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base.js"
+import { ODDebugger } from "./console.js"
 import * as crypto from "crypto"
+
+/**## ODSessionManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODSessionManager` class.
+ */
+export type ODSessionManagerIdConstraint = Record<string,ODSession>
 
 /**## ODSessionManager `class`
  * This is an Open Discord session manager.
@@ -13,9 +18,30 @@ import * as crypto from "crypto"
  * 
  * Visit the `ODSession` class for more info
  */
-export class ODSessionManager extends ODManager<ODSession> {
+export class ODSessionManager<IdList extends ODSessionManagerIdConstraint = ODSessionManagerIdConstraint> extends ODManager<ODSession> {
     constructor(debug:ODDebugger){
         super(debug,"session")
+    }
+
+    get<SessionId extends keyof ODNoGeneric<IdList>>(id:SessionId): IdList[SessionId]
+    get(id:ODValidId): ODSession|null
+    
+    get(id:ODValidId): ODSession|null {
+        return super.get(id)
+    }
+
+    remove<SessionId extends keyof ODNoGeneric<IdList>>(id:SessionId): IdList[SessionId]
+    remove(id:ODValidId): ODSession|null
+    
+    remove(id:ODValidId): ODSession|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof ODNoGeneric<IdList>): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -41,28 +67,28 @@ export type ODSessionTimeoutCallback = (id:string, timeout:"default"|"custom", d
 /**## ODSession `class`
  * This is an Open Discord session.
  * 
- * It can be used to create 100% unique id's for usage in the bot. An id can also store additional data which isn't saved to the filesystem.
+ * It can be used to create unique user sessions with an ID. Each session can store additional data which isn't saved to the filesystem.
  * You can almost compare it to the PHP session system.
  */
 export class ODSession extends ODManagerData {
     /**The history of previously generated instance ids. Used to reduce the risk of generating the same id twice. */
-    #idHistory: string[] = []
+    protected idHistory: string[] = []
     /**The max length of the instance id history. */
-    #maxIdHistoryLength: number = 500
+    protected maxIdHistoryLength: number = 500
     /**An array of all the currently active session instances. */
     sessions: ODSessionInstance[] = []
     /**The default amount of minutes before a session automatically stops. */
     timeoutMinutes: number = 30
     /**The id of the auto-timeout session checker interval */
-    #intervalId: NodeJS.Timeout
+    protected intervalId: NodeJS.Timeout
     /**Listeners for when a session times-out. */
-    #timeoutListeners: ODSessionTimeoutCallback[] = []
+    protected timeoutListeners: ODSessionTimeoutCallback[] = []
 
     constructor(id:ODValidId, intervalSeconds?:number){
         super(id)
 
         //create the auto-timeout session checker
-        this.#intervalId = setInterval(() => {
+        this.intervalId = setInterval(() => {
             const deletableSessions: {instance:ODSessionInstance,reason:"default"|"custom"}[] = []
             
             //collect all deletable sessions
@@ -82,31 +108,31 @@ export class ODSession extends ODManagerData {
                 this.sessions.splice(index,1)
 
                 //emit timeout listeners
-                this.#timeoutListeners.forEach((cb) => cb(session.instance.id,session.reason,session.instance.data,new Date(session.instance.creation)))
+                this.timeoutListeners.forEach((cb) => cb(session.instance.id,session.reason,session.instance.data,new Date(session.instance.creation)))
             })
 
         },((intervalSeconds) ? (intervalSeconds * 1000) : 60000))
     }
 
     /**Create a unique hex id of 8 characters and add it to the instance id history */
-    #createUniqueId(): string {
+    protected createUniqueId(): string {
         const hex = crypto.randomBytes(4).toString("hex")
-        if (this.#idHistory.includes(hex)){
-            return this.#createUniqueId()
+        if (this.idHistory.includes(hex)){
+            return this.createUniqueId()
         }else{
-            this.#idHistory.push(hex)
-            if (this.#idHistory.length > this.#maxIdHistoryLength) this.#idHistory.shift()
+            this.idHistory.push(hex)
+            if (this.idHistory.length > this.maxIdHistoryLength) this.idHistory.shift()
             return hex
         }
     }
     /**Stop the global interval that automatically deletes timed-out sessions. (This action can't be reverted!) */
     stopAutoTimeout(){
-        clearInterval(this.#intervalId)
+        clearInterval(this.intervalId)
     }
 
     /**Start a session instance with data. Returns the unique id required to access the session. */
     start(data?:any): string {
-        const id = this.#createUniqueId()
+        const id = this.createUniqueId()
         this.sessions.push({
             id,data,
             creation:new Date().getTime(),
@@ -150,6 +176,6 @@ export class ODSession extends ODManagerData {
     }
     /**Listen for a session timeout (default or custom) */
     onTimeout(callback:ODSessionTimeoutCallback){
-        this.#timeoutListeners.push(callback)
+        this.timeoutListeners.push(callback)
     }
 }

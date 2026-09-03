@@ -1,30 +1,25 @@
 ///////////////////////////////////////
 //HELP MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODValidId } from "./base"
-import { ODDebugger } from "./console"
-
-/**## ODHelpMenuComponentRenderer `type`
- * This is the callback of the help menu component renderer. It also contains information about how & where it is rendered.
- */
-export type ODHelpMenuComponentRenderer = (page:number, category:number, location:number, mode:"slash"|"text") => string|Promise<string>
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODSystemError, ODValidId } from "./base.js"
+import { ODDebugger } from "./console.js"
 
 /**## ODHelpMenuComponent `class`
  * This is an Open Discord help menu component.
  * 
  * It can render something on the Open Discord help menu.
  */
-export class ODHelpMenuComponent extends ODManagerData {
+export abstract class ODHelpMenuComponent extends ODManagerData {
     /**The priority of this component. The higher, the earlier it will appear in the help menu. */
     priority: number
-    /**The render function for this component. */
-    render: ODHelpMenuComponentRenderer
 
-    constructor(id:ODValidId, priority:number, render:ODHelpMenuComponentRenderer){
+    constructor(id:ODValidId, priority:number){
         super(id)
         this.priority = priority
-        this.render = render
     }
+
+    /**The render function for this component. */
+    abstract render(page:number, category:number, location:number, mode:"slash"|"text"): string|Promise<string>
 }
 
 /**## ODHelpMenuTextComponent `class`
@@ -33,10 +28,16 @@ export class ODHelpMenuComponent extends ODManagerData {
  * It can render a static piece of text on the Open Discord help menu.
  */
 export class ODHelpMenuTextComponent extends ODHelpMenuComponent {
+    /**The text of this help menu component. */
+    text: string
+
     constructor(id:ODValidId, priority:number, text:string){
-        super(id,priority,() => {
-            return text
-        })
+        super(id,priority)
+        this.text = text
+    }
+
+    render(page:number,category:number,location:number,mode:"slash"|"text"){
+        return this.text
     }
 }
 
@@ -74,23 +75,34 @@ export interface ODHelpMenuCommandComponentSettings {
  * It contains a useful helper to render a command in the Open Discord help menu.
  */
 export class ODHelpMenuCommandComponent extends ODHelpMenuComponent {
+    /**The settings for this help menu component. */
+    settings:ODHelpMenuCommandComponentSettings
+
     constructor(id:ODValidId, priority:number, settings:ODHelpMenuCommandComponentSettings){
-        super(id,priority,(page,category,location,mode) => {
-            if (mode == "slash" && settings.slashName){
-                return `\`${settings.slashName}${(settings.slashOptions) ? this.#renderOptions(settings.slashOptions) : ""}\` ➜ ${settings.slashDescription ?? ""}`
-            
-            }else if (mode == "text" && settings.textName){
-                return `\`${settings.textName}${(settings.textOptions) ? this.#renderOptions(settings.textOptions) : ""}\` ➜ ${settings.textDescription ?? ""}`
-            
-            }else return ""
-        })
+        super(id,priority)
+        this.settings = settings
+    }
+
+    render(page:number,category:number,location:number,mode:"slash"|"text"){
+        if (mode == "slash" && this.settings.slashName){
+            return `\`${this.settings.slashName}${(this.settings.slashOptions) ? this.renderOptions(this.settings.slashOptions) : ""}\` ➜ ${this.settings.slashDescription ?? ""}`
+        
+        }else if (mode == "text" && this.settings.textName){
+            return `\`${this.settings.textName}${(this.settings.textOptions) ? this.renderOptions(this.settings.textOptions) : ""}\` ➜ ${this.settings.textDescription ?? ""}`
+        
+        }else return ""
     }
     
     /**Utility function to render all command options. */
-    #renderOptions(options:ODHelpMenuCommandComponentOption[]){
+    protected renderOptions(options:ODHelpMenuCommandComponentOption[]){
         return " "+options.map((opt) => (opt.optional) ? `[${opt.name}]` : `<${opt.name}>`).join(" ")
     }
 }
+
+/**## ODHelpMenuCategoryIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODHelpMenuCategory` class.
+ */
+export type ODHelpMenuCategoryIdConstraint = Record<string,ODHelpMenuComponent|null>
 
 /**## ODHelpMenuCategory `class`
  * This is an Open Discord help menu category.
@@ -98,7 +110,7 @@ export class ODHelpMenuCommandComponent extends ODHelpMenuComponent {
  * Every category in the help menu is an embed field by default.
  * Try to limit the amount of components per category.
  */
-export class ODHelpMenuCategory extends ODManager<ODHelpMenuComponent> {
+export class ODHelpMenuCategory<IdList extends ODHelpMenuCategoryIdConstraint = ODHelpMenuCategoryIdConstraint> extends ODManager<ODHelpMenuComponent> {
     /**The id of this category. */
     id: ODId
     /**The priority of this category. The higher, the earlier it will appear in the menu. */
@@ -129,14 +141,35 @@ export class ODHelpMenuCategory extends ODManager<ODHelpMenuComponent> {
         for (const component of derefArray){
             try {
                 result.push(await component.render(page,category,i,mode))
-            }catch(err){
-                process.emit("uncaughtException",err)
+            }catch(err:any){
+                process.emit("uncaughtException",new ODSystemError(err))
             }
             i++
         }
 
         //only return the non-empty components
         return result.filter((component) => component !== "").join("\n\n")
+    }
+
+    get<HelpMenuComponentId extends keyof ODNoGeneric<IdList>>(id:HelpMenuComponentId): IdList[HelpMenuComponentId]
+    get(id:ODValidId): ODHelpMenuComponent|null
+    
+    get(id:ODValidId): ODHelpMenuComponent|null {
+        return super.get(id)
+    }
+
+    remove<HelpMenuComponentId extends keyof ODNoGeneric<IdList>>(id:HelpMenuComponentId): IdList[HelpMenuComponentId]
+    remove(id:ODValidId): ODHelpMenuComponent|null
+    
+    remove(id:ODValidId): ODHelpMenuComponent|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof ODNoGeneric<IdList>): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -147,6 +180,12 @@ export class ODHelpMenuCategory extends ODManager<ODHelpMenuComponent> {
  */
 export type ODHelpMenuRenderResult = {name:string, value:string}[][]
 
+
+/**## ODHelpMenuManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODHelpMenuManager` class.
+ */
+export type ODHelpMenuManagerIdConstraint = Record<string,ODHelpMenuCategory>
+
 /**## ODHelpMenuManager `class`
  * This is an Open Discord help menu manager.
  * 
@@ -155,19 +194,16 @@ export type ODHelpMenuRenderResult = {name:string, value:string}[][]
  * 
  * Fewer Categories == More Clean Menu
  */
-export class ODHelpMenuManager extends ODManager<ODHelpMenuCategory> {
-    /**Alias to Open Discord debugger. */
-    #debug: ODDebugger
+export class ODHelpMenuManager<IdList extends ODHelpMenuManagerIdConstraint = ODHelpMenuManagerIdConstraint> extends ODManager<ODHelpMenuCategory> {
     /**The amount of categories per-page. */
     categoriesPerPage: number = 3
     
     constructor(debug:ODDebugger){
         super(debug,"help menu category")
-        this.#debug = debug
     }
 
     add(data:ODHelpMenuCategory, overwrite?:boolean): boolean {
-        data.useDebug(this.#debug,"help menu component")
+        data.useDebug(this.debug,"help menu component")
         return super.add(data,overwrite)
     }
 
@@ -204,7 +240,7 @@ export class ODHelpMenuManager extends ODManager<ODHelpMenuCategory> {
                     }
                 }
             }catch(err){
-                process.emit("uncaughtException",err)
+                process.emit("uncaughtException",new ODSystemError("Failed to render help menu category '"+category.id.value+"'!",{cause:err}))
             }
         }
 
@@ -212,5 +248,26 @@ export class ODHelpMenuManager extends ODManager<ODHelpMenuCategory> {
         if (currentPage.length > 0) result.push(currentPage)
 
         return result
+    }
+
+    get<HelpMenuCategoryId extends keyof ODNoGeneric<IdList>>(id:HelpMenuCategoryId): IdList[HelpMenuCategoryId]
+    get(id:ODValidId): ODHelpMenuCategory|null
+    
+    get(id:ODValidId): ODHelpMenuCategory|null {
+        return super.get(id)
+    }
+
+    remove<HelpMenuCategoryId extends keyof ODNoGeneric<IdList>>(id:HelpMenuCategoryId): IdList[HelpMenuCategoryId]
+    remove(id:ODValidId): ODHelpMenuCategory|null
+    
+    remove(id:ODValidId): ODHelpMenuCategory|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof ODNoGeneric<IdList>): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }

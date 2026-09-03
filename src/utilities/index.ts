@@ -1,6 +1,7 @@
 import * as fs from "fs"
 import ansis from "ansis"
-import * as api from "../api/index"
+import * as api from "../api/index.js"
+import * as discord from "discord.js"
 
 /**## sharedFuses `utility variable`
  * All shared fuses from Open Discord. Please use `opendiscord.sharedFuses` instead!
@@ -25,7 +26,7 @@ export function checkNodeVersion(project:api.ODProjectType){
  */
 export function moduleInstalled(id:string,throwError?:boolean): boolean {
     try{
-        require.resolve(id)
+        import.meta.resolve(id)
         return true
     }catch{
         if (throwError) throw new Error("npm module \""+id+"\" is not installed! Install it via 'npm install "+id+"'")
@@ -41,6 +42,7 @@ export function initialStartupLogs(opendiscord:api.ODMain,project:api.ODProjectT
     const title = (project == "openticket") ? "OPEN TICKET" : "OPEN MODERATION"
     console.log("\n--------------------------- "+title+" STARTUP ---------------------------")
     opendiscord.log("Logging system activated!","system")
+    opendiscord.debug.debug("Open Discord Framework Version: "+opendiscord.versions.get("opendiscord:api")?.toString())
     opendiscord.debug.debug("Using Node.js "+process.version+"!")
 
     try{
@@ -107,7 +109,7 @@ export function timedAwait<ReturnValue>(promise:ReturnValue,timeout:number,onErr
         try{
             const res = await promise
             if (allowResolve) resolve(res)
-        }catch(err){
+        }catch(err:any){
             onError(err)
         }
     return promise
@@ -117,7 +119,7 @@ export function timedAwait<ReturnValue>(promise:ReturnValue,timeout:number,onErr
 /**## dateString `utility function`
  * Use this function to create a short date string in the following format: `DD/MM/YYYY HH:MM:SS`
  */
-export function dateString(date): string {
+export function dateString(date:Date): string {
     return `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
 }
 
@@ -162,8 +164,29 @@ export function ordinalNumber(num:number){
 /**## trimEmojis `utility function`
  * Trim/remove all emoji's from a Javascript string.
  */
-export function trimEmojis(text){
+export function trimEmojis(text:string){
     return text.replace(/(\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?)*)/gu,"")
+}
+
+/**## getMessageFromBuildResult `utility function`
+ * Get the final `messageCreateOptions` from a returned build result from builders/components.
+ */
+export function getMessageFromBuildResult(build:api.ODMessageBuildResult|api.ODMessageComponentBuildResult,type:"interaction"|"message"){
+    const msgFlags: number[] = []
+    let msgData: discord.MessageCreateOptions
+    if ('message' in build){
+        //USING BUILDERS (deprecated)
+        msgData = build.message
+        if (build.ephemeral) msgFlags.push(discord.MessageFlags.Ephemeral)
+    }else{
+        //USING COMPONENTS
+        msgData = build.msg
+        if (type == "interaction" && build.ephemeral) msgFlags.push(discord.MessageFlags.Ephemeral) //disabled with regular messages
+        if (build.componentsV2) msgFlags.push(discord.MessageFlags.IsComponentsV2)
+        if (build.supressEmbeds) msgFlags.push(discord.MessageFlags.SuppressEmbeds)
+        if (build.supressNotifications) msgFlags.push(discord.MessageFlags.SuppressNotifications)
+    }
+    return Object.assign(msgData,{flags:msgFlags})
 }
 
 /**## easterEggs `utility object`

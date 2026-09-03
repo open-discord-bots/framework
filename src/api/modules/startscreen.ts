@@ -1,10 +1,10 @@
 ///////////////////////////////////////
 //STARTSCREEN MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODValidId } from "./base"
-import { ODDebugger, ODError, ODLiveStatusManager } from "./console"
-import { ODFlag } from "./flag"
-import { ODPlugin, ODUnknownCrashedPlugin } from "./plugin"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODValidId } from "./base.js"
+import { ODDebugger, ODError, ODLiveStatusManager, ODLiveStatusManagerIdConstraint } from "./console.js"
+import { ODFlag } from "./flag.js"
+import { ODPlugin, ODUnknownCrashedPlugin } from "./plugin.js"
 import ansis from "ansis"
 
 /**## ODStartScreenComponentRenderCallback `type`
@@ -12,21 +12,23 @@ import ansis from "ansis"
  */
 export type ODStartScreenComponentRenderCallback = (location:number) => string|Promise<string>
 
+/**## ODStartScreenManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODStartScreenManager` class.
+ */
+export type ODStartScreenManagerIdConstraint = Record<string,ODStartScreenComponent>
+
 /**## ODStartScreenManager `class`
  * This is an Open Discord startscreen manager.
  * 
  * This class is responsible for managing & rendering the startscreen of the bot.
  * The startscreen is the part you see when the bot has started up successfully. (e.g. the Open Discord logo, logs, livestatus, flags, ...)
  */
-export class ODStartScreenManager extends ODManager<ODStartScreenComponent> {
-    /**Alias to the Open Discord debugger. */
-    #debug: ODDebugger
+export class ODStartScreenManager<IdList extends ODStartScreenManagerIdConstraint = ODStartScreenManagerIdConstraint,LiveStatus extends ODLiveStatusManager = ODLiveStatusManager> extends ODManager<ODStartScreenComponent> {
     /**Alias to the livestatus manager. */
-    livestatus: ODLiveStatusManager
+    livestatus: LiveStatus
 
-    constructor(debug:ODDebugger,livestatus:ODLiveStatusManager){
+    constructor(debug:ODDebugger,livestatus:LiveStatus){
         super(debug,"startscreen component")
-        this.#debug = debug
         this.livestatus = livestatus
     }
 
@@ -46,13 +48,34 @@ export class ODStartScreenManager extends ODManager<ODStartScreenComponent> {
             try {
                 const renderedText = await component.renderAll(location)
                 console.log(renderedText)
-                this.#debug.console.debugfile.writeText("[STARTSCREEN] Component: \""+component.id+"\"\n"+ansis.strip(renderedText))
+                this.debug?.console.debugfile.writeText("[STARTSCREEN] Component: \""+component.id+"\"\n"+ansis.strip(renderedText))
             }catch(e){
-                this.#debug.console.log("Unable to render \""+component.id+"\" startscreen component!","error")
-                this.#debug.console.debugfile.writeErrorMessage(new ODError(e,"uncaughtException"))
+                this.debug?.console.log("Unable to render \""+component.id+"\" startscreen component!","error")
+                this.debug?.console.debugfile.writeErrorMessage(new ODError(e,"uncaughtException"))
             }
             location++
         }
+    }
+
+    get<StartScreenId extends keyof ODNoGeneric<IdList>>(id:StartScreenId): IdList[StartScreenId]
+    get(id:ODValidId): ODStartScreenComponent|null
+    
+    get(id:ODValidId): ODStartScreenComponent|null {
+        return super.get(id)
+    }
+
+    remove<StartScreenId extends keyof ODNoGeneric<IdList>>(id:StartScreenId): IdList[StartScreenId]
+    remove(id:ODValidId): ODStartScreenComponent|null
+    
+    remove(id:ODValidId): ODStartScreenComponent|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof ODNoGeneric<IdList>): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -64,20 +87,22 @@ export class ODStartScreenManager extends ODManager<ODStartScreenComponent> {
  * 
  * It's recommended to use pre-built components except if you really need a custom one.
  */
-export class ODStartScreenComponent extends ODManagerData {
+export abstract class ODStartScreenComponent extends ODManagerData {
     /**The priority of this component. */
     priority: number
     /**An optional render function which will be inserted before the default renderer. */
-    renderBefore: ODStartScreenComponentRenderCallback|null = null
+    renderBefore: ODStartScreenComponentRenderCallback|null
     /**The render function which will render the contents of this component. */
     render: ODStartScreenComponentRenderCallback
     /**An optional render function which will be inserted behind the default renderer. */
-    renderAfter: ODStartScreenComponentRenderCallback|null = null
+    renderAfter: ODStartScreenComponentRenderCallback|null
 
-    constructor(id:ODValidId, priority:number, render:ODStartScreenComponentRenderCallback){
+    constructor(id:ODValidId, priority:number, render:ODStartScreenComponentRenderCallback,renderBefore?:ODStartScreenComponentRenderCallback,renderAfter?:ODStartScreenComponentRenderCallback){
         super(id)
         this.priority = priority
         this.render = render
+        this.renderBefore = renderBefore ?? null
+        this.renderAfter = renderAfter ?? null
     }
 
     /**Render this component and combine it with the `renderBefore` & `renderAfter` contents. */
@@ -207,7 +232,7 @@ export class ODStartScreenCategoryComponent extends ODStartScreenComponent {
         super(id,priority,async (location) => {
             const contents = await render(location)
             if (contents != "" || this.renderIfEmpty){
-                return ansis.bold.underline("\n"+name.toUpperCase()+(contents != "" ? ":\n" : ":")) + contents
+                return ansis.bold.underline("\n"+this.name.toUpperCase()+(contents != "" ? ":\n" : ":")) + contents
             }else return ""
         })
         this.name = name
@@ -294,12 +319,12 @@ export class ODStartScreenPluginsCategoryComponent extends ODStartScreenCategory
  * This component will render a livestatus category to the startscreen. This will list the livestatus messages in the category.
  * An optional priority can be specified to choose the location of the component.
  */
-export class ODStartScreenLiveStatusCategoryComponent extends ODStartScreenCategoryComponent {
+export class ODStartScreenLiveStatusCategoryComponent<LiveStatus extends ODLiveStatusManager<ODLiveStatusManagerIdConstraint>> extends ODStartScreenCategoryComponent {
     /**A reference to the Open Discord livestatus manager. */
-    livestatus: ODLiveStatusManager
+    livestatus: LiveStatus
 
-    constructor(id:ODValidId, priority:number, livestatus:ODLiveStatusManager){
-        super(id,priority,"livestatus",async () => {
+    constructor(id:ODValidId, priority:number, livestatus:LiveStatus){
+        super(id,priority,"news & updates",async () => {
             const messages = await this.livestatus.getAllMessages()
             return this.livestatus.renderer.render(messages)
         },false)

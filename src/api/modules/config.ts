@@ -1,11 +1,17 @@
 ///////////////////////////////////////
 //CONFIG MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODPromiseVoid, ODSystemError, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODPromiseVoid, ODSystemError, ODValidId, ODValidJsonType } from "./base.js"
 import nodepath from "path"
-import { ODDebugger } from "./console"
+import { ODDebugger } from "./console.js"
 import fs from "fs"
 import * as fjs from "formatted-json-stringify"
+import { jsonc } from "jsonc"
+
+/**## ODConfigManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODConfigManager` class.
+ */
+export type ODConfigManagerIdConstraint = Record<string,ODConfig<any>>
 
 /**## ODConfigManager `class`
  * This is an Open Discord config manager.
@@ -14,17 +20,19 @@ import * as fjs from "formatted-json-stringify"
  * 
  * You can use this class to get/change/add a config file (`ODConfig`) in your plugin!
  */
-export class ODConfigManager extends ODManager<ODConfig> {
-    /**Alias to Open Discord debugger. */
-    #debug: ODDebugger
-    
+export class ODConfigManager<IdList extends ODConfigManagerIdConstraint = ODConfigManagerIdConstraint> extends ODManager<ODConfig<any>> {
     constructor(debug:ODDebugger){
         super(debug,"config")
-        this.#debug = debug
     }
-    add(data:ODConfig|ODConfig[],overwrite?:boolean): boolean {
-        if (Array.isArray(data)) data.forEach((d) => d.useDebug(this.#debug))
-        else data.useDebug(this.#debug)
+
+    add(data:ODConfig<any>|ODConfig<any>[],overwrite?:boolean): boolean {
+        if (this.debug){
+            if (Array.isArray(data)){
+                for (const d of data){
+                    d.useDebug(this.debug)
+                }
+            }else data.useDebug(this.debug)
+        }
         return super.add(data,overwrite)
     }
     /**Init all config files. */
@@ -32,10 +40,31 @@ export class ODConfigManager extends ODManager<ODConfig> {
         for (const config of this.getAll()){
             try{
                 await config.init()
-            }catch(err){
+            }catch(err:any){
                 process.emit("uncaughtException",new ODSystemError(err))
             }
         }
+    }
+
+    get<ConfigId extends keyof ODNoGeneric<IdList>>(id:ConfigId): IdList[ConfigId]
+    get(id:ODValidId): ODConfig<any>|null
+    
+    get(id:ODValidId): ODConfig<any>|null {
+        return super.get(id)
+    }
+    
+    remove<ConfigId extends keyof ODNoGeneric<IdList>>(id:ConfigId): IdList[ConfigId]
+    remove(id:ODValidId): ODConfig<any>|null
+    
+    remove(id:ODValidId): ODConfig<any>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof ODNoGeneric<IdList>): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -45,13 +74,13 @@ export class ODConfigManager extends ODManager<ODConfig> {
  * 
  * You can use this class if you want to create your own config implementation (e.g. `yml`, `xml`,...)!
  */
-export class ODConfig extends ODManagerData {
+export abstract class ODConfig<Data extends any> extends ODManagerData {
     /**The name of the file with extension. */
     file: string = ""
     /**The path to the file relative to the main directory. */
     path: string = ""
     /**An object/array of the entire config file! Variables inside it can be edited while the bot is running! */
-    data: any
+    data: Data
     /**Is this config already initiated? */
     initiated: boolean = false
     /**An array of listeners to run when the config gets reloaded. These are not executed on the initial loading. */
@@ -104,8 +133,9 @@ export class ODConfig extends ODManagerData {
  * //create a config with custom dir: ./plugins/testplugin/test.json
  * const config = new api.ODJsonConfig("plugin-config","test.json","./plugins/testplugin/")
  */
-export class ODJsonConfig extends ODConfig {
+export class ODJsonConfig<Data extends any> extends ODConfig<Data> {
     formatter: fjs.custom.BaseFormatter
+    protected readonly defaultFormatter = new fjs.DefaultFormatter(null,true,"    ")
 
     constructor(id:ODValidId, file:string, customPath?:string, formatter?:fjs.custom.BaseFormatter){
         super(id,{})
@@ -121,8 +151,7 @@ export class ODJsonConfig extends ODConfig {
             this.data = JSON.parse(fs.readFileSync(this.path).toString())
             super.init()
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("Unable to parse config \""+nodepath.join("./",this.path)+"\"!")
+            throw new ODSystemError("Unable to parse config \""+nodepath.join("./",this.path)+"\"!",{cause:err})
         }
     }
     /**Reload the config. Be aware that this doesn't update the config data everywhere in the bot! */
@@ -136,24 +165,96 @@ export class ODJsonConfig extends ODConfig {
                 try{
                     cb()
                 }catch(err){
-                    process.emit("uncaughtException",err)
+                    process.emit("uncaughtException",new Error("Failed to run config reload listener!",{cause:err}))
                 }
             })
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("Unable to reload config \""+nodepath.join("./",this.path)+"\"!")
+            throw new ODSystemError("Unable to reload config \""+nodepath.join("./",this.path)+"\"!",{cause:err})
         }
     }
     /**Save the edited config to the filesystem. This is used by the Interactive Setup CLI. It's not recommended to use this while the bot is running. */
-    save(): ODPromiseVoid {
+    save(withoutFormatter?:boolean): ODPromiseVoid {
         if (!this.initiated) throw new ODSystemError("Unable to save config \""+nodepath.join("./",this.path)+"\", the file hasn't been initiated yet!")
         try{
-            const contents = this.formatter.stringify(this.data)
+            const contents = (withoutFormatter) ? this.defaultFormatter.stringify(this.data as ODValidJsonType,this.path) : this.formatter.stringify(this.data as ODValidJsonType,this.path)
             fs.writeFileSync(this.path,contents)
             super.save()
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("Unable to save config \""+nodepath.join("./",this.path)+"\"!")
+            throw new ODSystemError("Unable to save config \""+nodepath.join("./",this.path)+"\"!",{cause:err})
         }
+    }
+}
+
+/**## ODJsonCommentsConfig `class`
+ * An Open Discord JSONC (`.jsonc`) config.  
+ * Use this class to get & edit variables from the config files or to create your own JSON config!
+ * @example
+ * //create a config from: ./config/test.jsonc with the id "some-config"
+ * const config = new api.ODJsonCommentsConfig("some-config","test.jsonc")
+ * 
+ * //create a config with custom dir: ./plugins/testplugin/test.jsonc
+ * const config = new api.ODJsonCommentsConfig("plugin-config","test.jsonc","./plugins/testplugin/")
+ */
+export class ODJsonCommentsConfig<Data extends any> extends ODConfig<Data> {
+    formatter: fjs.custom.BaseFormatter
+    protected readonly defaultFormatter = new fjs.DefaultFormatter(null,true,"    ")
+
+    constructor(id:ODValidId, file:string, customPath?:string, formatter?:fjs.custom.BaseFormatter){
+        super(id,{})
+        this.file = (file.endsWith(".jsonc")) ? file : file+".jsonc"
+        this.path = customPath ? nodepath.join("./",customPath,this.file) : nodepath.join("./config/",this.file)
+        this.formatter = formatter ?? new fjs.DefaultFormatter(null,true,"    ")
+    }
+
+    /**Init the config. */
+    init(): ODPromiseVoid {
+        if (!fs.existsSync(this.path)) throw new ODSystemError("Unable to parse JSONC config \""+nodepath.join("./",this.path)+"\", the file doesn't exist!")
+        try{
+            this.data = jsonc.parse(fs.readFileSync(this.path).toString())
+            super.init()
+        }catch(err){
+            throw new ODSystemError("Unable to parse JSONC config \""+nodepath.join("./",this.path)+"\"!",{cause:err})
+        }
+    }
+    /**Reload the config. Be aware that this doesn't update the config data everywhere in the bot! */
+    reload(){
+        if (!this.initiated) throw new ODSystemError("Unable to reload JSONC config \""+nodepath.join("./",this.path)+"\", the file hasn't been initiated yet!")
+        if (!fs.existsSync(this.path)) throw new ODSystemError("Unable to JSONC reload config \""+nodepath.join("./",this.path)+"\", the file doesn't exist!")
+        try{
+            this.data = jsonc.parse(fs.readFileSync(this.path).toString())
+            super.reload()
+            this.reloadListeners.forEach((cb) => {
+                try{
+                    cb()
+                }catch(err){
+                    process.emit("uncaughtException",new Error("Failed to run config reload listener!",{cause:err}))
+                }
+            })
+        }catch(err){
+            throw new ODSystemError("Unable to reload JSONC config \""+nodepath.join("./",this.path)+"\"!",{cause:err})
+        }
+    }
+    /**Save the edited config to the filesystem. This is used by the Interactive Setup CLI. It's not recommended to use this while the bot is running. */
+    save(withoutFormatter?:boolean): ODPromiseVoid {
+        if (!this.initiated) throw new ODSystemError("Unable to save JSONC config \""+nodepath.join("./",this.path)+"\", the file hasn't been initiated yet!")
+        try{
+            const contents = (withoutFormatter) ? this.defaultFormatter.stringify(this.data as ODValidJsonType,this.path) : this.formatter.stringify(this.data as ODValidJsonType,this.path)
+            fs.writeFileSync(this.path,contents)
+            super.save()
+        }catch(err){
+            throw new ODSystemError("Unable to save JSONC config \""+nodepath.join("./",this.path)+"\"!",{cause:err})
+        }
+    }
+}
+
+/**## ODMemoryConfig `class`
+ * An Open Discord memory config.  
+ * This config lives in-memory and does not have any connection to the filesystem.
+ * 
+ * It is perfect for temporary configs or using the `ODChecker` without a real config file.
+ */
+export class ODMemoryConfig<Data extends any> extends ODConfig<Data> {
+    constructor(id:ODValidId,data:Data){
+        super(id,data)
     }
 }

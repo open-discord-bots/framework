@@ -1,9 +1,9 @@
 ///////////////////////////////////////
 //LANGUAGE MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODPromiseVoid, ODSystemError, ODValidId } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODPromiseVoid, ODSystemError, ODValidId } from "./base.js"
 import nodepath from "path"
-import { ODDebugger } from "./console"
+import { ODDebugger } from "./console.js"
 import fs from "fs"
 
 /**## ODLanguageMetadata `interface`
@@ -22,6 +22,11 @@ export interface ODLanguageMetadata {
     automated:boolean
 }
 
+/**## ODLanguageManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODLanguageManager` class.
+ */
+export type ODLanguageManagerIdConstraint = Record<string,ODLanguage>
+
 /**## ODLanguageManager `class`
  * This is an Open Discord language manager.
  * 
@@ -30,28 +35,27 @@ export interface ODLanguageMetadata {
  * 
  * Add new languages using the `ODlanguage` class in your plugin!
  */
-export class ODLanguageManager extends ODManager<ODLanguage> {
+export class ODLanguageManager<IdList extends ODLanguageManagerIdConstraint = ODLanguageManagerIdConstraint,TranslationIds extends string = string> extends ODManager<ODLanguage> {
     /**The currently selected language. */
     current: ODLanguage|null = null
     /**The currently selected backup language. (used when translation missing in current language) */
     backup: ODLanguage|null = null
-    /**An alias to Open Discord debugger. */
-    #debug: ODDebugger
     
     constructor(debug:ODDebugger, presets:boolean){
         super(debug,"language")
-        if (presets) this.add(new ODLanguage("english","english.json"))
-        this.current = presets ? new ODLanguage("english","english.json") : null
-        this.backup = presets ? new ODLanguage("english","english.json") : null
-        this.#debug = debug
+        if (presets) this.add(new ODJsonLanguage("english","english.json"))
+        this.current = presets ? new ODJsonLanguage("english","english.json") : null
+        this.backup = presets ? new ODJsonLanguage("english","english.json") : null
     }
 
     /**Set the current language by providing the ID of a language which is registered in this manager. */
+    setCurrentLanguage(id:keyof ODNoGeneric<IdList>): void
+    setCurrentLanguage(id:ODValidId): void
     setCurrentLanguage(id:ODValidId){
         this.current = this.get(id)
         const languageId = this.current?.id.value ?? "<unknown-id>"
         const languageAutomated = this.current?.metadata?.automated.toString() ?? "<unknown-metadata>"
-        this.#debug.debug("Selected current language",[
+        this.debug?.debug("Selected current language",[
             {key:"id",value:languageId},
             {key:"automated",value:languageAutomated},
         ])
@@ -61,11 +65,13 @@ export class ODLanguageManager extends ODManager<ODLanguage> {
         return (this.current) ? this.current : null
     }
     /**Set the backup language by providing the ID of a language which is registered in this manager. */
+    setBackupLanguage(id:keyof ODNoGeneric<IdList>): void
+    setBackupLanguage(id:ODValidId): void
     setBackupLanguage(id:ODValidId){
         this.backup = this.get(id)
         const languageId = this.backup?.id.value ?? "<unknown-id>"
         const languageAutomated = this.backup?.metadata?.automated.toString() ?? "<unknown-metadata>"
-        this.#debug.debug("Selected backup language",[
+        this.debug?.debug("Selected backup language",[
             {key:"id",value:languageId},
             {key:"automated",value:languageAutomated},
         ])
@@ -84,8 +90,10 @@ export class ODLanguageManager extends ODManager<ODLanguage> {
         return (this.current) ? this.current.id.value : ""
     }
     /**Get a translation string by JSON location. (e.g. `"checker.system.typeError"`) */
+    getTranslation(id:TranslationIds): string
+    getTranslation(id:string): string|null
     getTranslation(id:string): string|null {
-        if (!this.current) return this.#getBackupTranslation(id)
+        if (!this.current) return this.getBackupTranslation(id)
         
         const splitted = id.split(".")
         let currentObject = this.current.data
@@ -99,10 +107,10 @@ export class ODLanguageManager extends ODManager<ODLanguage> {
         })
 
         if (typeof result == "string") return result
-        else return this.#getBackupTranslation(id)
+        else return this.getBackupTranslation(id)
     }
-    /**Get a backup  translation string by JSON location. (system only) */
-    #getBackupTranslation(id:string): string|null {
+    /**Get a backup translation string by JSON location. (system only) */
+    protected getBackupTranslation(id:string): string|null {
         if (!this.backup) return null
 
         const splitted = id.split(".")
@@ -120,6 +128,8 @@ export class ODLanguageManager extends ODManager<ODLanguage> {
         else return null
     }
     /**Get a backup translation string by JSON location and replace `{0}`,`{1}`,`{2}`,... with the provided parameters. */
+    getTranslationWithParams(id:TranslationIds, params:string[]): string
+    getTranslationWithParams(id:string, params:string[]): string|null
     getTranslationWithParams(id:string, params:string[]): string|null {
         let translation = this.getTranslation(id)
         if (!translation) return translation
@@ -136,10 +146,31 @@ export class ODLanguageManager extends ODManager<ODLanguage> {
         for (const language of this.getAll()){
             try{
                 await language.init()
-            }catch(err){
+            }catch(err:any){
                 process.emit("uncaughtException",new ODSystemError(err))
             }
         }
+    }
+
+    get<LanguageId extends keyof ODNoGeneric<IdList>>(id:LanguageId): IdList[LanguageId]
+    get(id:ODValidId): ODLanguage|null
+    
+    get(id:ODValidId): ODLanguage|null {
+        return super.get(id)
+    }
+
+    remove<LanguageId extends keyof ODNoGeneric<IdList>>(id:LanguageId): IdList[LanguageId]
+    remove(id:ODValidId): ODLanguage|null
+    
+    remove(id:ODValidId): ODLanguage|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof ODNoGeneric<IdList>): boolean
+    exists(id:ODValidId): boolean
+    
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
     }
 }
 
@@ -151,7 +182,7 @@ export class ODLanguageManager extends ODManager<ODLanguage> {
  * 
  * JSON languages should be created using the `ODJsonLanguage` class instead!
  */
-export class ODLanguage extends ODManagerData {
+export abstract class ODLanguage extends ODManagerData {
     /**The name of the file with extension. */
     file: string = ""
     /**The path to the file relative to the main directory. */
@@ -167,9 +198,7 @@ export class ODLanguage extends ODManagerData {
     }
 
     /**Init the language. */
-    init(): ODPromiseVoid {
-        //nothing
-    }
+    abstract init(): ODPromiseVoid
 }
 
 /**## ODJsonLanguage `class`
@@ -193,8 +222,7 @@ export class ODJsonLanguage extends ODLanguage {
         try{
             this.data = JSON.parse(fs.readFileSync(this.path).toString())
         }catch(err){
-            process.emit("uncaughtException",err)
-            throw new ODSystemError("Unable to parse language \""+nodepath.join("./",this.path)+"\"!")
+            throw new ODSystemError("Unable to parse language \""+nodepath.join("./",this.path)+"\"!",{cause:err})
         }
         if (this.data["_TRANSLATION"]) this.metadata = this.data["_TRANSLATION"]
     }

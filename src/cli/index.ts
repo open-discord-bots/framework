@@ -1,11 +1,13 @@
-import * as api from "../api/index"
-import * as utilities from "../utilities/index"
-import {Terminal, terminal} from "terminal-kit"
+import * as api from "../api/index.js"
+import * as utilities from "../utilities/index.js"
+import terminalKit from "terminal-kit"
 import * as discord from "discord.js"
 import ansis from "ansis"
 import crypto from "crypto"
 
-export * from "./editConfig"
+const terminal = terminalKit.terminal
+
+export * from "./editConfig.js"
 
 /**## ODCliHeaderOpts `interface`
  * All metadata required for rendering the Interactive Setup CLI header.
@@ -102,7 +104,7 @@ export async function execute(opts:ODCliHeaderOpts,renderEditConfig:ODCliStartFu
 }
 
 /**A basic style template for select menu's in the interactive setup CLI. */
-export const autoCompleteMenuOpts: Terminal.SingleLineMenuOptions = {
+export const autoCompleteMenuOpts: terminalKit.Terminal.SingleLineMenuOptions = {
     style:terminal.white,
     selectedStyle:terminal.bgBlue.white
 }

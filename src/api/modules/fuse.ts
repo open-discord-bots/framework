@@ -44,7 +44,7 @@ export type ODFuseStringArray<FuseList extends object> = {
  */
 export class ODFuseManager<FuseList extends object> {
     /**A list of all the defaults */
-    private fuses: FuseList
+    protected fuses: FuseList
 
     constructor(fuses:FuseList){
         this.fuses = fuses
@@ -142,9 +142,6 @@ export interface ODSharedFuseList {
     /**Load the default Open Discord client activity initialization (& status refresh). */
     clientActivityInitiating:boolean,
 
-    /**Load the default Open Discord priority levels. */
-    priorityLoading:boolean,
-
     /**Load the default Open Discord slash commands. */
     slashCommandLoading:boolean,
     /**Load the default Open Discord slash command registerer (register slash cmds in discord). */
@@ -164,6 +161,11 @@ export interface ODSharedFuseList {
     /**Load the default Open Discord text commands. */
     textCommandLoading:boolean,
 
+    /**Load the default Open Discord message states. */
+    stateLoading:boolean,
+    /**Initiate the default Open Discord message states. */
+    stateInitiating:boolean,
+
     /**Load the default Open Discord button builders. */
     buttonBuildersLoading:boolean,
     /**Load the default Open Discord dropdown builders. */
@@ -176,6 +178,15 @@ export interface ODSharedFuseList {
     messageBuildersLoading:boolean,
     /**Load the default Open Discord modal builders. */
     modalBuildersLoading:boolean,
+
+    /**Load the default Open Discord shared components. */
+    sharedComponentsLoading:boolean,
+    /**Load the default Open Discord message components. */
+    messageComponentsLoading:boolean,
+    /**Load the default Open Discord modal components. */
+    modalComponentsLoading:boolean,
+    /**Load the default Open Discord component modifiers. */
+    componentModifiersLoading:boolean,
 
     /**Load the default Open Discord command responders. */
     commandRespondersLoading:boolean,
@@ -212,17 +223,17 @@ export interface ODSharedFuseList {
     /**Load the default Open Discord help menu components. */
     helpMenuComponentLoading:boolean,
 
-    /**Load the default Open Discord stat scopes. */
-    statScopesLoading:boolean,
-    /**Load the default Open Discord stats. */
-    statLoading:boolean,
-    /**Initiate the default Open Discord stats. */
-    statInitiating:boolean,
+    /**Load the default Open Discord statistic scopes. */
+    statisticScopesLoading:boolean,
+    /**Load the default Open Discord statistics. */
+    statisticLoading:boolean,
+    /**Initiate the default Open Discord statistics. */
+    statisticInitiating:boolean,
 
-    /**Load the default Open Discord code/functions. */
-    codeLoading:boolean,
-    /**Execute the default Open Discord code/functions. */
-    codeExecution:boolean,
+    /**Load the default Open Discord task/functions. */
+    taskLoading:boolean,
+    /**Execute the default Open Discord task/functions. */
+    taskExecution:boolean,
 
     /**Load the default Open Discord livestatus. */
     liveStatusLoading:boolean,
@@ -291,8 +302,6 @@ export class ODSharedFuseManager extends ODFuseManager<ODSharedFuseList> {
             clientActivityLoading:true,
             clientActivityInitiating:true,
 
-            priorityLoading:true,
-            
             slashCommandLoading:true,
             slashCommandRegistering:true,
             forceSlashCommandRegistration:false,
@@ -303,12 +312,20 @@ export class ODSharedFuseManager extends ODFuseManager<ODSharedFuseList> {
             allowContextMenuRemoval:true,
             textCommandLoading:true,
 
+            stateLoading:true,
+            stateInitiating:true,
+
             buttonBuildersLoading:true,
             dropdownBuildersLoading:true,
             fileBuildersLoading:true,
             embedBuildersLoading:true,
             messageBuildersLoading:true,
             modalBuildersLoading:true,
+
+            sharedComponentsLoading:true,
+            messageComponentsLoading:true,
+            modalComponentsLoading:true,
+            componentModifiersLoading:true,
 
             commandRespondersLoading:true,
             buttonRespondersLoading:true,
@@ -329,12 +346,12 @@ export class ODSharedFuseManager extends ODFuseManager<ODSharedFuseList> {
             helpMenuCategoryLoading:true,
             helpMenuComponentLoading:true,
 
-            statScopesLoading:true,
-            statLoading:true,
-            statInitiating:true,
+            statisticScopesLoading:true,
+            statisticLoading:true,
+            statisticInitiating:true,
 
-            codeLoading:true,
-            codeExecution:true,
+            taskLoading:true,
+            taskExecution:true,
 
             liveStatusLoading:true,
             startScreenLoading:true,

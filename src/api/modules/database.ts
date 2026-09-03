@@ -1,11 +1,16 @@
 ///////////////////////////////////////
 //DATABASE MODULE
 ///////////////////////////////////////
-import { ODId, ODManager, ODManagerData, ODOptionalPromise, ODPromiseVoid, ODSystemError, ODValidId, ODValidJsonType } from "./base"
+import { ODId, ODManager, ODManagerData, ODNoGeneric, ODOptionalPromise, ODPromiseVoid, ODSystemError, ODValidId, ODValidJsonType } from "./base.js"
 import fs from "fs"
 import nodepath from "path"
-import { ODDebugger } from "./console"
+import { ODDebugger } from "./console.js"
 import * as fjs from "formatted-json-stringify"
+
+/**## ODDatabaseManagerIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODDatabaseManager` class.
+ */
+export type ODDatabaseManagerIdConstraint = Record<string,ODDatabase<{}>>
 
 /**## ODDatabaseManager `class`
  * This is an Open Discord database manager.
@@ -14,7 +19,7 @@ import * as fjs from "formatted-json-stringify"
  * 
  * You can use this class to get/add a database (`ODDatabase`) in your plugin!
  */
-export class ODDatabaseManager extends ODManager<ODDatabase> {
+export class ODDatabaseManager<IdList extends ODDatabaseManagerIdConstraint = ODDatabaseManagerIdConstraint> extends ODManager<ODDatabase<{}>> {
     constructor(debug:ODDebugger){
         super(debug,"database")
     }
@@ -24,12 +29,40 @@ export class ODDatabaseManager extends ODManager<ODDatabase> {
         for (const database of this.getAll()){
             try{
                 await database.init()
-            }catch(err){
+            }catch(err:any){
                 process.emit("uncaughtException",new ODSystemError(err))
             }
         }
     }
+
+    get<DatabaseId extends keyof ODNoGeneric<IdList>>(id:DatabaseId): IdList[DatabaseId]
+    get(id:ODValidId): ODDatabase<{}>|null
+
+    get(id:ODValidId): ODDatabase<{}>|null {
+        return super.get(id)
+    }
+
+    remove<DatabaseId extends keyof ODNoGeneric<IdList>>(id:DatabaseId): IdList[DatabaseId]
+    remove(id:ODValidId): ODDatabase<{}>|null
+
+    remove(id:ODValidId): ODDatabase<{}>|null {
+        return super.remove(id)
+    }
+
+    exists(id:keyof ODNoGeneric<IdList>): boolean
+    exists(id:ODValidId): boolean
+
+    exists(id:ODValidId): boolean {
+        return super.exists(id)
+    }
 }
+
+
+/**## ODDatabaseIdConstraint `type`
+ * The constraint/layout for id mappings/interfaces of the `ODDatabase` class.
+ */
+export type ODDatabaseIdConstraint = Record<string,ODValidJsonType>
+
 
 /**## ODDatabase `class`
  * This is an Open Discord database template.
@@ -37,40 +70,42 @@ export class ODDatabaseManager extends ODManager<ODDatabase> {
  * 
  * You can use this class if you want to create your own database implementation (e.g. `mongodb`, `mysql`,...)!
  */
-export class ODDatabase extends ODManagerData {
+export abstract class ODDatabase<IdList extends ODDatabaseIdConstraint = ODDatabaseIdConstraint> extends ODManagerData {
     /**The name of the file with extension. */
     file: string = ""
     /**The path to the file relative to the main directory. */
     path: string = ""
 
     /**Init the database. */
-    init(): ODPromiseVoid {
-        //nothing
-    }
+    abstract init(): ODPromiseVoid
+    
     /**Add/Overwrite a specific category & key in the database. Returns `true` when overwritten. */
-    set(category:string, key:string, value:ODValidJsonType): ODOptionalPromise<boolean> {
-        return false
-    }
+    abstract set<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string, value:IdList[CategoryId]): ODOptionalPromise<boolean>
+    abstract set(category:string, key:string, value:ODValidJsonType): ODOptionalPromise<boolean>
+    abstract set(category:string, key:string, value:ODValidJsonType): ODOptionalPromise<boolean>
+    
     /**Get a specific category & key in the database */
-    get(category:string, key:string): ODOptionalPromise<ODValidJsonType|undefined> {
-        return undefined
-    }
-    /**Delete a specific category & key in the database */
-    delete(category:string, key:string): ODOptionalPromise<boolean> {
-        return false
-    }
+    abstract get<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string): ODOptionalPromise<IdList[CategoryId]|undefined>
+    abstract get(category:string, key:string): ODOptionalPromise<ODValidJsonType|undefined>
+    abstract get(category:string, key:string): ODOptionalPromise<ODValidJsonType|undefined>
+    
+    /**Delete a specific category & key in the database. Returns `true` when deleted. */
+    abstract delete<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string): ODOptionalPromise<boolean>
+    abstract delete(category:string, key:string): ODOptionalPromise<boolean>
+    abstract delete(category:string, key:string): ODOptionalPromise<boolean>
+    
     /**Check if a specific category & key exists in the database */
-    exists(category:string, key:string): ODOptionalPromise<boolean> {
-        return false
-    }
+    abstract exists(category:keyof ODNoGeneric<IdList>, key:string): ODOptionalPromise<boolean>
+    abstract exists(category:string, key:string): ODOptionalPromise<boolean>
+    abstract exists(category:string, key:string): ODOptionalPromise<boolean>
+    
     /**Get a specific category in the database */
-    getCategory(category:string): ODOptionalPromise<{key:string, value:ODValidJsonType}[]|undefined> {
-        return undefined
-    }
+    abstract getCategory<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId): ODOptionalPromise<{key:string, value:IdList[CategoryId]}[]|undefined>
+    abstract getCategory(category:string): ODOptionalPromise<{key:string, value:ODValidJsonType}[]|undefined>
+    abstract getCategory(category:string): ODOptionalPromise<{key:string, value:ODValidJsonType}[]|undefined>
+    
     /**Get all values in the database */
-    getAll(): ODOptionalPromise<ODJsonDatabaseStructure> {
-        return []
-    }
+    abstract getAll(): ODOptionalPromise<ODJsonDatabaseStructure>
 }
 
 /**## ODJsonDatabaseStructure `type`
@@ -85,7 +120,7 @@ export type ODJsonDatabaseStructure = {category:string, key:string, value:ODVali
  * 
  * You can use this class if you want to add your own database or to use an existing one!
  */
-export class ODJsonDatabase extends ODDatabase {
+export class ODJsonDatabase<IdList extends ODDatabaseIdConstraint = ODDatabaseIdConstraint> extends ODDatabase<IdList> {
     constructor(id:ODValidId, file:string, customPath?:string){
         super(id)
         this.file = (file.endsWith(".json")) ? file : file+".json"
@@ -94,15 +129,17 @@ export class ODJsonDatabase extends ODDatabase {
 
     /**Init the database. */
     init(): ODPromiseVoid {
-        this.#system.getData()
+        this.getRawData()
     }
     /**Set/overwrite the value of `category` & `key`. Returns `true` when overwritten!
      * @example
      * const didOverwrite = database.setData("category","key","value") //value can be any of the valid types
      * //You need an ODJsonDatabase class named "database" for this example to work!
      */
+    set<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string, value:IdList[CategoryId]): ODOptionalPromise<boolean>
+    set(category:string, key:string, value:ODValidJsonType): ODOptionalPromise<boolean>
     set(category:string, key:string, value:ODValidJsonType): ODOptionalPromise<boolean> {
-        const currentList = this.#system.getData()
+        const currentList = this.getRawData()
         const currentData = currentList.find((d) => (d.category === category) && (d.key === key))
         
         //overwrite when already present
@@ -112,7 +149,7 @@ export class ODJsonDatabase extends ODDatabase {
             currentList.push({category,key,value})
         }
 
-        this.#system.setData(currentList)
+        this.setRawData(currentList)
         return currentData ? true : false
     }
     /**Get the value of `category` & `key`. Returns `undefined` when non-existent!
@@ -120,8 +157,10 @@ export class ODJsonDatabase extends ODDatabase {
      * const data = database.getData("category","key") //data will be the value
      * //You need an ODJsonDatabase class named "database" for this example to work!
      */
+    get<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string): ODOptionalPromise<IdList[CategoryId]|undefined>
+    get(category:string, key:string): ODOptionalPromise<ODValidJsonType|undefined>
     get(category:string, key:string): ODOptionalPromise<ODValidJsonType|undefined> {
-        const currentList = this.#system.getData()
+        const currentList = this.getRawData()
         const tempresult = currentList.find((d) => (d.category === category) && (d.key === key))
         return tempresult ? tempresult.value : undefined
     }
@@ -130,50 +169,53 @@ export class ODJsonDatabase extends ODDatabase {
      * const didExist = database.deleteData("category","key") //delete this value
      * //You need an ODJsonDatabase class named "database" for this example to work!
      */
+    delete<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string): ODOptionalPromise<boolean>
+    delete(category:string, key:string): ODOptionalPromise<boolean>
     delete(category:string, key:string): ODOptionalPromise<boolean> {
-        const currentList = this.#system.getData()
+        const currentList = this.getRawData()
         const currentData = currentList.find((d) => (d.category === category) && (d.key === key))
         if (currentData) currentList.splice(currentList.indexOf(currentData),1)
 
-        this.#system.setData(currentList)
+        this.setRawData(currentList)
         return currentData ? true : false
     }
     /**Check if a value of `category` & `key` exists. Returns `false` when non-existent! */
+    exists(category:keyof ODNoGeneric<IdList>, key:string): ODOptionalPromise<boolean>
+    exists(category:string, key:string): ODOptionalPromise<boolean>
     exists(category:string, key:string): ODOptionalPromise<boolean> {
-        const currentList = this.#system.getData()
+        const currentList = this.getRawData()
         const tempresult = currentList.find((d) => (d.category === category) && (d.key === key))
         return tempresult ? true : false
     }
     /**Get all values in `category`. Returns `undefined` when non-existent! */
+    getCategory<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId): ODOptionalPromise<{key:string, value:IdList[CategoryId]}[]|undefined>
+    getCategory(category:string): ODOptionalPromise<{key:string, value:ODValidJsonType}[]|undefined>
     getCategory(category:string): ODOptionalPromise<{key:string, value:ODValidJsonType}[]|undefined> {
-        const currentList = this.#system.getData()
+        const currentList = this.getRawData()
         const tempresult = currentList.filter((d) => (d.category === category))
         return tempresult ? tempresult.map((data) => {return {key:data.key,value:data.value}}) : undefined
     }
     /**Get all values in `category`. */
     getAll(): ODOptionalPromise<ODJsonDatabaseStructure> {
-        return this.#system.getData()
+        return this.getRawData()
     }
 
-    #system = {
-        /**Read parsed data from the json file */
-        getData: (): ODJsonDatabaseStructure => {
-            if (fs.existsSync(this.path)){
-                try{
-                    return JSON.parse(fs.readFileSync(this.path).toString())
-                }catch(err){
-                    process.emit("uncaughtException",err)
-                    throw new ODSystemError("Unable to read database "+this.path+"! getData() read error. (see error above)")
-                }
-            }else{
-                fs.writeFileSync(this.path,"[]")
-                return []
+    /**Read parsed data from the json file */
+    protected getRawData(): ODJsonDatabaseStructure {
+        if (fs.existsSync(this.path)){
+            try{
+                return JSON.parse(fs.readFileSync(this.path).toString())
+            }catch(err){
+                throw new ODSystemError("Unable to read database "+this.path+"! getData() read error.",{cause:err})
             }
-        },
-        /**Write parsed data to the json file */
-        setData: (data:ODJsonDatabaseStructure) => {
-            fs.writeFileSync(this.path,JSON.stringify(data,null,"\t"))
+        }else{
+            fs.writeFileSync(this.path,"[]")
+            return []
         }
+    }
+    /**Write parsed data to the json file */
+    protected setRawData(data:ODJsonDatabaseStructure){
+        fs.writeFileSync(this.path,JSON.stringify(data,null,"\t"))
     }
 }
 
@@ -186,7 +228,7 @@ export class ODJsonDatabase extends ODDatabase {
  * This one is exactly the same as `ODJsonDatabase`, but it has a formatter from the `formatted-json-stringify` package.
  * This can help you organise it a little bit better!
  */
-export class ODFormattedJsonDatabase extends ODDatabase {
+export class ODFormattedJsonDatabase<IdList extends ODDatabaseIdConstraint = ODDatabaseIdConstraint> extends ODDatabase<IdList> {
     /**The formatter to use on the database array */
     formatter: fjs.ArrayFormatter
 
@@ -199,15 +241,17 @@ export class ODFormattedJsonDatabase extends ODDatabase {
 
     /**Init the database. */
     init(): ODPromiseVoid {
-        this.#system.getData()
+        this.getRawData()
     }
     /**Set/overwrite the value of `category` & `key`. Returns `true` when overwritten!
      * @example
      * const didOverwrite = database.setData("category","key","value") //value can be any of the valid types
      * //You need an ODFormattedJsonDatabase class named "database" for this example to work!
      */
+    set<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string, value:IdList[CategoryId]): ODOptionalPromise<boolean>
+    set(category:string, key:string, value:ODValidJsonType): ODOptionalPromise<boolean>
     set(category:string, key:string, value:ODValidJsonType): ODOptionalPromise<boolean> {
-        const currentList = this.#system.getData()
+        const currentList = this.getRawData()
         const currentData = currentList.find((d) => (d.category === category) && (d.key === key))
         
         //overwrite when already present
@@ -217,7 +261,7 @@ export class ODFormattedJsonDatabase extends ODDatabase {
             currentList.push({category,key,value})
         }
 
-        this.#system.setData(currentList)
+        this.setRawData(currentList)
         return currentData ? true : false
     }
     /**Get the value of `category` & `key`. Returns `undefined` when non-existent!
@@ -225,8 +269,10 @@ export class ODFormattedJsonDatabase extends ODDatabase {
      * const data = database.getData("category","key") //data will be the value
      * //You need an ODFormattedJsonDatabase class named "database" for this example to work!
      */
+    get<CategoryId extends keyof ODNoGeneric<IdList>>(category: CategoryId, key: string): ODOptionalPromise<IdList[CategoryId] | undefined>
+    get(category:string, key:string): ODOptionalPromise<ODValidJsonType|undefined>
     get(category:string, key:string): ODOptionalPromise<ODValidJsonType|undefined> {
-        const currentList = this.#system.getData()
+        const currentList = this.getRawData()
         const tempresult = currentList.find((d) => (d.category === category) && (d.key === key))
         return tempresult ? tempresult.value : undefined
     }
@@ -235,44 +281,48 @@ export class ODFormattedJsonDatabase extends ODDatabase {
      * const didExist = database.deleteData("category","key") //delete this value
      * //You need an ODFormattedJsonDatabase class named "database" for this example to work!
      */
+    delete<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId, key:string): ODOptionalPromise<boolean>
+    delete(category:string, key:string): ODOptionalPromise<boolean>
     delete(category:string, key:string): ODOptionalPromise<boolean> {
-        const currentList = this.#system.getData()
+        const currentList = this.getRawData()
         const currentData = currentList.find((d) => (d.category === category) && (d.key === key))
         if (currentData) currentList.splice(currentList.indexOf(currentData),1)
 
-        this.#system.setData(currentList)
+        this.setRawData(currentList)
         return currentData ? true : false
     }
     /**Check if a value of `category` & `key` exists. Returns `false` when non-existent! */
+    exists(category:keyof ODNoGeneric<IdList>, key:string): ODOptionalPromise<boolean>
+    exists(category:string, key:string): ODOptionalPromise<boolean>
     exists(category:string, key:string): ODOptionalPromise<boolean> {
-        const currentList = this.#system.getData()
+        const currentList = this.getRawData()
         const tempresult = currentList.find((d) => (d.category === category) && (d.key === key))
         return tempresult ? true : false
     }
     /**Get all values in `category`. Returns `undefined` when non-existent! */
+    getCategory<CategoryId extends keyof ODNoGeneric<IdList>>(category:CategoryId): ODOptionalPromise<{key:string, value:IdList[CategoryId]}[]|undefined>
+    getCategory(category:string): ODOptionalPromise<{key:string, value:ODValidJsonType}[]|undefined>
     getCategory(category:string): ODOptionalPromise<{key:string, value:ODValidJsonType}[]|undefined> {
-        const currentList = this.#system.getData()
+        const currentList = this.getRawData()
         const tempresult = currentList.filter((d) => (d.category === category))
         return tempresult ? tempresult.map((data) => {return {key:data.key,value:data.value}}) : undefined
     }
     /**Get all values in `category`. */
     getAll(): ODOptionalPromise<ODJsonDatabaseStructure> {
-        return this.#system.getData()
+        return this.getRawData()
     }
 
-    #system = {
-        /**Read parsed data from the json file */
-        getData: (): ODJsonDatabaseStructure => {
-            if (fs.existsSync(this.path)){
-                return JSON.parse(fs.readFileSync(this.path).toString())
-            }else{
-                fs.writeFileSync(this.path,"[]")
-                return []
-            }
-        },
-        /**Write parsed data to the json file */
-        setData: (data:ODJsonDatabaseStructure) => {
-            fs.writeFileSync(this.path,this.formatter.stringify(data))
+    /**Read parsed data from the json file */
+    protected getRawData(): ODJsonDatabaseStructure {
+        if (fs.existsSync(this.path)){
+            return JSON.parse(fs.readFileSync(this.path).toString())
+        }else{
+            fs.writeFileSync(this.path,"[]")
+            return []
         }
+    }
+    /**Write parsed data to the json file */
+    protected setRawData(data:ODJsonDatabaseStructure) {
+        fs.writeFileSync(this.path,this.formatter.stringify(data,this.path))
     }
 }
