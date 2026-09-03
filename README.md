@@ -2,7 +2,7 @@
 <img src="https://apis.dj-dj.be/cdn/opendiscord/logo.png" alt="Open Discord Logo" width="650px"><br>
 <span align="center"><b>A modular framework for the next-generation of Discord bots</b></span><br><br>
 <a href="https://otgithub.dj-dj.be"><img src="https://apis.dj-dj.be/cdn/openticket/logo.png" alt="Open Ticket Logo" height="55px"></a>
-<a href="https://otgithub.dj-dj.be"><img src="https://apis.dj-dj.be/cdn/openmoderation/logo.png" alt="Open Moderation Logo" height="60px"></a><br><br>
+<a href="https://omgithub.dj-dj.be"><img src="https://apis.dj-dj.be/cdn/openmoderation/logo.png" alt="Open Moderation Logo" height="60px"></a><br><br>
 <a href="https://discord.com/invite/26vT9wt3n3"><img alt="Discord Invite Link" src="https://img.shields.io/badge/discord-support%20server-5865F2.svg?style=flat-square&logo=discord"></img></a>
 <a href="https://github.com/open-discord-bots/plugins/blob/main/LICENSE"><img alt="Open Discord Plugins License" src="https://img.shields.io/badge/license-MIT-important.svg?style=flat-square"></img></a>
 <a href="https://discord.dj-dj.be"><img alt="Open Discord Plugins Stars" src="https://img.shields.io/github/stars/open-discord-bots/framework?color=yellow&label=stars&logo=github&style=flat-square"></img></a>
@@ -59,8 +59,7 @@ We do currently <b>NOT</b> provide support for <b>3rd party implementations</b> 
 
 ## 🛠️ Contributors
 ### ❤️ Sponsors
-A big thanks to all our sponsors! Without them, it wouldn't be possible to create this project!
-
+Huge thanks to our sponsors for making this project possible. Your support means everything to us.
 <table>
 <tr>
 <td><img src="https://github.com/guillee3.png" alt="Profile Picture" width="100px"></td>
