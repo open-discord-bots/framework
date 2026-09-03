@@ -4,115 +4,277 @@
 import { ODId, ODValidId, ODManager, ODSystemError, ODManagerData, ODNoGeneric } from "./base.js"
 import * as discord from "discord.js"
 import { ODDebugger } from "./console.js"
-import { ODClientManager } from "./client.js"
+import { ODClientManager, ODClientPermissions } from "./client.js"
 
-/**## ODPermissionType `type`
- * All available permission types/levels. Can be used in the `ODPermission` class.
+/**## ODPermissionScopeMode `enum`
+ * Different modes for scope priority in the permission system.
  */
-export type ODPermissionType = "member"|"support"|"moderator"|"admin"|"owner"|"developer"
-
-/**## ODPermissionScope `type`
- * The scope in which a certain permission is active.
- */
-export type ODPermissionScope = "global-user"|"channel-user"|"global-role"|"channel-role"
-
-/**## ODPermissionResult `interface`
- * The result returned by `ODPermissionManager.getPermissions()`.
- */
-export interface ODPermissionResult {
-    /**The permission type. */
-    type:ODPermissionType
-    /**The permission scope. */
-    scope:ODPermissionScope|"default"
-    /**The highest level available for this scope. */
-    level:ODPermissionLevel,
-    /**The permission which returned this level. */
-    source:ODPermission|null
+export enum ODPermissionScopeMode {
+    /**More specific scopes take priority. (Global -> Category -> Channel) */
+    HierarchicalScopes="HierarchicalScopes",
+    /****(BEST OPTION)** At Least one scope must allow to grant permission. */
+    AnyScope="AnyScope",
+    /**All scopes must allow to grant permission. */
+    AllScopes="AllScopes"
 }
 
-/**## ODPermissionLevel `enum`
- * All available permission types/levels. But as `enum` instead of `type`. Used to calculate the level.
+/**## ODPermissionSettings `interface`
+ * The scopes of this permission, each with their own settings.
  */
-export enum ODPermissionLevel {
-    /**A normal member. (Default for everyone) */
-    member,
-    /**Support team. Higher than a normal member. (Used for ticket-admins) */
-    support,
-    /**Moderator. Higher than the support team. (Unused) */
-    moderator,
-    /**Admin. Higher than a moderator. (Used for global-admins) */
-    admin,
-    /**Server owner. (Able to use all commands including `/stats reset`) */
-    owner,
-    /**Bot owner or all users from dev team. (Able to use all commands including `/stats reset`) */
-    developer
+export interface ODPermissionSettings {
+    /**The global scope, applies everywhere. */
+    globalScope?:ODPermissionScope
+    /**The channel scope, applies in a certain channel. */
+    channelScopes?:(ODPermissionScope & {
+        /**The channel this scope applies to. */
+        channelId:string
+    })[],
+    /**The category scope, applies in a certain category. */
+    categoryScopes?:(ODPermissionScope & {
+        /**The category this scope applies to. */
+        categoryId:string
+    })[],
+    /**The scope mode changes the way scopes take priority over eachother. */
+    scopeMode:ODPermissionScopeMode
+}
+
+/**## ODPermissionScope `interface`
+ * The configuration for a permission scope.
+ * - `ALLOW` -> Must match at least one of these rules.
+ * - `REQUIRE` -> Must match all required rules.
+ */
+export interface ODPermissionScope {
+    /**(WARNING!) This explicitly denies this permission eventhough other rules match. It should not be used by default. */
+    denyAll?:boolean
+
+    /**Custom `ALLOW` function when other rules already return `false`. Does not interfer with `REQUIRE` rules. */
+    allowCustom?:(ctx:ODPermissionCalculationContext) => Promise<boolean>
+    /**Allow everyone. */
+    allowEveryone?:boolean
+    /**Allow the developer of the bot. */
+    allowBotDeveloper?:boolean
+    /**Allow the server owner. */
+    allowServerOwner?:boolean
+    /**Allow any user in this list. */
+    allowedUserIds?:string[]
+    /**Allow users with any of these roles. */
+    allowedRoleIds?:string[]
+    /**Allow users with any of these discord permissions. */
+    allowedDiscordPerms?:ODClientPermissions[]
+
+    /**Custom `REQUIRE` function when other rules already return `true`. Does not interfer with `ALLOW` rules. */
+    requireCustom?:(ctx:ODPermissionCalculationContext) => Promise<boolean>
+    /**Require the user to be the developer of the bot. */
+    requireBotDeveloper?:boolean
+    /**Require the user to be the owner of the server. */
+    requireServerOwner?:boolean
+    /**Require the user to have all these roles. */
+    requiredRoleIds?:string[]
+    /**Require the user to have all these discord permissions. */
+    requiredDiscordPerms?:ODClientPermissions[]
+}
+
+/**## ODPermissionCalculationContext `interface`
+ * The context for making permission calculations.
+ */
+export interface ODPermissionCalculationContext {
+    user:discord.User,
+    member:discord.GuildMember|null
+    roles:discord.Role[],
+    channel:discord.Channel|null,
+    guild:discord.Guild,
+    serverOwner:discord.User,
+    botDevelopers:discord.User[]
 }
 
 /**## ODPermission `class`
  * This is an Open Discord permission.
  * 
- * It defines a single permission level for a specific scope (global/channel & user/role)
- * These permissions only apply to commands & interactions.
- * They are not related to channel permissions in the ticket system.
+ * It defines permissions for a specific command or action.
+ * Each permission is able to have multiple scopes and settings to customise how permissions should behave.
  * 
- * Register this class to an `ODPermissionManager` to use it!
+ * Register this class in `opendiscord.permissions` (`ODPermissionManager`) to use it.
  */
 export class ODPermission extends ODManagerData {
-    /**The scope of this permission. */
-    readonly scope: ODPermissionScope
-    /**The type/level of this permission. */
-    readonly permission: ODPermissionType
-    /**The user/role of this permission. */
-    readonly value: discord.Role|discord.User
-    /**The channel that this permission applies to. (`null` when global) */
-    readonly channel: discord.Channel|null
-
-    constructor(id:ODValidId, scope:"global-user", permission:ODPermissionType, value:discord.User)
-    constructor(id:ODValidId, scope:"global-role", permission:ODPermissionType, value:discord.Role)
-    constructor(id:ODValidId, scope:"channel-user", permission:ODPermissionType, value:discord.User, channel:discord.Channel)
-    constructor(id:ODValidId, scope:"channel-role", permission:ODPermissionType, value:discord.Role, channel:discord.Channel)
-    constructor(id:ODValidId, scope:ODPermissionScope, permission:ODPermissionType, value:discord.Role|discord.User, channel?:discord.Channel){
+    /**The scope mode changes the way scopes take priority over eachother. */
+    scopeMode:ODPermissionScopeMode
+    /**The global scope, applies everywhere. */
+    protected globalScope: ODPermissionScope|null
+    /**The channel scope, applies in a certain channel. */
+    protected channelScopes: (ODPermissionScope & {
+        /**The channel this scope applies to. */
+        channelId:string
+    })[]
+    /**The category scope, applies in a certain category. */
+    protected categoryScopes: (ODPermissionScope & {
+        /**The category this scope applies to. */
+        categoryId:string
+    })[]
+    protected client: ODClientManager
+    
+    constructor(id:ODValidId,settings:ODPermissionSettings,clientManager:ODClientManager){
         super(id)
-        this.scope = scope
-        this.permission = permission
-        this.value = value
-        this.channel = channel ?? null
+        this.client = clientManager
+        this.scopeMode = settings.scopeMode
+        this.globalScope = settings.globalScope ?? null
+        this.channelScopes = settings.channelScopes ?? []
+        this.categoryScopes = settings.categoryScopes ?? []
     }
-}
 
-/**## ODPermissionSettings `interface`
- * Optional settings for the `getPermissions()` method in the `ODPermissionManager`.
- */
-export interface ODPermissionSettings {
-    /**Include permissions from the global user scope. */
-    allowGlobalUserScope?:boolean,
-    /**Include permissions from the global role scope. */
-    allowGlobalRoleScope?:boolean,
-    /**Include permissions from the channel user scope. */
-    allowChannelUserScope?:boolean,
-    /**Include permissions from the channel role scope. */
-    allowChannelRoleScope?:boolean,
-    /**Only include permissions of which the id matches this regex. */
-    idRegex?:RegExp
-}
+    /**Modify the scope mode of this permission. */
+    setScopeMode(mode:ODPermissionScopeMode){
+        this.scopeMode = mode
+    }
+    /**Set the global scope settings of this permission. */
+    setGlobalScope(scope:ODPermissionScope|null){
+        this.globalScope = scope
+    }
+    /**Get the global scope settings of this permission. */
+    getGlobalScope(){
+        return structuredClone(this.globalScope)
+    }
+    /**Add or update a channel with scope settings to this permission. */
+    setChannelScope(channelId:string,scope:ODPermissionScope){
+        const index = this.channelScopes.findIndex((scope) => scope.channelId === channelId)
+        if (index < 0) this.channelScopes.push({channelId,...scope})
+        else this.channelScopes[index] = {channelId,...scope}
+    }
+    /**Remove a channel with scope settings from this permission. */
+    removeChannelScope(channelId:string){
+        const index = this.channelScopes.findIndex((scope) => scope.channelId === channelId)
+        if (index > -1){
+            this.channelScopes.splice(index,1)
+            return true
+        }else return false
+    }
+    /**Get a channel with scope settings from this permission. */
+    getChannelScope(channelId:string){
+        const index = this.channelScopes.findIndex((scope) => scope.channelId === channelId)
+        if (index > -1) return structuredClone(this.channelScopes[index])
+        else return null
+    }
+    /**Get all channel scope settings from this permission. */
+    getAllChannelScopes(){
+        return structuredClone(this.channelScopes)
+    }
+    /**Add or update a category with scope settings to this permission. */
+    setCategoryScope(categoryId:string,scope:ODPermissionScope){
+        const index = this.categoryScopes.findIndex((scope) => scope.categoryId === categoryId)
+        if (index < 0) this.categoryScopes.push({categoryId,...scope})
+        else this.categoryScopes[index] = {categoryId,...scope}
+    }
+    /**Remove a category with scope settings from this permission. */
+    removeCategoryScope(categoryId:string){
+        const index = this.categoryScopes.findIndex((scope) => scope.categoryId === categoryId)
+        if (index > -1){
+            this.categoryScopes.splice(index,1)
+            return true
+        }else return false
+    }
+    /**Get a category with scope settings from this permission. */
+    getCategoryScope(categoryId:string){
+        const index = this.categoryScopes.findIndex((scope) => scope.categoryId === categoryId)
+        if (index > -1) return structuredClone(this.categoryScopes[index])
+        else return null
+    }
+    /**Get all category scope settings from this permission. */
+    getAllCategoryScopes(){
+        return structuredClone(this.categoryScopes)
+    }
+    /**Check if this permission is granted to a certain user in a certain channel. */
+    async hasPermissions(user:discord.User,channel?:discord.Channel|null): Promise<boolean> {
+        if (!this.client.mainServer) throw new ODSystemError("ODPermission.hasPermissions() => ODClientManager.mainServer is not defined. Couldn't find the main server of the bot.")
+        const guild = (channel && !channel.isDMBased()) ? channel.guild : this.client.mainServer
+        const member = await this.client.fetchGuildMember(guild,user.id)
+        const roles = member?.roles.cache.toJSON() ?? []
 
-/**## ODPermissionCalculationCallback `type`
- * The callback of the permission calculation. (Used in `ODPermissionManager`)
- */
-export type ODPermissionCalculationCallback = (user:discord.User, channel?:discord.Channel|null, guild?:discord.Guild|null, settings?:ODPermissionSettings|null) => Promise<ODPermissionResult>
+        const ctx: ODPermissionCalculationContext = {
+            user,
+            channel:channel ?? null,
+            guild,
+            member,
+            roles,
+            serverOwner:await this.client.fetchMainServerOwner(),
+            botDevelopers:await this.client.fetchBotDevelopers()
+        }
 
-/**## ODPermissionCommandResult `type`
- * The result of calculating permissions for a command.
- */
-export type ODPermissionCommandResult = {
-    /**Returns `true` when the user has valid permissions. */
-    hasPerms:false,
-    reason:"no-perms"|"disabled"|"not-in-server"
-}|{
-    /**Returns `true` when the user has valid permissions. */
-    hasPerms:true,
-    /**Is the user a server admin or a normal member? This does not decide if the user has permissions or not. */
-    isAdmin:boolean
+        return this.calculatePermission(ctx)
+    }
+    /**Calculate the permission for a user based on the provided context. */
+    protected async calculatePermission(ctx:ODPermissionCalculationContext): Promise<boolean> {
+        //COLLECT APPLIED SCOPES
+        const appliedScopes: ODPermissionScope[] = []
+
+        //global
+        if (this.globalScope) appliedScopes.push(this.globalScope)
+
+        //category
+        if (ctx.channel && !ctx.channel.isDMBased()){
+            const categoryId = ctx.channel.parentId
+            if (categoryId){
+                const categoryScope = this.categoryScopes.find((scope) => scope.categoryId === categoryId)
+                if (categoryScope) appliedScopes.push(categoryScope)
+            }
+        }
+
+        //channel
+        if (ctx.channel){
+            const channelId = ctx.channel.id
+            const channelScope = this.channelScopes.find((scope) => scope.channelId === channelId)
+            if (channelScope) appliedScopes.push(channelScope)
+        }
+
+
+        if (appliedScopes.length === 0) return false
+        else if (this.scopeMode === ODPermissionScopeMode.HierarchicalScopes) {
+            //the last scope should be the most specific one
+            const scope = appliedScopes[appliedScopes.length - 1]
+            return await this.calculateScope(scope,ctx)
+
+        }else if (this.scopeMode === ODPermissionScopeMode.AnyScope) {
+            //at least one of the scopes must return true
+            const result = await Promise.all(appliedScopes.map((scope) => this.calculateScope(scope,ctx)))
+            return result.some(result => result === true)
+
+        }else if (this.scopeMode === ODPermissionScopeMode.AllScopes) {
+            //all scopes must return true
+            const result = await Promise.all(appliedScopes.map((scope) => this.calculateScope(scope,ctx)))
+            return result.every(result => result === true)
+
+        }else return false
+    }
+    /**Calculate the scope for a user based on the provided context. */
+    protected async calculateScope(scope:ODPermissionScope,ctx:ODPermissionCalculationContext): Promise<boolean> {
+        if (scope.denyAll) return false
+
+        //ALLOW RULES: At least one of these rules must be true
+        //an empty ruleset does NOT grant access
+        const allowRules:boolean[] = []
+
+        allowRules.push(scope.allowEveryone ?? false)
+        if (scope.allowBotDeveloper) allowRules.push(ctx.botDevelopers.some((u) => u.id === ctx.user.id))
+        if (scope.allowServerOwner) allowRules.push(ctx.serverOwner.id === ctx.user.id)
+        if (scope.allowedUserIds) allowRules.push(scope.allowedUserIds.includes(ctx.user.id))
+        if (scope.allowedRoleIds) allowRules.push(scope.allowedRoleIds.some((allowedRoleId) => ctx.roles.some((r) => r.id === allowedRoleId)))
+        if (scope.allowedDiscordPerms) allowRules.push(scope.allowedDiscordPerms.some((p) => ctx.member?.permissions.has(p) ?? false))
+        if (scope.allowCustom) allowRules.push(await scope.allowCustom(ctx))
+
+        //REQUIRE RULES: All enabled rules must be true
+        //an empty ruleset MIGHT grant access
+        const requireRules:boolean[] = []
+
+        if (scope.requireBotDeveloper) requireRules.push(ctx.botDevelopers.some((u) => u.id === ctx.user.id))
+        if (scope.allowServerOwner) requireRules.push(ctx.serverOwner.id === ctx.user.id)
+        if (scope.requiredRoleIds) requireRules.push(scope.requiredRoleIds.every((requiredRoleId) => ctx.roles.some((r) => r.id === requiredRoleId)))
+        if (scope.requiredDiscordPerms) requireRules.push(scope.requiredDiscordPerms.every((p) => ctx.member?.permissions.has(p) ?? false))
+        if (scope.requireCustom) requireRules.push(await scope.requireCustom(ctx))
+        
+        //FINAL SCOPE RESULT
+        const allowanceMet = allowRules.some(result => result === true)
+        const requirementsMet = requireRules.every(result => result === true)
+
+        return allowanceMet && requirementsMet
+    }
 }
 
 /**## ODPermissionManagerIdConstraint `type`
@@ -121,222 +283,28 @@ export type ODPermissionCommandResult = {
 export type ODPermissionManagerIdConstraint = Record<string,ODPermission>
 
 /**## ODPermissionManager `class`
- * This is an Open Discord permission manager.
+ * This is the Open Discord permission manager.
  * 
- * It manages all permissions in the bot!
- * Use the `getPermissions()` and `hasPermissions()` methods to get user perms.
- * 
- * Add new permissions using the `ODPermission` class in your plugin!
+ * Register new `ODPermissions` using .add() and configure them individually.
  */
 export class ODPermissionManager<IdList extends ODPermissionManagerIdConstraint = ODPermissionManagerIdConstraint> extends ODManager<ODPermission> {
-    /**The function for calculating permissions in this manager. */
-    private calculation: ODPermissionCalculationCallback|null
     /**An alias to the Open Discord client manager. */
-    private client: ODClientManager
-    /**The result which is returned when no other permissions match. (`member` by default) */
-    defaultResult: ODPermissionResult = {
-        level:ODPermissionLevel["member"],
-        scope:"default",
-        type:"member",
-        source:null
-    }
-
-    constructor(debug:ODDebugger, client:ODClientManager, useDefaultCalculation?:boolean){
+    protected client: ODClientManager
+    
+    constructor(debug:ODDebugger,client:ODClientManager){
         super(debug,"permission")
-        this.calculation = useDefaultCalculation ? this.defaultCalculation : null
         this.client = client
     }
 
-    /**Edit the permission calculation function in this manager. */
-    setCalculation(calculation:ODPermissionCalculationCallback){
-        this.calculation = calculation
+    /**Is this user the developer of this bot? */
+    async isBotDeveloper(user:discord.User|string): Promise<boolean> {
+        const userId = user instanceof discord.User ? user.id : user
+        return (await this.client.fetchBotDevelopers()).some((u) => u.id === userId)
     }
-    /**Edit the result which is returned when no other permissions match. (`member` by default) */
-    setDefaultResult(result:ODPermissionResult){
-        this.defaultResult = result
-    }
-    /**Get an `ODPermissionResult` based on a few context factors. Use `hasPermissions()` to simplify the result. */
-    getPermissions(user:discord.User, channel?:discord.Channel|null, guild?:discord.Guild|null, settings?:ODPermissionSettings|null): Promise<ODPermissionResult> {
-        try{
-            if (!this.calculation) throw new ODSystemError("ODPermissionManager:getPermissions() => missing perms calculation")
-            return this.calculation(user,channel,guild,settings)
-        }catch(err){
-            throw new ODSystemError("ODPermissionManager:getPermissions() => Failed permissions calculation.",{cause:err})
-        }
-    }
-    /**Simplifies the `ODPermissionResult` returned from `getPermissions()` and returns a boolean to check if the user matches the required permissions. */
-    hasPermissions(minimum:ODPermissionType, data:ODPermissionResult){
-        if (minimum == "member") return true
-        else if (minimum == "support") return (data.level >= ODPermissionLevel["support"])
-        else if (minimum == "moderator") return (data.level >= ODPermissionLevel["moderator"])
-        else if (minimum == "admin") return (data.level >= ODPermissionLevel["admin"])
-        else if (minimum == "owner") return (data.level >= ODPermissionLevel["owner"])
-        else if (minimum == "developer") return (data.level >= ODPermissionLevel["developer"])
-        else throw new ODSystemError("Invalid minimum permission type at ODPermissionManager.hasPermissions()")
-    }
-    /**Check for permissions. (default calculation) */
-    private async defaultCalculation(user:discord.User,channel?:discord.Channel|null,guild?:discord.Guild|null, settings?:ODPermissionSettings|null): Promise<ODPermissionResult> {
-        const globalCalc = await this.defaultGlobalCalculation(user,channel,guild,settings)
-        const channelCalc = await this.defaultChannelCalculation(user,channel,guild,settings)
-
-        if (globalCalc.level > channelCalc.level) return globalCalc
-        else return channelCalc
-    }
-    /**Check for global permissions. Result will be compared with the channel perms in `#defaultCalculation()`. */
-    private async defaultGlobalCalculation(user:discord.User,channel?:discord.Channel|null,guild?:discord.Guild|null, settings?:ODPermissionSettings|null): Promise<ODPermissionResult> {
-        const idRegex = (settings && typeof settings.idRegex != "undefined") ? settings.idRegex : null
-        const allowGlobalUserScope = (settings && typeof settings.allowGlobalUserScope != "undefined") ? settings.allowGlobalUserScope : true
-        const allowGlobalRoleScope = (settings && typeof settings.allowGlobalRoleScope != "undefined") ? settings.allowGlobalRoleScope : true
-
-        //check for global user permissions
-        if (allowGlobalUserScope){
-            const users = this.getFiltered((permission) => (!idRegex || (idRegex && idRegex.test(permission.id.value))) && permission.scope == "global-user" && (permission.value instanceof discord.User) && permission.value.id == user.id)
-
-            if (users.length > 0){
-                //sort all permisions from highest to lowest
-                users.sort((a,b) => {
-                    const levelA = ODPermissionLevel[a.permission]
-                    const levelB = ODPermissionLevel[b.permission]
-
-                    if (levelB > levelA) return 1
-                    else if (levelA > levelB) return -1
-                    else return 0
-                })
-
-                return {
-                    type:users[0].permission,
-                    scope:"global-user",
-                    level:ODPermissionLevel[users[0].permission],
-                    source:users[0] ?? null
-                }
-            }
-        }
-            
-        //check for global role permissions
-        if (allowGlobalRoleScope){
-            if (guild){
-                const member = await this.client.fetchGuildMember(guild,user.id)
-                if (member){
-                    const memberRoles = member.roles.cache.map((role) => role.id)
-                    const roles = this.getFiltered((permission) => (!idRegex || (idRegex && idRegex.test(permission.id.value))) && permission.scope == "global-role" && (permission.value instanceof discord.Role) && memberRoles.includes(permission.value.id) && permission.value.guild.id == guild.id)
-
-                    if (roles.length > 0){
-                        //sort all permisions from highest to lowest
-                        roles.sort((a,b) => {
-                            const levelA = ODPermissionLevel[a.permission]
-                            const levelB = ODPermissionLevel[b.permission]
-        
-                            if (levelB > levelA) return 1
-                            else if (levelA > levelB) return -1
-                            else return 0
-                        })
-        
-                        return {
-                            type:roles[0].permission,
-                            scope:"global-role",
-                            level:ODPermissionLevel[roles[0].permission],
-                            source:roles[0] ?? null
-                        }
-                    }
-                }
-            }
-        }
-
-        //spread result to prevent accidental referencing
-        return {...this.defaultResult}
-    }
-    /**Check for channel permissions. Result will be compared with the global perms in `#defaultCalculation()`. */
-    private async defaultChannelCalculation(user:discord.User,channel?:discord.Channel|null,guild?:discord.Guild|null, settings?:ODPermissionSettings|null): Promise<ODPermissionResult> {
-        const idRegex = (settings && typeof settings.idRegex != "undefined") ? settings.idRegex : null
-        const allowChannelUserScope = (settings && typeof settings.allowChannelUserScope != "undefined") ? settings.allowChannelUserScope : true
-        const allowChannelRoleScope = (settings && typeof settings.allowChannelRoleScope != "undefined") ? settings.allowChannelRoleScope : true
-        
-        if (guild && channel && !channel.isDMBased()){
-            //check for channel user permissions
-            if (allowChannelUserScope){
-                const users = this.getFiltered((permission) => (!idRegex || (idRegex && idRegex.test(permission.id.value))) && permission.scope == "channel-user" && permission.channel && (permission.channel.id == channel.id) && (permission.value instanceof discord.User) && permission.value.id == user.id)
-
-                if (users.length > 0){
-                    //sort all permisions from highest to lowest
-                    users.sort((a,b) => {
-                        const levelA = ODPermissionLevel[a.permission]
-                        const levelB = ODPermissionLevel[b.permission]
-
-                        if (levelB > levelA) return 1
-                        else if (levelA > levelB) return -1
-                        else return 0
-                    })
-
-                    return {
-                        type:users[0].permission,
-                        scope:"channel-user",
-                        level:ODPermissionLevel[users[0].permission],
-                        source:users[0] ?? null
-                    }
-                }
-            }
-            
-            //check for channel role permissions
-            if (allowChannelRoleScope){
-                const member = await this.client.fetchGuildMember(guild,user.id)
-                if (member){
-                    const memberRoles = member.roles.cache.map((role) => role.id)
-                    const roles = this.getFiltered((permission) => (!idRegex || (idRegex && idRegex.test(permission.id.value))) && permission.scope == "channel-role" && permission.channel && (permission.channel.id == channel.id) && (permission.value instanceof discord.Role) && memberRoles.includes(permission.value.id) && permission.value.guild.id == guild.id)
-
-                    if (roles.length > 0){
-                        //sort all permisions from highest to lowest
-                        roles.sort((a,b) => {
-                            const levelA = ODPermissionLevel[a.permission]
-                            const levelB = ODPermissionLevel[b.permission]
-        
-                            if (levelB > levelA) return 1
-                            else if (levelA > levelB) return -1
-                            else return 0
-                        })
-        
-                        return {
-                            type:roles[0].permission,
-                            scope:"channel-role",
-                            level:ODPermissionLevel[roles[0].permission],
-                            source:roles[0] ?? null
-                        }
-                    }
-                }
-            }
-        }
-
-        //spread result to prevent accidental modification because of referencing
-        return {...this.defaultResult}
-    }
-
-    /**Check the permissions for a certain command of the bot. Permission mode: `none`, `everyone`, `admin` or any valid discord role ID. */
-    async checkCommandPerms(permissionMode:string,requiredLevel:ODPermissionType,user:discord.User,member?:discord.GuildMember|null,channel?:discord.Channel|null,guild?:discord.Guild|null,settings?:ODPermissionSettings): Promise<ODPermissionCommandResult> {
-        if (permissionMode === "none"){
-            return {hasPerms:false,reason:"disabled"}
-
-        }else if (permissionMode === "everyone"){
-            const isAdmin = this.hasPermissions(requiredLevel,await this.getPermissions(user,channel,guild,settings))
-            return {hasPerms:true,isAdmin}
-
-        }else if (permissionMode === "admin"){
-            const isAdmin = this.hasPermissions(requiredLevel,await this.getPermissions(user,channel,guild,settings))
-            if (!isAdmin) return {hasPerms:false,reason:"no-perms"}
-            else return {hasPerms:true,isAdmin}
-        }else{
-            if (!guild || !member){
-                this.debug?.debug("ODPermissionManager.checkCommandPerms(): Permission Error, Not in server! (#1)")
-                return {hasPerms:false,reason:"not-in-server"}
-            }
-            const role = await this.client.fetchGuildRole(guild,permissionMode)
-            if (!role){
-                this.debug?.debug("ODPermissionManager.checkCommandPerms(): Permission Error, Not in server! (#2)")
-                return {hasPerms:false,reason:"not-in-server"}
-            }
-            if (!role.members.has(member.id)) return {hasPerms:false,reason:"no-perms"}
-
-            const isAdmin = this.hasPermissions(requiredLevel,await this.getPermissions(user,channel,guild,settings))
-            return {hasPerms:true,isAdmin}
-        }
+    /**Is this user the owner of the main server? */
+    async isMainServerOwner(user:discord.User|string): Promise<boolean> {
+        const userId = user instanceof discord.User ? user.id : user
+        return ((await this.client.fetchMainServerOwner()).id === userId)
     }
 
     get<PermissionId extends keyof ODNoGeneric<IdList>>(id:PermissionId): IdList[PermissionId]

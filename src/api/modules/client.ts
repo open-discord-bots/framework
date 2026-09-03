@@ -21,11 +21,11 @@ export type ODClientPriviligedIntents = ("GuildMembers"|"MessageContent"|"Presen
 /**## ODClientPartials `type`
  * A list of partials required for the bot to work. (`Message` & `Channel` are for receiving DM messages from uncached channels)
  */
-export type ODClientPartials = ("User"|"Channel"|"GuildMember"|"Message"|"Reaction"|"GuildScheduledEvent"|"ThreadMember")
+export type ODClientPartials = ("User"|"Channel"|"GuildMember"|"Message"|"Reaction"|"Poll"|"PollAnswer"|"GuildScheduledEvent"|"ThreadMember"|"SoundboardSound")
 /**## ODClientPermissions `type`
  * A list of permissions required in the server that the bot is active in.
  */
-export type ODClientPermissions = ("CreateInstantInvite"|"KickMembers"|"BanMembers"|"Administrator"|"ManageChannels"|"ManageGuild"|"AddReactions"|"ViewAuditLog"|"PrioritySpeaker"|"Stream"|"ViewChannel"|"SendMessages"|"SendTTSMessages"|"ManageMessages"|"EmbedLinks"|"AttachFiles"|"ReadMessageHistory"|"MentionEveryone"|"UseExternalEmojis"|"ViewGuildInsights"|"Connect"|"Speak"|"MuteMembers"|"DeafenMembers"|"MoveMembers"|"UseVAD"|"ChangeNickname"|"ManageNicknames"|"ManageRoles"|"ManageWebhooks"|"ManageGuildExpressions"|"UseApplicationCommands"|"RequestToSpeak"|"ManageEvents"|"ManageThreads"|"CreatePublicThreads"|"CreatePrivateThreads"|"UseExternalStickers"|"SendMessagesInThreads"|"UseEmbeddedActivities"|"ModerateMembers"|"ViewCreatorMonetizationAnalytics"|"UseSoundboard"|"UseExternalSounds"|"SendVoiceMessages")
+export type ODClientPermissions = keyof discord.PermissionFlags
 
 /**## ODClientManager `class`
  * This is an Open Discord client manager.
@@ -350,6 +350,25 @@ export class ODClientManager<SlashIdList extends ODSlashCommandManagerIdConstrai
             }catch{}
             return {success:false}
         }
+    }
+    /**Get the bot developers of this bot. */
+    async fetchBotDevelopers(): Promise<discord.User[]> {
+        try{
+            const developer = (await this.client.application.fetch()).owner
+            if (developer instanceof discord.User){
+                return [developer]
+            }else if (developer instanceof discord.Team){
+                return developer.members.map((tm) => tm.user)
+            }else return []
+        }catch{
+            return []
+        }
+    }
+    /**Get the owner of the main server. */
+    async fetchMainServerOwner(): Promise<discord.User> {
+        if (!this.mainServer) throw new ODSystemError("ODClientManager.fetchMainServerOwner() => mainServer is not defined. Couldn't find the main server of the bot.")
+        const owner = (await this.mainServer.members.fetch(this.mainServer.ownerId)).user
+        return owner
     }
 }
 
