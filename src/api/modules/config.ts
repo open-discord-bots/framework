@@ -135,6 +135,7 @@ export abstract class ODConfig<Data extends any> extends ODManagerData {
  */
 export class ODJsonConfig<Data extends any> extends ODConfig<Data> {
     formatter: fjs.custom.BaseFormatter
+    protected readonly defaultFormatter = new fjs.DefaultFormatter(null,true,"    ")
 
     constructor(id:ODValidId, file:string, customPath?:string, formatter?:fjs.custom.BaseFormatter){
         super(id,{})
@@ -172,10 +173,10 @@ export class ODJsonConfig<Data extends any> extends ODConfig<Data> {
         }
     }
     /**Save the edited config to the filesystem. This is used by the Interactive Setup CLI. It's not recommended to use this while the bot is running. */
-    save(): ODPromiseVoid {
+    save(withoutFormatter?:boolean): ODPromiseVoid {
         if (!this.initiated) throw new ODSystemError("Unable to save config \""+nodepath.join("./",this.path)+"\", the file hasn't been initiated yet!")
         try{
-            const contents = this.formatter.stringify(this.data as ODValidJsonType,this.path)
+            const contents = (withoutFormatter) ? this.defaultFormatter.stringify(this.data as ODValidJsonType,this.path) : this.formatter.stringify(this.data as ODValidJsonType,this.path)
             fs.writeFileSync(this.path,contents)
             super.save()
         }catch(err){
@@ -196,6 +197,7 @@ export class ODJsonConfig<Data extends any> extends ODConfig<Data> {
  */
 export class ODJsonCommentsConfig<Data extends any> extends ODConfig<Data> {
     formatter: fjs.custom.BaseFormatter
+    protected readonly defaultFormatter = new fjs.DefaultFormatter(null,true,"    ")
 
     constructor(id:ODValidId, file:string, customPath?:string, formatter?:fjs.custom.BaseFormatter){
         super(id,{})
@@ -233,10 +235,10 @@ export class ODJsonCommentsConfig<Data extends any> extends ODConfig<Data> {
         }
     }
     /**Save the edited config to the filesystem. This is used by the Interactive Setup CLI. It's not recommended to use this while the bot is running. */
-    save(): ODPromiseVoid {
+    save(withoutFormatter?:boolean): ODPromiseVoid {
         if (!this.initiated) throw new ODSystemError("Unable to save JSONC config \""+nodepath.join("./",this.path)+"\", the file hasn't been initiated yet!")
         try{
-            const contents = this.formatter.stringify(this.data as ODValidJsonType,this.path)
+            const contents = (withoutFormatter) ? this.defaultFormatter.stringify(this.data as ODValidJsonType,this.path) : this.formatter.stringify(this.data as ODValidJsonType,this.path)
             fs.writeFileSync(this.path,contents)
             super.save()
         }catch(err){
